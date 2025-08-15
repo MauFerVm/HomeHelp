@@ -1,0 +1,72 @@
+# Node modules
+**/node_modules/
+
+# Builds / outputs
+dist/
+build/
+out/
+client/build/
+server/build/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Coverage / testing / bundlers
+coverage/
+.nyc_output/
+.cypress/
+cypress/videos/
+cypress/screenshots/
+.cache/
+.parcel-cache/
+.next/
+.cache-loader/
+
+# Environment / secrets
+.env
+**/.env
+*.env.local
+*.env.*.local
+client/.env
+server/.env
+!.env.example
+
+# OS & temp files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+*~
+*.swp
+tmp/
+.pids/
+*.pid
+
+# IDE / editor
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# TypeScript
+*.tsbuildinfo
+
+# Misc
+*.sqlite
+*.sqlite3
+*.tgz
+*.bak
+
+# Uploads: ignorar todo menos .gitkeep
+server/public/uploads/certificates/*
+!server/public/uploads/certificates/.gitkeep
+
+server/public/uploads/profiles/*
+!server/public/uploads/profiles/.gitkeep

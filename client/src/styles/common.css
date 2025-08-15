@@ -1,0 +1,127 @@
+/* src/styles/common.css */
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@100..900&display=swap");
+
+:root {
+  /*--primaryColor: hsl(94, 55%, 56%);
+  --hoverColor: hsl(93, 75%, 76%);
+
+  --paleGreen: hsl(96, 75%, 89%);
+  --whiteColor: hsl(0, 0%, 100%);
+  --blackColor: hsl(0, 0%, 18%);
+  --greyText: hsl(0, 0%, 75%);
+  --bgColor: hsl(113, 11%, 85%);
+  --inputColor: hsl(330, 12%, 97%);*/
+  --primaryColor: #a74924;
+  --hoverColor: #bc5532;
+
+  --paleGreen: #2c2627;
+  --whiteColor: #e3d8cb;
+  --blackColor: #1f1b1c;
+  --greyText: #a6a6a6;
+  --bgColor: #1f1b1c;
+  --inputColor: #2c2627;
+  --biggestFontSize: 2.5rem;
+  --h1FontSize: 1.5rem;
+  --h2FontSize: 1.25rem;
+  --h3FontSize: 1rem;
+  --normalFontSize: .938rem;
+  --smallFontSize: .813rem;
+  --smallestFontSize: .75rem;
+}
+
+/* Reset y utilidades */
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Montserrat", sans-serif;
+}
+
+html {
+  font-size: 90%;
+}
+
+.flex {
+  display: flex;
+  align-items: center;
+}
+
+.grid {
+  display: grid;
+}
+
+/*a {
+  text-decoration: none;
+  color: inherit;
+}*/
+
+a {
+  text-decoration: none;
+  color: var(--primaryColor);
+}
+
+a:hover {
+  color: var(--hoverColor);
+}
+
+button {
+  border: none;
+  outline: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+img,
+video {
+  max-width: 100%;
+  height: auto;
+}
+
+.showMessage {
+  display: block;
+  color: var(--whiteColor);
+  background: rgb(255, 0, 0);
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.btn {
+  border-radius: 8px;
+  padding: 0.8rem 1rem;
+  background: var(--primaryColor);
+  color: var(--whiteColor);
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.btn:hover {
+  background: var(--hoverColor);
+  color: var(--whiteColor);
+  /*color: var(--blackColor);*/
+}
+
+.input {
+  gap: 0.5rem;
+  padding: 1rem;
+  background: var(--inputColor);
+  border-radius: 10px;
+}
+
+.input input {
+  background: transparent;
+  border: none;
+  outline: none;
+  width: 100%;
+  /*agregado*/
+  color: var(--whiteColor);
+}
+
+.forgotPassword {
+  font-size: var(--smallFontSize);
+  color: var(--blackColor);
+  opacity: 0.7;
+  text-align: center;
+}

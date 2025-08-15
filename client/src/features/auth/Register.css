@@ -1,0 +1,357 @@
+/* src/features/auth/Register.css
+   Basado en Login.css adaptado para la página de registro.
+   Usa las mismas variables definidas en common.css
+*/
+
+:root { box-sizing: border-box; }
+*, *::before, *::after { box-sizing: inherit; }
+
+.registerPage {
+    height: 100vh;
+    width: 100%;
+    margin: auto;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 7px 50px rgb(19, 18, 19, 0.8);
+}
+
+.registerPage .container {
+    height: 80vh;
+    width: 60%;
+    margin: auto;
+    justify-content: space-between;
+    border-radius: 10px;
+    background: var(--bgColor);
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    overflow: hidden; /* asegurar el recorte redondeado */
+}
+
+/* Video / hero a la izquierda */
+.registerPage .container .videoDiv {
+    position: relative;
+    display: flex;
+    flex-basis: 50%;
+    width: 50%;
+    height: 100%;
+    padding: 0 1.5rem;
+    text-align: center;
+    justify-content: center;
+    flex-direction: column;
+    margin: auto 0;
+    border-radius: 10px 0 0 10px;
+    overflow: hidden;
+}
+
+.registerPage .container .videoDiv video,
+.registerPage .container .videoDiv .footerDiv {
+    position: absolute;
+}
+
+.registerPage .container .videoDiv video {
+    height: 100%;
+    width: 100%;
+    -o-object-fit: cover;
+    object-fit: cover;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    left: 0;
+}
+
+.registerPage .container .videoDiv .textDiv {
+    position: relative;
+    z-index: 2;
+    padding: 1.5rem;
+}
+
+.registerPage .container .videoDiv .textDiv .title {
+    color: var(--whiteColor);
+    font-size: 35px;
+    font-weight: 800;
+}
+
+.registerPage .container .videoDiv .textDiv p {
+    color: var(--whiteColor);
+    padding: 1rem 0;
+    font-weight: 400;
+}
+
+.registerPage .container .videoDiv .footerDiv {
+    bottom: 10px;
+    padding: 0 1rem;
+    height: 60px;
+    background: rgba(227, 216, 203, 0.15);
+    left: 10px;
+    right: 10px;
+    justify-content: space-between;
+    -webkit-backdrop-filter: blur(1px);
+    backdrop-filter: blur(1px);
+    border-radius: 10px;
+}
+
+.registerPage .container .videoDiv .text {
+    color: var(--whiteColor);
+}
+
+.registerPage .container .videoDiv .btn {
+    background: var(--whiteColor);
+    color: var(--primaryColor);
+    padding: 0.8rem 1.5rem;
+    border-radius: 10px;
+    font-weight: 400;
+    transition: 0.3s ease;
+}
+
+.registerPage .container .videoDiv .btn:hover {
+    background: var(--hoverColor);
+    color: var(--whiteColor);
+}
+
+/* Formulario a la derecha */
+.registerPage .container .formDiv {
+    flex-basis: 50%;
+    width: 50%;
+    margin: auto 0;
+    padding: 1.5rem 2rem;
+    flex-direction: column;
+    gap: 1.5rem;
+    background: transparent;
+    border-radius: 0 10px 10px 0;
+    display: flex;
+    align-items: stretch;
+
+    /* importante: que el contenedor del formulario ocupe todo el alto disponible */
+    height: 100%;
+}
+
+/* header */
+.registerPage .container .formDiv .headerDiv {
+    text-align: center;
+    padding: 0.5rem 0 1rem 0;
+}
+
+.registerPage .container .formDiv .headerDiv img {
+    width: 60px;
+    padding-bottom: 0.5rem;
+}
+
+.registerPage .container .formDiv .headerDiv h3 {
+    font-size: 25px;
+    color: var(--whiteColor);
+    font-weight: 600;
+}
+
+/* Form internals: .form ocupa todo el alto y tenemos .step scrollable y .wizardNav fijo */
+.registerPage .container .formDiv .form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 0;
+}
+
+/* Cada step: scroll interno si necesario */
+.registerPage .container .formDiv .form .step {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 8px;
+    padding-bottom: 8px;
+}
+
+/* estetica de la scrollbar (opcional, legible) */
+.registerPage .container .formDiv .form .step::-webkit-scrollbar {
+  width: 10px;
+}
+.registerPage .container .formDiv .form .step::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.08);
+  border-radius: 8px;
+}
+
+/* icon color */
+.registerPage .container .formDiv .form .inputDiv .icon {
+    color: var(--greyText);
+}
+
+.registerPage .container .formDiv .form .inputDiv label {
+    color: var(--whiteColor);
+    font-weight: 400;
+    font-size: 14px;
+    padding: 0.5rem 0;
+    display: block;
+}
+
+/* caja del input */
+.registerPage .container .formDiv .form .inputDiv .input {
+    gap: 0.5rem;
+    padding: 0.9rem;
+    background: var(--inputColor);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+}
+
+/* inputs: asegurar ancho y color legible */
+.registerPage .container .formDiv .form .inputDiv input,
+.registerPage .container .formDiv .form .inputDiv select,
+.registerPage .container .formDiv .form .inputDiv textarea {
+    background: transparent;
+    border: none;
+    outline: none;
+    width: 100%;
+    color: var(--whiteColor);
+    font-size: 0.95rem;
+    box-sizing: border-box;
+}
+
+/* placeholder y tamaño por defecto */
+.registerPage .container .formDiv .form .inputDiv input::placeholder,
+.registerPage .container .formDiv .form .inputDiv textarea::placeholder {
+    color: var(--greyText);
+}
+
+/* limitar tamaño del textarea y permitir scroll en el mismo */
+.registerPage .container .formDiv .form .inputDiv textarea {
+    max-height: 220px;
+    min-height: 80px;
+    resize: vertical;
+    overflow: auto;
+    padding: 0.6rem;
+}
+
+/* file input: evitar que el botón o texto se salga */
+.registerPage .container .formDiv .form input[type="file"] {
+  cursor: pointer;
+  max-width: 100%;
+}
+
+/* file wrapper safe */
+.registerPage .container .formDiv .form .file-wrapper {
+  max-width: 100%;
+  overflow: hidden;
+}
+
+/* Botones generales (.btn ya definido en common.css) */
+/* Varianten para wizard */
+.btn.primary {
+  background: var(--primaryColor);
+  color: var(--whiteColor);
+  border-radius: 10px;
+  padding: 0.7rem 1rem;
+  border: none;
+}
+.btn.secondary {
+  background: transparent;
+  color: var(--whiteColor);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  padding: 0.6rem 0.9rem;
+}
+
+/* hover behavior */
+.btn.primary:hover {
+  background: var(--hoverColor);
+  color: var(--whiteColor);
+}
+.btn.secondary:hover {
+  background: rgba(255,255,255,0.04);
+  color: var(--whiteColor);
+}
+
+/* NAV: botones de paginación (fijos fuera del step) */
+.registerPage .container .formDiv .form .wizardNav {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: center;
+    margin-top: 4px;
+}
+
+/* override: los botones del wizard no deben ser full width */
+.registerPage .container .formDiv .form .wizardNav .btn {
+    width: auto !important;
+    min-width: 110px;
+    padding: 0.6rem 1rem;
+    border-radius: 10px;
+}
+
+/* Botón principal general (por compatibilidad) */
+.registerPage .container .formDiv .form .btn {
+    padding: 0.9rem;
+    background: var(--primaryColor);
+    border-radius: 10px;
+    color: var(--whiteColor);
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    width: 100%;
+    gap: 0.5rem;
+    transition: 0.3s ease;
+    border: none;
+}
+
+/* forgot / small text */
+.registerPage .container .formDiv .form .forgotPassword {
+    font-size: var(--smallFontSize);
+    color: var(--whiteColor);
+    opacity: 0.9;
+    text-align: center;
+}
+
+/* Responsivo: apilar en pantallas pequeñas */
+@media screen and (max-width: 927px) {
+    .registerPage .container {
+        width: 90%;
+        flex-direction: column;
+        height: auto;
+        padding: 1rem 0;
+    }
+    .registerPage .container .videoDiv {
+        width: 100%;
+        flex-basis: auto;
+        border-radius: 10px;
+        height: 45vh;
+    }
+    .registerPage .container .formDiv {
+        width: 100%;
+        flex-basis: auto;
+        padding: 1rem;
+        transform: translateY(-0.5rem);
+    }
+
+    .registerPage .container .formDiv .form .inputDiv .input {
+        width: 100%;
+    }
+
+    /* en móviles mantenemos el scroll interno pero limitada la altura */
+    .registerPage .container .formDiv .form > .step {
+      max-height: 60vh;
+    }
+}
+
+/* Ajustes para móviles muy pequeños */
+@media screen and (max-width: 602px) {
+    .registerPage .container {
+        height: 100%;
+        width: 100%;
+        flex-direction: column;
+        padding: 1rem;
+    }
+    .registerPage .container .videoDiv {
+        height: 35vh;
+    }
+    .registerPage .container .formDiv .headerDiv h3 {
+        font-size: 20px;
+    }
+    .registerPage .container .formDiv .form .inputDiv .input {
+        width: 100%;
+    }
+}
+
+/* utilidad extra para asegurar placeholders con color similar al login */
+input::placeholder {
+    color: var(--greyText);
+}
