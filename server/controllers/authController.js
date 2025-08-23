@@ -38,10 +38,13 @@ exports.registerCompleto = async (req, res) => {
       return res.status(409).json({ error: 'username_taken', message: 'Nombre de usuario no disponible. Elegí otro.' });
     }
 
-    // 1) Insert usuario
+    // Determinar rol a guardar (por defecto 'cliente' si no se envía)
+    const roleToSave = rol || 'cliente';
+
+    // 1) Insert usuario (AHORA guarda rol)
     const [userResult] = await conn.query(
-      'INSERT INTO usuario (correo, nombre_usuario, contraseña, fecha_creacion, activo) VALUES (?, ?, ?, NOW(), TRUE)',
-      [correo, nombre_usuario, contrasena]
+      'INSERT INTO usuario (correo, nombre_usuario, contraseña, fecha_creacion, activo, rol) VALUES (?, ?, ?, NOW(), TRUE, ?)',
+      [correo, nombre_usuario, contrasena, roleToSave]
     );
     const usuarioId = userResult.insertId;
 
@@ -56,7 +59,7 @@ exports.registerCompleto = async (req, res) => {
     const personaId = personaResult.insertId;
 
     // 4) Insert en cliente_hogar o profesional usando personaId COMO PK (no usuarioId)
-    if (rol === 'cliente') {
+    if (roleToSave === 'cliente') {
       const { direccion, localidad_id } = req.body;
       if (direccion && localidad_id) {
         await conn.query(
@@ -64,7 +67,7 @@ exports.registerCompleto = async (req, res) => {
           [personaId, direccion, localidad_id]
         );
       }
-    } else if (rol === 'profesional') {
+    } else if (roleToSave === 'profesional') {
       const { presentacion, instituto, tipo_profesional_id, localidad_id } = req.body;
       // foto_titulo: si lo subís con multer, tenés que usar upload.fields (ver nota abajo)
       const fotoTitulo = req.body.foto_titulo || null;
