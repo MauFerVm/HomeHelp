@@ -126,12 +126,35 @@ export default function RegistroForm() {
     e.preventDefault();
     if (!validateStep()) return;
 
+    // Construimos FormData explícitamente para asegurarnos que:
+    // - el 'rol' siempre se envíe con la key 'rol'
+    // - los archivos se envíen con las keys que espera el backend: 'foto_perfil' y 'foto_titulo'
     const payload = new FormData();
-    Object.entries(formData).forEach(([k,v]) => {
-      if (v !== null && v !== '') payload.append(k, v);
+
+    // Campos escalares / string
+    const scalarFields = [
+      'correo','nombre_usuario','contrasena','nombre_apellido','fecha_nacimiento',
+      'rol','direccion','provincia_id','localidad_id','tipo_profesional_id',
+      'presentacion','instituto'
+    ];
+    scalarFields.forEach(k => {
+      const v = formData[k];
+      if (v !== null && v !== undefined && v !== '') {
+        payload.append(k, v);
+      }
     });
 
+    // Archivos
+    if (formData.foto_perfil instanceof File) {
+      payload.append('foto_perfil', formData.foto_perfil);
+    }
+    if (formData.foto_titulo instanceof File) {
+      payload.append('foto_titulo', formData.foto_titulo);
+    }
+
     try {
+      // Nota: dejé la URL exactamente como la tenías (/auth/register-completo)
+      // porque pediste que NO cambie otras cosas.
       await api.post('/auth/register-completo', payload, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
