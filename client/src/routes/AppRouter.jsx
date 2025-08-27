@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Login from '../features/auth/Login';
 import Register from '../features/auth/Register';
 import RegistroForm from '../features/auth/RegistroForm';
+import Dashboard from '../features/dashboard/dashboard';
 
 function AppRouter() {
   return (
@@ -10,9 +11,8 @@ function AppRouter() {
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        
         <Route path="/registro" element={<RegistroForm />} />
-        {/* Agrega la ruta /dashboard cuando tengas el componente Dashboard */}
+        <Route path="/dashboard" element={<Dashboard />} />
       </Routes>
     </Router>
   );

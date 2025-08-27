@@ -21,6 +21,17 @@ const Login = () => {
         LoginUserName: loginUserName,
         LoginPassword: loginPassword,
       });
+      
+      // Guardar el rol del usuario en localStorage
+      if (res.data && res.data.rol) {
+        localStorage.setItem('userType', res.data.rol);
+        console.log('Usuario autenticado con rol:', res.data.rol);
+      } else {
+        console.warn('No se recibió el rol del usuario del servidor');
+        // Por defecto, asignar rol de cliente si no se recibe
+        localStorage.setItem('userType', 'cliente');
+      }
+      
       // Login exitoso, navegar a dashboard
       navigate('/dashboard');
     } catch (err) {
