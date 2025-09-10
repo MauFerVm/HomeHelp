@@ -65,7 +65,9 @@ const Dashboard = () => {
     // Función para determinar el número de elementos por vista
     const updateItemsPerView = () => {
         const isMobile = window.innerWidth <= 768;
-        setItemsPerView(isMobile ? 2 : 4);
+        const isSmallPC = window.innerWidth >= 1000 && window.innerWidth <= 1300;
+        const isMediumPC = window.innerWidth >= 1400 && window.innerWidth <= 1500;
+        setItemsPerView(isMobile ? 2 : (isSmallPC || isMediumPC ? 3 : 4));
     };
 
     // Actualizar itemsPerView al montar el componente y al cambiar el tamaño de la ventana
@@ -87,30 +89,61 @@ const Dashboard = () => {
         { name: 'Plomería', image: plomeria }
     ];
 
+    // Crear categorías duplicadas solo para pantallas de 1400-1500px
+    const isMediumScreen = window.innerWidth >= 1400 && window.innerWidth <= 1500;
+    const isLargeScreen = window.innerWidth >= 1600 && window.innerWidth <= 1700;
+    const displayCategories = isMediumScreen ? [...categories, ...categories] : categories;
+
     const nextSlide = () => {
-        if (currentSlide < effectiveMaxSlides) {
-            setCurrentSlide(currentSlide + 1);
+        if (isMediumScreen) {
+            // Para pantallas 1400-1500px: navegación circular
+            setCurrentSlide(prev => {
+                const nextSlide = prev + 3;
+                if (nextSlide >= categories.length) {
+                    return 0;
+                }
+                return nextSlide;
+            });
         } else {
-            // Volver al inicio cuando se llega al final
-            setCurrentSlide(0);
+            // Para otras pantallas: navegación normal
+            if (currentSlide < effectiveMaxSlides) {
+                setCurrentSlide(currentSlide + 1);
+            } else {
+                setCurrentSlide(0);
+            }
         }
     };
 
     const prevSlide = () => {
-        if (currentSlide > 0) {
-            setCurrentSlide(currentSlide - 1);
+        if (isMediumScreen) {
+            // Para pantallas 1400-1500px: navegación circular
+            setCurrentSlide(prev => {
+                const prevSlide = prev - 1;
+                if (prevSlide < 0) {
+                    return categories.length - 1;
+                }
+                return prevSlide;
+            });
         } else {
-            // Ir al final cuando se está en el inicio
-            setCurrentSlide(effectiveMaxSlides);
+            // Para otras pantallas: navegación normal
+            if (currentSlide > 0) {
+                setCurrentSlide(currentSlide - 1);
+            } else {
+                setCurrentSlide(effectiveMaxSlides);
+            }
         }
     };
 
     // Calcular el número máximo de slides basado en el número de categorías y elementos por vista
     const maxSlides = Math.max(0, categories.length - itemsPerView);
     // Para móviles: permitir navegar por todas las categorías (2 por vista)
+    // Para PC pequeñas: permitir navegar por todas las categorías (3 por vista)
+    // Para PC medianas: permitir navegar por todas las categorías (3 por vista)
     // Para desktop: mantener la lógica actual (4 por vista)
     const effectiveMaxSlides = window.innerWidth <= 768 ? 
         Math.ceil(categories.length / 2) - 1 : // Móvil: 8 categorías / 2 = 4 slides (0,1,2,3)
+        (window.innerWidth >= 1000 && window.innerWidth <= 1300) || (window.innerWidth >= 1400 && window.innerWidth <= 1500) ?
+        Math.ceil(categories.length / 3) - 1 : // PC pequeña/mediana: 8 categorías / 3 = 3 slides (0,1,2)
         1; // Desktop: mantener como está
     
     // Debug: mostrar información del carrusel
@@ -490,10 +523,14 @@ const Dashboard = () => {
                                 <div 
                                     className="categories-track"
                                     style={{ 
-                                        transform: `translateX(-${currentSlide * (110 / itemsPerView) * itemsPerView}%)`
+                                        transform: isMediumScreen 
+                                            ? `translateX(-${currentSlide * (100 / 2.8)}%)`
+                                            : isLargeScreen
+                                            ? `translateX(-${currentSlide * (110 / 1)}%)`
+                                            : `translateX(-${currentSlide * (110 / itemsPerView) * itemsPerView}%)`
                                     }}
                                 >
-                                    {categories.map((category, index) => (
+                                    {displayCategories.map((category, index) => (
                                         <div key={index} className="category-card">
                                             <div className="category-image-container">
                                                 <img 
