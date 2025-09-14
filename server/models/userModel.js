@@ -2,7 +2,7 @@
 const db = require('../config/db');
 
 class Usuario {
-  constructor({ id = null, correo, nombre_usuario, contraseña, fecha_creacion = null, activo = true, rol = 'cliente' }) {
+  constructor({ id = null, correo, nombre_usuario, contraseña, fecha_creacion = null, activo = true, rol = 'cliente', foto_perfil = null, nombre_apellido = null }) {
     this.id = id;
     this.correo = correo;
     this.nombre_usuario = nombre_usuario;
@@ -10,6 +10,8 @@ class Usuario {
     this.fecha_creacion = fecha_creacion;
     this.activo = activo;
     this.rol = rol;
+    this.foto_perfil = foto_perfil;
+    this.nombre_apellido = nombre_apellido;
   }
 
   static async crearUsuario({ correo, nombre_usuario, contraseña, rol = 'cliente' }) {
@@ -23,7 +25,10 @@ class Usuario {
 
   static async buscarPorCredenciales(nombre_usuario, contraseña) {
     const [rows] = await db.query(
-      'SELECT * FROM usuario WHERE nombre_usuario = ? AND contraseña = ?',
+      `SELECT u.*, p.foto_perfil, p.nombre_apellido 
+       FROM usuario u 
+       LEFT JOIN persona p ON u.id = p.usuario_id 
+       WHERE u.nombre_usuario = ? AND u.contraseña = ?`,
       [nombre_usuario, contraseña]
     );
     if (rows.length === 0) return null;
@@ -37,7 +42,9 @@ class Usuario {
       nombre_usuario: this.nombre_usuario,
       fecha_creacion: this.fecha_creacion,
       activo: this.activo,
-      rol: this.rol
+      rol: this.rol,
+      foto_perfil: this.foto_perfil,
+      nombre_apellido: this.nombre_apellido
     };
   }
 }

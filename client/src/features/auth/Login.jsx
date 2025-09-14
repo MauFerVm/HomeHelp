@@ -22,13 +22,13 @@ const Login = () => {
         LoginPassword: loginPassword,
       });
       
-      // Guardar el rol del usuario en localStorage
-      if (res.data && res.data.rol) {
-        localStorage.setItem('userType', res.data.rol);
-        console.log('Usuario autenticado con rol:', res.data.rol);
+      // Guardar la información completa del usuario en localStorage
+      if (res.data) {
+        localStorage.setItem('userType', res.data.rol || 'cliente');
+        localStorage.setItem('userData', JSON.stringify(res.data));
+        console.log('Usuario autenticado:', res.data);
       } else {
-        console.warn('No se recibió el rol del usuario del servidor');
-        // Por defecto, asignar rol de cliente si no se recibe
+        console.warn('No se recibió información del usuario del servidor');
         localStorage.setItem('userType', 'cliente');
       }
       

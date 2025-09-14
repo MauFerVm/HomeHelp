@@ -2,9 +2,10 @@
 const db = require('../config/db');
 
 class TipoProfesional {
-  constructor({ id = null, nombre }) {
+  constructor({ id = null, nombre, estado }) {
     this.id = id;
     this.nombre = nombre;
+    this.estado = estado;
   }
 
   /**
@@ -13,7 +14,18 @@ class TipoProfesional {
    */
   static async getAll() {
     const [rows] = await db.query(
-      'SELECT id, nombre FROM tipo_profesional ORDER BY nombre'
+      'SELECT id, nombre, estado FROM tipo_profesional ORDER BY nombre'
+    );
+    return rows.map(r => new TipoProfesional(r));
+  }
+
+  /**
+   * Trae solo los tipos de profesional activos
+   * @returns {Promise<TipoProfesional[]>}
+   */
+  static async getActive() {
+    const [rows] = await db.query(
+      'SELECT id, nombre, estado FROM tipo_profesional WHERE estado = "ACTIVO" ORDER BY nombre'
     );
     return rows.map(r => new TipoProfesional(r));
   }
@@ -21,7 +33,8 @@ class TipoProfesional {
   toJSON() {
     return {
       id: this.id,
-      nombre: this.nombre
+      nombre: this.nombre,
+      estado: this.estado
     };
   }
 }

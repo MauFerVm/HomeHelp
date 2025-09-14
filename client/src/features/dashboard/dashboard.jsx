@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './dashboard.css';
+import PublicarProblemaForm from '../../components/PublicarProblemaForm';
 import { 
     FaBell, 
     FaSearch, 
@@ -42,6 +43,9 @@ const Dashboard = () => {
     const [itemsPerView, setItemsPerView] = useState(4);
     const carouselRef = useRef(null);
     const [carouselWidth, setCarouselWidth] = useState(0);
+    const [categories, setCategories] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [showProblemaForm, setShowProblemaForm] = useState(false);
     
     // Estado para el tipo de usuario (cliente, profesional o admin)
     // Se obtiene automáticamente del localStorage después del login
@@ -53,6 +57,20 @@ const Dashboard = () => {
       return storedUserType;
     });
 
+    // Estado para la información del usuario incluyendo foto de perfil
+    const [userData, setUserData] = useState(() => {
+      const storedUserData = localStorage.getItem('userData');
+      if (storedUserData) {
+        try {
+          return JSON.parse(storedUserData);
+        } catch (error) {
+          console.error('Error al parsear userData:', error);
+          return null;
+        }
+      }
+      return null;
+    });
+
     // Verificar que el userType esté sincronizado con el localStorage
     useEffect(() => {
       const storedUserType = localStorage.getItem('userType');
@@ -61,6 +79,72 @@ const Dashboard = () => {
         setUserType(storedUserType);
       }
     }, [userType]);
+
+    // Mapeo de imágenes para las categorías
+    const categoryImageMap = {
+        'Albañileria': albañil,
+        'Carpinteria': carpintero,
+        'Cerrajeria': cerrajero,
+        'Electricidad': electricidad,
+        'Gas': gasista,
+        'Herreria': herrero,
+        'Pintura': pintor,
+        'Plomeria': plomeria,
+        'Plomería': plomeria // Por si hay variaciones en el nombre
+    };
+
+    // Función para obtener categorías activas desde la API
+    const fetchActiveCategories = async () => {
+        try {
+            setLoading(true);
+            const response = await fetch('http://localhost:3002/api/categories/active');
+            const data = await response.json();
+            
+            if (data.success) {
+                // Mapear las categorías con sus imágenes correspondientes
+                const categoriesWithImages = data.data.map(category => ({
+                    id: category.id,
+                    name: category.nombre,
+                    image: categoryImageMap[category.nombre] || perfil, // Usar imagen por defecto si no se encuentra
+                    estado: category.estado
+                }));
+                setCategories(categoriesWithImages);
+            } else {
+                console.error('Error al obtener categorías:', data.message);
+                // En caso de error, usar categorías por defecto
+                setCategories([
+                    { name: 'Albañileria', image: albañil },
+                    { name: 'Carpinteria', image: carpintero },
+                    { name: 'Cerrajeria', image: cerrajero },
+                    { name: 'Electricidad', image: electricidad },
+                    { name: 'Gas', image: gasista },
+                    { name: 'Herreria', image: herrero },
+                    { name: 'Pintura', image: pintor },
+                    { name: 'Plomería', image: plomeria }
+                ]);
+            }
+        } catch (error) {
+            console.error('Error al conectar con la API:', error);
+            // En caso de error de conexión, usar categorías por defecto
+            setCategories([
+                { name: 'Albañileria', image: albañil },
+                { name: 'Carpinteria', image: carpintero },
+                { name: 'Cerrajeria', image: cerrajero },
+                { name: 'Electricidad', image: electricidad },
+                { name: 'Gas', image: gasista },
+                { name: 'Herreria', image: herrero },
+                { name: 'Pintura', image: pintor },
+                { name: 'Plomería', image: plomeria }
+            ]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Cargar categorías al montar el componente
+    useEffect(() => {
+        fetchActiveCategories();
+    }, []);
 
     // Función para determinar el número de elementos por vista
     const updateItemsPerView = () => {
@@ -78,16 +162,7 @@ const Dashboard = () => {
     }, []);
     
 
-    const categories = [
-        { name: 'Albañileria', image: albañil },
-        { name: 'Carpinteria', image: carpintero },
-        { name: 'Cerrajeria', image: cerrajero },
-        { name: 'Electricidad', image: electricidad },
-        { name: 'Gas', image: gasista },
-        { name: 'Herreria', image: herrero },
-        { name: 'Pintura', image: pintor },
-        { name: 'Plomería', image: plomeria }
-    ];
+    // Las categorías ahora se obtienen dinámicamente desde la API
 
     // Crear categorías duplicadas solo para pantallas de 1400-1500px
     const isMediumScreen = window.innerWidth >= 1400 && window.innerWidth <= 1500;
@@ -154,7 +229,7 @@ const Dashboard = () => {
         console.log('Slides efectivos:', effectiveMaxSlides);
         console.log('Slide actual:', currentSlide);
         console.log('Es móvil:', window.innerWidth <= 768);
-    }, [categories.length, itemsPerView, maxSlides, effectiveMaxSlides, currentSlide]);
+    }, [categories, itemsPerView, maxSlides, effectiveMaxSlides, currentSlide]);
     
     // Las flechas nunca se bloquean - siempre permiten navegación circular
     const canGoNext = true;
@@ -172,6 +247,7 @@ const Dashboard = () => {
     const handleLogout = () => {
         // Limpiar localStorage al hacer logout
         localStorage.removeItem('userType');
+        localStorage.removeItem('userData');
         // Aquí puedes agregar lógica adicional de logout si es necesario
         // Por ejemplo, limpiar cookies, etc.
         navigate('/');
@@ -185,6 +261,20 @@ const Dashboard = () => {
 
     const closeMobileMenu = () => {
         setMobileMenuOpen(false);
+    };
+
+    const handleOpenProblemaForm = () => {
+        setShowProblemaForm(true);
+    };
+
+    const handleCloseProblemaForm = () => {
+        setShowProblemaForm(false);
+    };
+
+    const handleProblemaSubmit = (data) => {
+        console.log('Solicitud creada:', data);
+        // Aquí puedes agregar lógica adicional después de crear la solicitud
+        // Por ejemplo, actualizar una lista de solicitudes, mostrar notificación, etc.
     };
 
     // Handle body scroll lock when mobile menu is open
@@ -479,7 +569,13 @@ const Dashboard = () => {
                         <div className="notification-icon">
                             <FaBell />
                         </div>
-                        <img src={perfil} alt="Perfil" className="profile-image" />
+                        <img 
+                            src={userData && userData.foto_perfil 
+                                ? `http://localhost:3002/uploads/profiles/${userData.foto_perfil}` 
+                                : perfil} 
+                            alt="Perfil" 
+                            className="profile-image" 
+                        />
                     </div>
                 </header>
 
@@ -510,7 +606,13 @@ const Dashboard = () => {
                     {/* Categories Section */}
                     <div className="categories-section">
                         <h2 className="section-title">Categorías destacadas</h2>
-                        <div className="categories-container">
+                        {loading ? (
+                            <div className="loading-container">
+                                <div className="loading-spinner"></div>
+                                <p>Cargando categorías...</p>
+                            </div>
+                        ) : (
+                            <div className="categories-container">
                             <button 
                                 className={`nav-button prev ${!canGoPrev ? 'disabled' : ''}`} 
                                 onClick={prevSlide}
@@ -553,6 +655,7 @@ const Dashboard = () => {
                                 <FaChevronRight />
                             </button>
                         </div>
+                        )}
                     </div>
 
                     {/* Featured Professionals Section */}
@@ -592,7 +695,10 @@ const Dashboard = () => {
                         
                         {/* Post Problem Button - Positioned within professionals section */}
                         <div className="post-problem-section">
-                            <button className="post-problem-button">
+                            <button 
+                                className="post-problem-button"
+                                onClick={handleOpenProblemaForm}
+                            >
                                 <FaPlus />
                                 <span>Publicar un problema</span>
                             </button>
@@ -601,6 +707,13 @@ const Dashboard = () => {
 
                 </main>
             </div>
+
+            {/* Modal del formulario de publicar problema */}
+            <PublicarProblemaForm
+                isOpen={showProblemaForm}
+                onClose={handleCloseProblemaForm}
+                onSubmit={handleProblemaSubmit}
+            />
 
             </div>
         </>

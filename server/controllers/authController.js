@@ -48,8 +48,8 @@ exports.registerCompleto = async (req, res) => {
     );
     const usuarioId = userResult.insertId;
 
-    // 2) Foto de perfil (si usás multer.single('foto_perfil'))
-    const fotoPerfil = req.file ? req.file.filename : null;
+    // 2) Foto de perfil (usando upload.fields())
+    const fotoPerfil = req.files && req.files.foto_perfil && req.files.foto_perfil[0] ? req.files.foto_perfil[0].filename : null;
 
     // 3) Insert persona -> **guardar el insertId** (este será personaId)
     const [personaResult] = await conn.query(
@@ -69,8 +69,8 @@ exports.registerCompleto = async (req, res) => {
       }
     } else if (roleToSave === 'profesional') {
       const { presentacion, instituto, tipo_profesional_id, localidad_id } = req.body;
-      // foto_titulo: si lo subís con multer, tenés que usar upload.fields (ver nota abajo)
-      const fotoTitulo = req.body.foto_titulo || null;
+      // foto_titulo: usando upload.fields()
+      const fotoTitulo = req.files && req.files.foto_titulo && req.files.foto_titulo[0] ? req.files.foto_titulo[0].filename : null;
       await conn.query(
         'INSERT INTO profesional (id, presentacion, instituto, foto_titulo, tipo_profesional_id, localidad_id) VALUES (?, ?, ?, ?, ?, ?)',
         [personaId, presentacion || null, instituto || null, fotoTitulo, tipo_profesional_id, localidad_id]
