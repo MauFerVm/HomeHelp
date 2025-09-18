@@ -794,7 +794,7 @@ body.menu-open {
 }
 
 /* Media queries para pantallas de PC entre 1300px y 1500px */
-@media (min-width: 1301px) and (max-width: 1500px) {
+@media (min-width: 1500px) and (max-width: 1600px) {
     .categories-container {
         max-width: 90%;
         margin: 0 auto;

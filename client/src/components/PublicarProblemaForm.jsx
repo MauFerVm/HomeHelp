@@ -14,17 +14,32 @@ const PublicarProblemaForm = ({ isOpen, onClose, onSubmit }) => {
   });
 
   const [tiposTrabajo, setTiposTrabajo] = useState([]);
+  const [localidades, setLocalidades] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   const [errors, setErrors] = useState({});
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [clienteData, setClienteData] = useState(null);
+  const [clientePersonaId, setClientePersonaId] = useState(null);
 
-  // Cargar tipos de trabajo al abrir el formulario
+  // Cargar tipos de trabajo, localidades y datos del cliente al abrir el formulario
   useEffect(() => {
     if (isOpen) {
       fetchTiposTrabajo();
+      fetchLocalidades();
+      fetchClienteData();
     }
   }, [isOpen]);
+
+  // Efecto para establecer la localidad cuando se carguen las localidades y los datos del cliente
+  useEffect(() => {
+    if (localidades.length > 0 && clienteData && clienteData.localidad_id) {
+      setFormData(prev => ({
+        ...prev,
+        localidad_id: String(clienteData.localidad_id)
+      }));
+    }
+  }, [localidades, clienteData]);
 
   const fetchTiposTrabajo = async () => {
     try {
@@ -41,6 +56,85 @@ const PublicarProblemaForm = ({ isOpen, onClose, onSubmit }) => {
       console.error('Error al conectar con la API:', error);
     } finally {
       setLoadingData(false);
+    }
+  };
+
+  const fetchLocalidades = async () => {
+    try {
+      // Obtener todas las localidades de todas las provincias
+      const response = await fetch('http://localhost:3002/api/location/provincias');
+      const provinciasData = await response.json();
+      
+      if (Array.isArray(provinciasData)) {
+        // Obtener localidades de todas las provincias
+        const allLocalidades = [];
+        for (const provincia of provinciasData) {
+          const localidadesResponse = await fetch(`http://localhost:3002/api/location/localidades/${provincia.id}`);
+          const localidadesData = await localidadesResponse.json();
+          if (Array.isArray(localidadesData)) {
+            allLocalidades.push(...localidadesData);
+          }
+        }
+        setLocalidades(allLocalidades);
+      }
+    } catch (error) {
+      console.error('Error al cargar localidades:', error);
+    }
+  };
+
+  const fetchClienteData = async () => {
+    try {
+      // Obtener el usuario_id del localStorage
+      const userData = localStorage.getItem('userData');
+      if (!userData) {
+        console.error('No se encontraron datos del usuario en localStorage');
+        return;
+      }
+
+      const user = JSON.parse(userData);
+      if (!user.id) {
+        console.error('No se encontró el ID del usuario');
+        return;
+      }
+
+      // Hacer una consulta directa a la base de datos para obtener los datos del cliente
+      const response = await fetch(`http://localhost:3002/api/auth/cliente/${user.id}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setClienteData(data.data);
+        // Obtener el persona_id del cliente
+        const personaId = await getPersonaIdByUsuarioId(user.id);
+        setClientePersonaId(personaId);
+        
+        // Pre-llenar el formulario con los datos del cliente
+        setFormData(prev => ({
+          ...prev,
+          direccion: data.data.direccion || '',
+          localidad_id: data.data.localidad_id || ''
+        }));
+      } else {
+        console.error('Error al cargar datos del cliente:', data.message);
+      }
+    } catch (error) {
+      console.error('Error al conectar con la API para obtener datos del cliente:', error);
+    }
+  };
+
+  const getPersonaIdByUsuarioId = async (usuarioId) => {
+    try {
+      const response = await fetch(`http://localhost:3002/api/auth/persona/${usuarioId}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        return data.data.id;
+      } else {
+        console.error('Error al obtener persona_id:', data.message);
+        return null;
+      }
+    } catch (error) {
+      console.error('Error al conectar con la API para obtener persona_id:', error);
+      return null;
     }
   };
 
@@ -100,6 +194,10 @@ const PublicarProblemaForm = ({ isOpen, onClose, onSubmit }) => {
   const validateForm = () => {
     const newErrors = {};
 
+    if (!clientePersonaId) {
+      newErrors.general = 'No se pudo obtener la información del cliente. Por favor, recarga la página.';
+    }
+
     if (!formData.tipoTrabajo) {
       newErrors.tipoTrabajo = 'Debe seleccionar un tipo de trabajo';
     }
@@ -138,9 +236,14 @@ const PublicarProblemaForm = ({ isOpen, onClose, onSubmit }) => {
     setLoading(true);
     
     try {
+      // Verificar que tenemos el cliente_persona_id
+      if (!clientePersonaId) {
+        throw new Error('No se pudo obtener el ID del cliente. Por favor, recarga la página e intenta nuevamente.');
+      }
+
       // Crear FormData para enviar archivos
       const submitData = new FormData();
-      submitData.append('cliente_persona_id', 1); // TODO: Obtener del usuario logueado
+      submitData.append('cliente_persona_id', clientePersonaId);
       submitData.append('tipo_profesional_id', formData.tipoTrabajo);
       submitData.append('titulo', formData.titulo);
       submitData.append('descripcion', formData.descripcion);
@@ -227,6 +330,11 @@ const PublicarProblemaForm = ({ isOpen, onClose, onSubmit }) => {
         </div>
 
         <form onSubmit={handleSubmit} className="problema-form">
+          {errors.general && (
+            <div className="error-message general-error">
+              {errors.general}
+            </div>
+          )}
           <div className="form-row">
             <div className="form-group">
               <label htmlFor="tipoTrabajo">Tipo de Trabajo *</label>
@@ -307,6 +415,11 @@ const PublicarProblemaForm = ({ isOpen, onClose, onSubmit }) => {
               disabled={loading}
             />
             {errors.direccion && <span className="error-message">{errors.direccion}</span>}
+            {clienteData && clienteData.direccion && (
+              <small className="form-help">
+                Dirección pre-cargada desde tu perfil. Puedes modificarla si es necesario.
+              </small>
+            )}
           </div>
 
           <div className="form-group">
@@ -320,12 +433,18 @@ const PublicarProblemaForm = ({ isOpen, onClose, onSubmit }) => {
               disabled={loading}
             >
               <option value="">Seleccionar localidad</option>
-              {/* TODO: Cargar localidades desde la API */}
-              <option value="1">Buenos Aires</option>
-              <option value="2">Córdoba</option>
-              <option value="3">Rosario</option>
+              {localidades.map(localidad => (
+                <option key={localidad.id} value={localidad.id}>
+                  {localidad.nombre}
+                </option>
+              ))}
             </select>
             {errors.localidad_id && <span className="error-message">{errors.localidad_id}</span>}
+            {clienteData && clienteData.localidad_nombre && (
+              <small className="form-help">
+                Tu localidad actual: {clienteData.localidad_nombre}
+              </small>
+            )}
           </div>
 
           <div className="form-group">

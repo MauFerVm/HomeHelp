@@ -693,7 +693,8 @@ const Dashboard = () => {
                             <FaChevronDown />
                         </div>
                         
-                        {/* Post Problem Button - Positioned within professionals section */}
+                        {/* Post Problem Button - oculto para profesionales */}
+                        {userType !== 'profesional' && (
                         <div className="post-problem-section">
                             <button 
                                 className="post-problem-button"
@@ -703,6 +704,7 @@ const Dashboard = () => {
                                 <span>Publicar un problema</span>
                             </button>
                         </div>
+                        )}
                     </div>
 
                 </main>

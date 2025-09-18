@@ -113,3 +113,105 @@ exports.login = async (req, res) => {
     res.status(500).json({ error: 'Error al autenticar usuario' });
   }
 };
+
+exports.getClienteData = async (req, res) => {
+  try {
+    const { usuario_id } = req.params;
+    
+    // Obtener datos del cliente incluyendo dirección y localidad
+    const [rows] = await pool.query(`
+      SELECT 
+        u.id as usuario_id,
+        u.correo,
+        u.nombre_usuario,
+        u.rol,
+        p.nombre_apellido,
+        p.foto_perfil,
+        ch.direccion,
+        ch.localidad_id,
+        l.nombre as localidad_nombre,
+        pr.nombre as provincia_nombre
+      FROM usuario u
+      LEFT JOIN persona p ON u.id = p.usuario_id
+      LEFT JOIN cliente_hogar ch ON p.id = ch.id
+      LEFT JOIN localidad l ON ch.localidad_id = l.id
+      LEFT JOIN provincia pr ON l.provincia_id = pr.id
+      WHERE u.id = ? AND u.rol = 'cliente'
+    `, [usuario_id]);
+
+    if (rows.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Cliente no encontrado' 
+      });
+    }
+
+    const clienteData = rows[0];
+    res.json({
+      success: true,
+      data: {
+        usuario_id: clienteData.usuario_id,
+        correo: clienteData.correo,
+        nombre_usuario: clienteData.nombre_usuario,
+        rol: clienteData.rol,
+        nombre_apellido: clienteData.nombre_apellido,
+        foto_perfil: clienteData.foto_perfil,
+        direccion: clienteData.direccion,
+        localidad_id: clienteData.localidad_id,
+        localidad_nombre: clienteData.localidad_nombre,
+        provincia_nombre: clienteData.provincia_nombre
+      }
+    });
+
+  } catch (error) {
+    console.error('Error al obtener datos del cliente:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error interno del servidor' 
+    });
+  }
+};
+
+exports.getPersonaByUsuarioId = async (req, res) => {
+  try {
+    const { usuario_id } = req.params;
+    
+    // Obtener datos de la persona por usuario_id
+    const [rows] = await pool.query(`
+      SELECT 
+        p.id,
+        p.nombre_apellido,
+        p.fecha_nacimiento,
+        p.foto_perfil,
+        p.usuario_id
+      FROM persona p
+      WHERE p.usuario_id = ?
+    `, [usuario_id]);
+
+    if (rows.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Persona no encontrada' 
+      });
+    }
+
+    const personaData = rows[0];
+    res.json({
+      success: true,
+      data: {
+        id: personaData.id,
+        nombre_apellido: personaData.nombre_apellido,
+        fecha_nacimiento: personaData.fecha_nacimiento,
+        foto_perfil: personaData.foto_perfil,
+        usuario_id: personaData.usuario_id
+      }
+    });
+
+  } catch (error) {
+    console.error('Error al obtener datos de la persona:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error interno del servidor' 
+    });
+  }
+};

@@ -129,6 +129,16 @@
   margin-top: 4px;
 }
 
+.general-error {
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  text-align: center;
+}
+
 .file-upload-container {
   position: relative;
 }
@@ -324,6 +334,72 @@
   to {
     transform: translateY(0);
     opacity: 1;
+  }
+}
+
+/* Media query para pantallas entre 1500px y 1600px */
+@media (min-width: 1500px) and (max-width: 1600px) {
+  .modal-content {
+    max-width: 450px;
+    max-height: 95vh;
+  }
+  
+  .modal-header {
+    padding: 16px 16px 0 16px;
+    margin-bottom: 16px;
+  }
+  
+  .modal-header h2 {
+    font-size: 20px;
+  }
+  
+  .problema-form {
+    padding: 0 16px 16px 16px;
+  }
+  
+  .form-group {
+    margin-bottom: 12px;
+  }
+  
+  .form-group label {
+    font-size: 12px;
+    margin-bottom: 4px;
+  }
+  
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    padding: 8px;
+    font-size: 12px;
+  }
+  
+  .form-group textarea {
+    min-height: 60px;
+  }
+  
+  .form-row {
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  
+  .form-actions {
+    margin-top: 16px;
+    padding-top: 16px;
+  }
+  
+  .cancel-button,
+  .submit-button {
+    padding: 8px 16px;
+    font-size: 12px;
+  }
+  
+  .file-upload-label {
+    padding: 8px;
+    font-size: 12px;
+  }
+  
+  .error-message {
+    font-size: 11px;
   }
 }
 

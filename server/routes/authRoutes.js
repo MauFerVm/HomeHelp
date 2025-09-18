@@ -37,4 +37,10 @@ router.post(
 // Login
 router.post('/login', authController.login);
 
+// Obtener datos completos del cliente
+router.get('/cliente/:usuario_id', authController.getClienteData);
+
+// Obtener datos de la persona por usuario_id
+router.get('/persona/:usuario_id', authController.getPersonaByUsuarioId);
+
 module.exports = router;
