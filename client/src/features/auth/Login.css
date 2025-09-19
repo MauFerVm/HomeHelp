@@ -300,3 +300,44 @@
         color: var(--greyText);
     }
 }
+
+/* Estilos para autocompletado del navegador en Login */
+.loginPage .container .formDiv .form .inputDiv input:-webkit-autofill,
+.loginPage .container .formDiv .form .inputDiv input:-webkit-autofill:hover,
+.loginPage .container .formDiv .form .inputDiv input:-webkit-autofill:focus,
+.loginPage .container .formDiv .form .inputDiv input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 30px var(--inputColor) inset !important;
+    -webkit-text-fill-color: var(--whiteColor) !important;
+    background-color: var(--inputColor) !important;
+    background-image: none !important;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Para Firefox */
+.loginPage .container .formDiv .form .inputDiv input:-moz-autofill {
+    background-color: var(--inputColor) !important;
+    color: var(--whiteColor) !important;
+}
+
+/* Asegurar que el botón del ojo mantenga su estilo en Login */
+.loginPage .container .formDiv .form .inputDiv .password-toggle-btn {
+    background: none !important;
+    border: none !important;
+    color: #666 !important;
+    cursor: pointer !important;
+    padding: 8px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 23px !important;
+    flex-shrink: 0 !important;
+}
+
+.loginPage .container .formDiv .form .inputDiv .password-toggle-btn:hover {
+    color: var(--whiteColor) !important;
+}
+
+/* Reducir altura del campo de contraseña en Login */
+.loginPage .container .formDiv .form .inputDiv:has(.password-toggle-btn) .input {
+    padding: 0.2rem 0.9rem !important;
+}

@@ -207,6 +207,44 @@
     box-sizing: border-box;
 }
 
+/* Estilos específicos para los selects (desplegables) */
+.registerPage .container .formDiv .form .inputDiv select {
+    background: var(--inputColor);
+    border-radius: 10px;
+    padding: 0.9rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.registerPage .container .formDiv .form .inputDiv select:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.registerPage .container .formDiv .form .inputDiv select:focus {
+    border-color: var(--primaryColor);
+    box-shadow: 0 0 0 2px rgba(255, 107, 107, 0.2);
+}
+
+.registerPage .container .formDiv .form .inputDiv select:disabled {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--greyText);
+    cursor: not-allowed;
+    border-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Estilos para las opciones del select */
+.registerPage .container .formDiv .form .inputDiv select option {
+    background: var(--inputColor);
+    color: var(--whiteColor);
+    padding: 0.5rem;
+}
+
+.registerPage .container .formDiv .form .inputDiv select option:hover {
+    background: var(--primaryColor);
+}
+
 /* placeholder y tamaño por defecto */
 .registerPage .container .formDiv .form .inputDiv input::placeholder,
 .registerPage .container .formDiv .form .inputDiv textarea::placeholder {
@@ -228,6 +266,53 @@
   max-width: 100%;
 }
 
+/* Estilo personalizado para el botón "Seleccionar archivo" */
+.registerPage .container .formDiv .form input[type="file"]::-webkit-file-upload-button {
+  background: var(--primaryColor);
+  color: var(--whiteColor);
+  border: none;
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  font-size: 0.95rem !important;
+  font-weight: 400 !important;
+  font-family: inherit !important;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-right: 0.5rem;
+}
+
+.registerPage .container .formDiv .form input[type="file"]::-webkit-file-upload-button:hover {
+  background: var(--hoverColor);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.registerPage .container .formDiv .form input[type="file"]::-webkit-file-upload-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* Para Firefox */
+.registerPage .container .formDiv .form input[type="file"]::-moz-file-upload-button {
+  background: var(--primaryColor);
+  color: var(--whiteColor);
+  border: none;
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  font-size: 0.95rem !important;
+  font-weight: 400 !important;
+  font-family: inherit !important;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-right: 0.5rem;
+}
+
+.registerPage .container .formDiv .form input[type="file"]::-moz-file-upload-button:hover {
+  background: var(--hoverColor);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
 /* file wrapper safe */
 .registerPage .container .formDiv .form .file-wrapper {
   max-width: 100%;
@@ -244,11 +329,12 @@
   border: none;
 }
 .btn.secondary {
-  background: transparent;
+  background: #333;
   color: var(--whiteColor);
-  border: 1px solid rgba(255,255,255,0.08);
+  border: 1px solid #555;
   border-radius: 10px;
   padding: 0.6rem 0.9rem;
+  font-weight: 500;
 }
 
 /* hover behavior */
@@ -257,8 +343,11 @@
   color: var(--whiteColor);
 }
 .btn.secondary:hover {
-  background: rgba(255,255,255,0.04);
+  background: #444;
+  border-color: #666;
   color: var(--whiteColor);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 /* NAV: botones de paginación (fijos fuera del step) */
@@ -354,4 +443,45 @@
 /* utilidad extra para asegurar placeholders con color similar al login */
 input::placeholder {
     color: var(--greyText);
+}
+
+/* Estilos para autocompletado del navegador */
+.registerPage .container .formDiv .form .inputDiv input:-webkit-autofill,
+.registerPage .container .formDiv .form .inputDiv input:-webkit-autofill:hover,
+.registerPage .container .formDiv .form .inputDiv input:-webkit-autofill:focus,
+.registerPage .container .formDiv .form .inputDiv input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 30px var(--inputColor) inset !important;
+    -webkit-text-fill-color: var(--whiteColor) !important;
+    background-color: var(--inputColor) !important;
+    background-image: none !important;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Para Firefox */
+.registerPage .container .formDiv .form .inputDiv input:-moz-autofill {
+    background-color: var(--inputColor) !important;
+    color: var(--whiteColor) !important;
+}
+
+/* Asegurar que el botón del ojo mantenga su estilo */
+.registerPage .container .formDiv .form .inputDiv .password-toggle-btn {
+    background: none !important;
+    border: none !important;
+    color: #666 !important;
+    cursor: pointer !important;
+    padding: 8px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 23px !important;
+    flex-shrink: 0 !important;
+}
+
+.registerPage .container .formDiv .form .inputDiv .password-toggle-btn:hover {
+    color: var(--whiteColor) !important;
+}
+
+/* Reducir altura del campo de contraseña */
+.registerPage .container .formDiv .form .inputDiv:has(.password-toggle-btn) .input {
+    padding: 0.2rem 0.9rem !important;
 }

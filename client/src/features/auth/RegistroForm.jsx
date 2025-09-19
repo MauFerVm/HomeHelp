@@ -224,7 +224,7 @@ export default function RegistroForm() {
             <h3>Regístrate</h3>
           </div>
 
-          <form ref={formRef} className='form' onSubmit={handleSubmit} noValidate>
+          <form ref={formRef} className='form' onSubmit={handleSubmit} noValidate autoComplete="off">
             {/* STEP 0 - Usuario */}
             <div className="step" data-step="0" style={{ display: step === 0 ? 'block' : 'none' }}>
               <UsuarioFields formData={formData} onChange={handleChange} disabled={step !== 0} />

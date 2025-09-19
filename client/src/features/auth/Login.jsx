@@ -6,12 +6,13 @@ import video from '../../assets/video.mp4';
 import logo from '../../assets/logo.png';
 import { FaUserShield } from 'react-icons/fa';
 import { BsFillShieldLockFill } from 'react-icons/bs';
-import { AiOutlineSwapRight } from 'react-icons/ai';
+import { AiOutlineSwapRight, AiOutlineEye, AiOutlineEyeInvisible } from 'react-icons/ai';
 
 const Login = () => {
   const [loginUserName, setLoginUserName] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
   const loginUser = async (e) => {
@@ -91,12 +92,31 @@ const Login = () => {
               <div className='input flex'>
                 <BsFillShieldLockFill className='icon' />
                 <input
-                  type='password'
+                  type={showPassword ? "text" : "password"}
                   id='password'
                   placeholder='Enter password'
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
                 />
+                <button
+                  type="button"
+                  className="password-toggle-btn"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#666',
+                    fontSize: '23px',
+                    flexShrink: 0
+                  }}
+                >
+                  {showPassword ? <AiOutlineEyeInvisible /> : <AiOutlineEye />}
+                </button>
               </div>
             </div>
 

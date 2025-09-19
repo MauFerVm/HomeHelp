@@ -1,10 +1,12 @@
 // src/components/UsuarioFields.jsx
-import React from 'react';
+import React, { useState } from 'react';
 import { MdEmail } from 'react-icons/md';
 import { FaUserShield } from 'react-icons/fa';
 import { BsFillShieldLockFill } from 'react-icons/bs';
+import { AiOutlineEye, AiOutlineEyeInvisible } from 'react-icons/ai';
 
 export default function UsuarioFields({ formData, onChange, disabled = false }) {
+  const [showPassword, setShowPassword] = useState(false);
   return (
     <>
       <div className="inputDiv">
@@ -20,6 +22,7 @@ export default function UsuarioFields({ formData, onChange, disabled = false }) 
             onChange={onChange}
             required
             disabled={disabled}
+            autoComplete="off"
           />
         </div>
       </div>
@@ -38,6 +41,7 @@ export default function UsuarioFields({ formData, onChange, disabled = false }) 
             required
             minLength={3}
             disabled={disabled}
+            autoComplete="off"
           />
         </div>
       </div>
@@ -47,7 +51,7 @@ export default function UsuarioFields({ formData, onChange, disabled = false }) 
         <div className="input flex">
           <BsFillShieldLockFill className="icon" />
           <input
-            type="password"
+            type={showPassword ? "text" : "password"}
             id="contrasena"
             name="contrasena"
             placeholder="Ingrese su contraseña"
@@ -56,7 +60,27 @@ export default function UsuarioFields({ formData, onChange, disabled = false }) 
             required
             minLength={6}
             disabled={disabled}
+            autoComplete="new-password"
           />
+          <button
+            type="button"
+            className="password-toggle-btn"
+            onClick={() => setShowPassword(!showPassword)}
+            disabled={disabled}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#666',
+              fontSize: '23px'
+            }}
+          >
+            {showPassword ? <AiOutlineEyeInvisible /> : <AiOutlineEye />}
+          </button>
         </div>
       </div>
     </>

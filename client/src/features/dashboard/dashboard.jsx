@@ -583,8 +583,24 @@ const Dashboard = () => {
                 <main className="dashboard-main">
                     {/* Greeting Section */}
                     <div className="greeting-section">
+                        <div className="greeting-content">
+                            <div className="greeting-text">
                                 <h1 className="greeting-title">¿Necesitas ayuda en tu hogar?</h1>
                                 <p className="greeting-subtitle">Conectamos con los mejores profesionales cerca tuyo</p>
+                            </div>
+                            {/* Post Problem Button - oculto para profesionales */}
+                            {userType !== 'profesional' && (
+                                <div className="post-problem-section">
+                                    <button 
+                                        className="post-problem-button"
+                                        onClick={handleOpenProblemaForm}
+                                    >
+                                        <FaPlus />
+                                        <span>Publicar un problema</span>
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     {/* Search Bar */}
@@ -692,19 +708,6 @@ const Dashboard = () => {
                         <div className="load-more">
                             <FaChevronDown />
                         </div>
-                        
-                        {/* Post Problem Button - oculto para profesionales */}
-                        {userType !== 'profesional' && (
-                        <div className="post-problem-section">
-                            <button 
-                                className="post-problem-button"
-                                onClick={handleOpenProblemaForm}
-                            >
-                                <FaPlus />
-                                <span>Publicar un problema</span>
-                            </button>
-                        </div>
-                        )}
                     </div>
 
                 </main>
