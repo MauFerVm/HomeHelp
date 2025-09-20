@@ -41,6 +41,10 @@ export default function RegistroForm() {
     foto_titulo: null
   });
 
+  const [captchaVerified, setCaptchaVerified] = useState(false);
+  const [captchaText, setCaptchaText] = useState('');
+  const [captchaInput, setCaptchaInput] = useState('');
+
   const [provincias, setProvincias] = useState([]);
   const [localidades, setLocalidades] = useState([]);
   const [tipos, setTipos] = useState([]);
@@ -55,6 +59,7 @@ export default function RegistroForm() {
   useEffect(() => {
     api.get('/location/provincias').then(r => setProvincias(r.data)).catch(()=>setProvincias([]));
     api.get('/location/tipos-profesional').then(r => setTipos(r.data)).catch(()=>setTipos([]));
+    setCaptchaText(generateCaptchaText());
   }, []);
 
   useEffect(() => {
@@ -70,6 +75,29 @@ export default function RegistroForm() {
   const handleSelectRole = (rol) => {
     setFormData(prev => ({ ...prev, rol }));
     setShowRoleDialog(false);
+  };
+
+  // Funciones del captcha
+  const generateCaptchaText = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    for (let i = 0; i < 6; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  };
+
+  const handleCaptchaChange = (e) => {
+    const value = e.target.value.toUpperCase();
+    setCaptchaInput(value);
+    const isVerified = value === captchaText;
+    setCaptchaVerified(isVerified);
+  };
+
+  const refreshCaptcha = () => {
+    setCaptchaText(generateCaptchaText());
+    setCaptchaInput('');
+    setCaptchaVerified(false);
   };
 
   const validateStep = () => {
@@ -101,6 +129,7 @@ export default function RegistroForm() {
       if (!formData.rol) { setErrors(['Rol no definido']); return false; }
       if (formData.rol === 'cliente' && !formData.direccion) { setErrors(['Dirección requerida']); return false; }
       if (formData.rol === 'profesional' && !formData.tipo_profesional_id) { setErrors(['Tipo de profesional requerido']); return false; }
+      if (!captchaVerified) { setErrors(['El captcha es incorrecto o no fue completado']); return false; }
     }
 
     setErrors([]);
@@ -227,7 +256,11 @@ export default function RegistroForm() {
           <form ref={formRef} className='form' onSubmit={handleSubmit} noValidate autoComplete="off">
             {/* STEP 0 - Usuario */}
             <div className="step" data-step="0" style={{ display: step === 0 ? 'block' : 'none' }}>
-              <UsuarioFields formData={formData} onChange={handleChange} disabled={step !== 0} />
+              <UsuarioFields 
+                formData={formData} 
+                onChange={handleChange} 
+                disabled={step !== 0}
+              />
             </div>
 
             {/* STEP 1 - Persona */}
@@ -265,6 +298,133 @@ export default function RegistroForm() {
 
               {formData.rol === 'cliente' && <ClienteFields formData={formData} onChange={handleChange} disabled={step !== 2} />}
               {formData.rol === 'profesional' && <ProfesionalFields formData={formData} onChange={handleChange} disabled={step !== 2} tipos={tipos} />}
+
+              {/* Captcha de letras */}
+              <div className="captcha-container" style={{ marginTop: '20px' }}>
+                <div style={{ 
+                  background: '#f9f9f9',
+                  border: `2px solid ${captchaVerified ? '#4caf50' : '#d3d3d3'}`,
+                  borderRadius: '4px',
+                  padding: '12px',
+                  maxWidth: '240px',
+                  margin: '0 auto'
+                }}>
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'space-between',
+                    marginBottom: '8px'
+                  }}>
+                    <span style={{ 
+                      fontSize: '11px', 
+                      color: '#666',
+                      fontWeight: 'bold'
+                    }}>
+                      Código:
+                    </span>
+                    <button
+                      type="button"
+                      onClick={refreshCaptcha}
+                      disabled={step !== 2}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontSize: '11px',
+                        color: '#4285f4',
+                        textDecoration: 'underline'
+                      }}
+                    >
+                      🔄
+                    </button>
+                  </div>
+                  
+                  {/* Imagen del captcha con letras distorsionadas */}
+                  <div style={{
+                    background: '#000',
+                    color: '#fff',
+                    padding: '8px',
+                    marginBottom: '8px',
+                    borderRadius: '3px',
+                    textAlign: 'center',
+                    position: 'relative',
+                    overflow: 'hidden'
+                  }}>
+                    <div style={{
+                      fontSize: '18px',
+                      fontWeight: 'bold',
+                      letterSpacing: '4px',
+                      fontFamily: 'monospace',
+                      position: 'relative',
+                      zIndex: 2,
+                      textShadow: '1px 1px 2px rgba(0,0,0,0.8)',
+                      transform: 'rotate(-1deg)',
+                      filter: 'contrast(1.2) brightness(1.1)'
+                    }}>
+                      {captchaText}
+                    </div>
+                    {/* Líneas de distorsión */}
+                    <div style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      background: `
+                        linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%),
+                        linear-gradient(-45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%)
+                      `,
+                      pointerEvents: 'none'
+                    }} />
+                  </div>
+
+                  {/* Input para el captcha */}
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    <input
+                      type="text"
+                      value={captchaInput}
+                      onChange={handleCaptchaChange}
+                      disabled={step !== 2}
+                      placeholder="Código"
+                      style={{
+                        flex: 1,
+                        padding: '6px 8px',
+                        border: `1px solid ${captchaVerified ? '#4caf50' : '#ddd'}`,
+                        borderRadius: '3px',
+                        fontSize: '12px',
+                        textTransform: 'uppercase',
+                        letterSpacing: '1px',
+                        fontFamily: 'monospace'
+                      }}
+                    />
+                    {captchaVerified && (
+                      <div style={{ 
+                        color: '#4caf50',
+                        fontSize: '16px',
+                        fontWeight: 'bold'
+                      }}>
+                        ✓
+                      </div>
+                    )}
+                  </div>
+
+                  {captchaVerified && (
+                    <div style={{ 
+                      fontSize: '10px', 
+                      color: '#4caf50',
+                      textAlign: 'center',
+                      marginTop: '6px',
+                      fontWeight: 'bold'
+                    }}>
+                      ✓ Verificado
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
             {errors.length > 0 && (

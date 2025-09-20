@@ -24,7 +24,7 @@ import {
     FaUserTie
 } from 'react-icons/fa';
 import logoHomeHelp from '../../assets/logo_homehelp.png';
-import perfil from '../../assets/perfil.png';
+import perfil from '../../assets/user.png';
 import albañil from '../../assets/albañil.jpg';
 import carpintero from '../../assets/carpintero.jpeg';
 import cerrajero from '../../assets/cerrajero.jpg';
