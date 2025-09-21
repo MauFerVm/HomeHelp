@@ -3,6 +3,8 @@ const SolicitudServicio = require('../models/solicitudServicioModel');
 const HistorialServicio = require('../models/historialServicioModel');
 const EstadoSolServicio = require('../models/estadoSolServicioModel');
 const TipoProfesional = require('../models/tipoProfesionalModel');
+const Persona = require('../models/personaModel'); 
+const notificacionService = require('../services/notificacionService');
 const db = require('../config/db');
 
 /**
@@ -79,7 +81,7 @@ const crearSolicitud = async (req, res) => {
       throw new Error('No se encontró el estado inicial');
     }
 
-    // Crear la solicitud de servicio
+    // Crear la solicitud de servicio (modelo se encarga del INSERT)
     const solicitud = new SolicitudServicio({
       cliente_persona_id,
       tipo_profesional_id,
@@ -93,7 +95,7 @@ const crearSolicitud = async (req, res) => {
       creado_en: new Date()
     });
 
-    // Guardar la solicitud
+    // Guardar la solicitud (save() debe insertar y setear this.id)
     await solicitud.save();
 
     // Calcular la fecha de vencimiento basada en el estado
@@ -113,6 +115,7 @@ const crearSolicitud = async (req, res) => {
     // Confirmar la transacción
     await connection.commit();
 
+    // RESPONDO AL CLIENTE YA (la operación crítica se completó)
     res.status(201).json({
       success: true,
       message: 'Solicitud creada exitosamente',
@@ -122,9 +125,48 @@ const crearSolicitud = async (req, res) => {
       }
     });
 
+    // ----------------- CREAR NOTIFICACIONES EN BACKGROUND -----------------
+    (async () => {
+      try {
+        // 1) Obtener datos de la persona creadora para armar el mensaje
+        const persona = await Persona.buscarPorId(cliente_persona_id);
+        const nombreCliente = persona ? persona.nombre_apellido : 'Un cliente';
+        const mensaje = `${nombreCliente} creó una nueva solicitud de servicio que podría interesarte.`;
+
+        // 2) Buscar profesionales que coincidan con tipo_profesional_id y localidad_id
+        //    (consulta de solo lectura, sin usar la conexión de la transacción ya liberada)
+        const [profesionales] = await db.query(
+          `SELECT u.id AS usuario_id
+           FROM profesional pr
+           JOIN persona per ON pr.id = per.id
+           JOIN usuario u ON per.usuario_id = u.id
+           WHERE pr.tipo_profesional_id = ? AND pr.localidad_id = ? AND u.activo = 1`,
+          [tipo_profesional_id, localidad_id]
+        );
+
+        if (Array.isArray(profesionales) && profesionales.length > 0) {
+          const destinatarios = profesionales.map(p => ({ usuario_id: p.usuario_id }));
+
+          // 3) Delegar a notificacionService (no debería tocar la BD aquí directamente,
+          //    el service delega al model de notificaciones)
+          await notificacionService.crearNotificaciones({
+            solicitud: { id: solicitud.id, titulo: solicitud.titulo, descripcion: solicitud.descripcion },
+            destinatarios,
+            mensaje,
+            tipo_notificacion: 'solicitud'
+          });
+        }
+        // si no hay profesionales, no hace nada
+      } catch (errNotif) {
+        // Loguear el error de notifications — **no** hacemos rollback ni afectamos la respuesta ya enviada
+        console.error('Error creando notificaciones (background):', errNotif);
+      }
+    })();
+    // -------------------------------------------------------------------
+
   } catch (error) {
     // Revertir la transacción en caso de error
-    await connection.rollback();
+    try { await connection.rollback(); } catch (e) { /* ignore */ }
     console.error('Error al crear solicitud:', error);
     res.status(500).json({
       success: false,

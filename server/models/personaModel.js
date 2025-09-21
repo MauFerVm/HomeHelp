@@ -34,6 +34,23 @@ class Persona {
     });
   }
 
+    /**
+   * Buscar persona por su id
+   * @param {number} id
+   * @returns {Promise<Persona|null>}
+   */
+  static async buscarPorId(id) {
+  const [rows] = await db.query(
+    `SELECT id, nombre_apellido, fecha_nacimiento, foto_perfil, usuario_id
+     FROM persona WHERE id = ? LIMIT 1`,
+    [id]
+  );
+  if (rows.length === 0) return null;
+  return new Persona(rows[0]);
+}
+
+  /**
+
   /**
    * toJSON: convierte a objeto plano para enviar al frontend
    */

@@ -14,7 +14,7 @@ class TipoProfesional {
    */
   static async getAll() {
     const [rows] = await db.query(
-      'SELECT id, nombre, estado FROM tipo_profesional ORDER BY nombre'
+      'SELECT id, nombre, estado FROM tipo_profesional WHERE estado = 1 ORDER BY nombre'
     );
     return rows.map(r => new TipoProfesional(r));
   }
