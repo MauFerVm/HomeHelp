@@ -1,0 +1,486 @@
+/* BuscarTrabajo.css - Estilos unificados para página completa y pestaña */
+
+/* Estilos para página completa */
+.buscar-trabajo-container {
+    min-height: 100vh;
+    background: transparent;
+    padding: 20px;
+}
+
+.buscar-trabajo-header {
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.buscar-trabajo-header h1 {
+    font-size: 2.5rem;
+    margin: 20px 0 10px 0;
+    color: #fff;
+    font-weight: 700;
+}
+
+.buscar-trabajo-header p {
+    font-size: 1.2rem;
+    color: #ccc;
+    margin: 0;
+}
+
+.back-button {
+    background: #667eea;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+    transition: all 0.3s ease;
+}
+
+.back-button:hover {
+    background: #5a6fd8;
+    transform: translateY(-2px);
+}
+
+/* Estilos para pestaña del dashboard */
+.buscar-trabajo-tab {
+    padding: 20px;
+    background: transparent;
+    min-height: calc(100vh - 80px);
+}
+
+.tab-header {
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.tab-header h2 {
+    font-size: 2rem;
+    margin: 0 0 10px 0;
+    color: #fff;
+    font-weight: 700;
+}
+
+.tab-header p {
+    font-size: 1.1rem;
+    color: #ccc;
+    margin: 0;
+}
+
+/* Estilos comunes */
+.loading-container,
+.error-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+    text-align: center;
+}
+
+.spinner {
+    font-size: 2rem;
+    animation: spin 1s linear infinite;
+    margin-bottom: 20px;
+    color: #667eea;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.error-container h2 {
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.retry-button {
+    background: #ff6b6b;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-top: 20px;
+    transition: all 0.3s ease;
+}
+
+.retry-button:hover {
+    background: #ff5252;
+    transform: translateY(-2px);
+}
+
+.solicitudes-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.solicitud-card {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.solicitud-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+}
+
+.solicitud-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 15px;
+}
+
+.solicitud-titulo {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #333;
+    margin: 0;
+    flex: 1;
+    margin-right: 15px;
+}
+
+.solicitud-prioridad {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 5px 10px;
+    border-radius: 15px;
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.solicitud-info {
+    margin-bottom: 15px;
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.info-icon {
+    color: #ff6b35;
+    width: 14px;
+}
+
+.solicitud-descripcion {
+    margin-bottom: 20px;
+}
+
+.solicitud-descripcion p {
+    color: #555;
+    line-height: 1.5;
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.solicitud-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.ver-detalle-button {
+    background: #ff6b35;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+}
+
+.ver-detalle-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 107, 53, 0.4);
+    background: #e55a2b;
+}
+
+.no-solicitudes {
+    text-align: center;
+    padding: 60px 20px;
+    grid-column: 1 / -1;
+    color: #ccc;
+}
+
+.no-solicitudes-icon {
+    font-size: 4rem;
+    margin-bottom: 20px;
+    opacity: 0.7;
+    color: #667eea;
+}
+
+.no-solicitudes h3 {
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+    color: #fff;
+}
+
+.no-solicitudes p {
+    font-size: 1.1rem;
+    opacity: 0.8;
+}
+
+/* Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 15px;
+    max-width: 600px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 25px 25px 0 25px;
+    border-bottom: 1px solid #eee;
+    margin-bottom: 20px;
+}
+
+.modal-header h2 {
+    margin: 0;
+    color: #333;
+    font-size: 1.5rem;
+}
+
+.close-button {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #666;
+    padding: 5px;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.close-button:hover {
+    background: #f0f0f0;
+    color: #333;
+}
+
+.modal-body {
+    padding: 0 25px;
+}
+
+.detalle-section {
+    margin-bottom: 25px;
+}
+
+.detalle-section h3 {
+    color: #333;
+    margin: 0 0 10px 0;
+    font-size: 1.3rem;
+}
+
+.detalle-section h4 {
+    color: #555;
+    margin: 0 0 10px 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.descripcion-text {
+    color: #333 !important;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.detalle-prioridad {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    margin-bottom: 15px;
+}
+
+.ubicacion-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #666;
+}
+
+.cliente-info {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.problema-foto {
+    width: 100%;
+    max-width: 300px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.historial-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.historial-item {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 10px;
+    border-left: 4px solid #667eea;
+}
+
+.historial-fecha {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 5px;
+}
+
+.historial-estado {
+    color: #667eea;
+    font-weight: 500;
+    margin-bottom: 5px;
+}
+
+.historial-notas {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+    padding: 20px 25px 25px 25px;
+    border-top: 1px solid #eee;
+    margin-top: 20px;
+}
+
+.cancel-button {
+    background: #6c757d;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.cancel-button:hover {
+    background: #5a6268;
+    transform: translateY(-2px);
+}
+
+.aplicar-button {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+}
+
+.aplicar-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .buscar-trabajo-container,
+    .buscar-trabajo-tab {
+        padding: 15px;
+    }
+    
+    .buscar-trabajo-header h1,
+    .tab-header h2 {
+        font-size: 1.5rem;
+    }
+    
+    .solicitudes-list {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .solicitud-card {
+        padding: 20px;
+    }
+    
+    .modal-content {
+        margin: 10px;
+        max-height: 95vh;
+    }
+    
+    .modal-header,
+    .modal-body,
+    .modal-footer {
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+    
+    .modal-footer {
+        flex-direction: column;
+    }
+    
+    .cancel-button,
+    .aplicar-button {
+        width: 100%;
+        justify-content: center;
+    }
+}

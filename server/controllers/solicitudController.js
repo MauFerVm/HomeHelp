@@ -213,11 +213,60 @@ const getAllSolicitudes = async (req, res) => {
   }
 };
 
+/**
+ * Obtiene solicitudes disponibles para un profesional específico
+ * Filtra por tipo de profesional y localidad
+ */
+const getSolicitudesDisponibles = async (req, res) => {
+  try {
+    const { usuario_id } = req.params;
+    
+    // Primero obtener los datos del profesional
+    const [profesionalRows] = await db.query(`
+      SELECT 
+        pr.tipo_profesional_id,
+        pr.localidad_id
+      FROM profesional pr
+      JOIN persona p ON pr.id = p.id
+      JOIN usuario u ON p.usuario_id = u.id
+      WHERE u.id = ? AND u.rol = 'profesional'
+    `, [usuario_id]);
+
+    if (profesionalRows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Profesional no encontrado'
+      });
+    }
+
+    const profesional = profesionalRows[0];
+
+    // Obtener solicitudes que coincidan con el tipo de profesional y localidad
+    const solicitudes = await SolicitudServicio.getDisponiblesParaProfesional(
+      profesional.tipo_profesional_id,
+      profesional.localidad_id
+    );
+    
+    res.json({
+      success: true,
+      data: solicitudes
+    });
+  } catch (error) {
+    console.error('Error al obtener solicitudes disponibles:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getTiposTrabajo,
   getEstadosSolicitud,
   crearSolicitud,
   getSolicitudesByCliente,
   getSolicitudById,
-  getAllSolicitudes
+  getAllSolicitudes,
+  getSolicitudesDisponibles
 };

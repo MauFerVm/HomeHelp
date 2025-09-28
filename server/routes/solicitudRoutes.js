@@ -83,4 +83,11 @@ router.get('/:id', solicitudController.getSolicitudById);
  */
 router.get('/', solicitudController.getAllSolicitudes);
 
+/**
+ * @route GET /api/solicitudes/disponibles/:usuario_id
+ * @desc Obtiene solicitudes disponibles para un profesional específico
+ * @access Private
+ */
+router.get('/disponibles/:usuario_id', solicitudController.getSolicitudesDisponibles);
+
 module.exports = router;

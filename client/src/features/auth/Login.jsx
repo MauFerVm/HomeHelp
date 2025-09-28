@@ -33,8 +33,8 @@ const Login = () => {
         localStorage.setItem('userType', 'cliente');
       }
       
-      // Login exitoso, navegar a dashboard
-      navigate('/dashboard');
+      // Login exitoso, navegar a main
+      navigate('/main');
     } catch (err) {
       if (err.response?.status === 401) {
         setErrorMsg('Usuario o contraseña incorrectos');

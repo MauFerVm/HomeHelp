@@ -111,6 +111,45 @@ class SolicitudServicio {
   }
 
   /**
+   * Trae solicitudes disponibles para un profesional específico
+   * Filtra por tipo de profesional y localidad, solo solicitudes abiertas
+   * @param {number} tipoProfesionalId 
+   * @param {number} localidadId 
+   * @returns {Promise<Array>}
+   */
+  static async getDisponiblesParaProfesional(tipoProfesionalId, localidadId) {
+    const [rows] = await db.query(
+      `SELECT 
+        ss.id, ss.titulo, ss.descripcion, ss.direccion, ss.prioridad, 
+        ss.foto, ss.creado_en, ss.tipo_profesional_id, ss.localidad_id,
+        CONCAT(p.nombre_apellido) as cliente_nombre,
+        u.correo as cliente_email,
+        p.foto_perfil as cliente_foto,
+        tp.nombre as tipo_profesional_nombre,
+        l.nombre as localidad_nombre,
+        ess.nombre as estado_nombre, ess.vencimiento_dias
+       FROM solicitud_servicio ss
+       JOIN persona p ON ss.cliente_persona_id = p.id
+       JOIN usuario u ON p.usuario_id = u.id
+       JOIN tipo_profesional tp ON ss.tipo_profesional_id = tp.id
+       JOIN localidad l ON ss.localidad_id = l.id
+       JOIN estado_sol_servicio ess ON ss.estado_id = ess.id
+       WHERE ss.tipo_profesional_id = ? 
+         AND ss.localidad_id = ? 
+         AND ess.nombre = 'abierta'
+       ORDER BY 
+         CASE ss.prioridad 
+           WHEN 'alta' THEN 1 
+           WHEN 'media' THEN 2 
+           WHEN 'baja' THEN 3 
+         END,
+         ss.creado_en DESC`,
+      [tipoProfesionalId, localidadId]
+    );
+    return rows;
+  }
+
+  /**
    * Actualiza el estado de una solicitud
    * @param {number} id 
    * @param {number} nuevoEstadoId 

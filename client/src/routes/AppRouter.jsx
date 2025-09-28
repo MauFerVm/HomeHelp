@@ -4,6 +4,7 @@ import Login from '../features/auth/Login';
 import Register from '../features/auth/Register';
 import RegistroForm from '../features/auth/RegistroForm';
 import Dashboard from '../features/dashboard/dashboard';
+import BuscarTrabajo from '../features/buscarTrabajo/BuscarTrabajo';
 
 function AppRouter() {
   return (
@@ -12,7 +13,8 @@ function AppRouter() {
         <Route path="/" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/registro" element={<RegistroForm />} />
-        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/main" element={<Dashboard />} />
+        <Route path="/buscar-trabajo" element={<BuscarTrabajo />} />
       </Routes>
     </Router>
   );

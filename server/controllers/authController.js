@@ -215,3 +215,70 @@ exports.getPersonaByUsuarioId = async (req, res) => {
     });
   }
 };
+
+exports.getProfesionalData = async (req, res) => {
+  try {
+    const { usuario_id } = req.params;
+    
+    // Obtener datos del profesional incluyendo tipo de profesional y localidad
+    const [rows] = await pool.query(`
+      SELECT 
+        u.id as usuario_id,
+        u.correo,
+        u.nombre_usuario,
+        u.rol,
+        p.nombre_apellido,
+        p.foto_perfil,
+        pr.presentacion,
+        pr.instituto,
+        pr.foto_titulo,
+        pr.tipo_profesional_id,
+        pr.localidad_id,
+        l.nombre as localidad_nombre,
+        prov.nombre as provincia_nombre,
+        tp.nombre as tipo_profesional_nombre
+      FROM usuario u
+      LEFT JOIN persona p ON u.id = p.usuario_id
+      LEFT JOIN profesional pr ON p.id = pr.id
+      LEFT JOIN localidad l ON pr.localidad_id = l.id
+      LEFT JOIN provincia prov ON l.provincia_id = prov.id
+      LEFT JOIN tipo_profesional tp ON pr.tipo_profesional_id = tp.id
+      WHERE u.id = ? AND u.rol = 'profesional'
+    `, [usuario_id]);
+
+    if (rows.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Profesional no encontrado' 
+      });
+    }
+
+    const profesionalData = rows[0];
+    res.json({
+      success: true,
+      data: {
+        usuario_id: profesionalData.usuario_id,
+        correo: profesionalData.correo,
+        nombre_usuario: profesionalData.nombre_usuario,
+        rol: profesionalData.rol,
+        nombre_apellido: profesionalData.nombre_apellido,
+        foto_perfil: profesionalData.foto_perfil,
+        presentacion: profesionalData.presentacion,
+        instituto: profesionalData.instituto,
+        foto_titulo: profesionalData.foto_titulo,
+        tipo_profesional_id: profesionalData.tipo_profesional_id,
+        localidad_id: profesionalData.localidad_id,
+        localidad_nombre: profesionalData.localidad_nombre,
+        provincia_nombre: profesionalData.provincia_nombre,
+        tipo_profesional_nombre: profesionalData.tipo_profesional_nombre
+      }
+    });
+
+  } catch (error) {
+    console.error('Error al obtener datos del profesional:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error interno del servidor' 
+    });
+  }
+};

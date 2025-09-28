@@ -2,12 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './dashboard.css';
 import PublicarProblemaForm from '../../components/PublicarProblemaForm';
-import { 
-    FaBell, 
-    FaSearch, 
-    FaChevronLeft, 
-    FaChevronRight, 
-    FaChevronDown, 
+import BuscarTrabajo from '../buscarTrabajo/BuscarTrabajo';
+import {
+    FaBell,
+    FaSearch,
+    FaChevronLeft,
+    FaChevronRight,
+    FaChevronDown,
     FaPlus,
     FaChevronUp,
     FaHome,
@@ -21,7 +22,8 @@ import {
     FaCalendarAlt,
     FaTools,
     FaTimesCircle,
-    FaUserTie
+    FaUserTie,
+    FaBriefcase
 } from 'react-icons/fa';
 import logoHomeHelp from '../../assets/logo_homehelp.png';
 import perfil from '../../assets/user.png';
@@ -46,38 +48,49 @@ const Dashboard = () => {
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showProblemaForm, setShowProblemaForm] = useState(false);
-    
+
+    // Notificaciones
+    const [notifications, setNotifications] = useState([]); // array de notificaciones
+    const [unreadCount, setUnreadCount] = useState(0);
+    const [showNotifications, setShowNotifications] = useState(false);
+    const [loadingNotifications, setLoadingNotifications] = useState(false);
+    const notiDropdownRef = useRef(null);
+    const bellRef = useRef(null);
+
+    // Estado para la pestaña activa del dashboard
+    const [activeTab, setActiveTab] = useState('dashboard');
+
     // Estado para el tipo de usuario (cliente, profesional o admin)
     // Se obtiene automáticamente del localStorage después del login
     // El valor se establece desde la base de datos usando el campo 'rol' de la tabla 'usuario'
     // Valores posibles: 'cliente', 'profesional', 'admin'
     const [userType, setUserType] = useState(() => {
-      const storedUserType = localStorage.getItem('userType') || 'cliente';
-      console.log('userType obtenido del localStorage:', storedUserType);
-      return storedUserType;
+        const storedUserType = localStorage.getItem('userType') || 'cliente';
+        console.log('userType obtenido del localStorage:', storedUserType);
+        return storedUserType;
     });
 
     // Estado para la información del usuario incluyendo foto de perfil
     const [userData, setUserData] = useState(() => {
-      const storedUserData = localStorage.getItem('userData');
-      if (storedUserData) {
-        try {
-          return JSON.parse(storedUserData);
-        } catch (error) {
-          console.error('Error al parsear userData:', error);
-          return null;
+        const storedUserData = localStorage.getItem('userData');
+        if (storedUserData) {
+            try {
+                return JSON.parse(storedUserData);
+            } catch (error) {
+                console.error('Error al parsear userData:', error);
+                return null;
+            }
         }
-      }
-      return null;
+        return null;
     });
 
     // Verificar que el userType esté sincronizado con el localStorage
     useEffect(() => {
-      const storedUserType = localStorage.getItem('userType');
-      if (storedUserType && storedUserType !== userType) {
-        console.log('Actualizando userType desde localStorage:', storedUserType);
-        setUserType(storedUserType);
-      }
+        const storedUserType = localStorage.getItem('userType');
+        if (storedUserType && storedUserType !== userType) {
+            console.log('Actualizando userType desde localStorage:', storedUserType);
+            setUserType(storedUserType);
+        }
     }, [userType]);
 
     // Mapeo de imágenes para las categorías
@@ -99,7 +112,7 @@ const Dashboard = () => {
             setLoading(true);
             const response = await fetch('http://localhost:3002/api/categories/active');
             const data = await response.json();
-            
+
             if (data.success) {
                 // Mapear las categorías con sus imágenes correspondientes
                 const categoriesWithImages = data.data.map(category => ({
@@ -146,6 +159,28 @@ const Dashboard = () => {
         fetchActiveCategories();
     }, []);
 
+    // Cerrar dropdown si clic fuera
+    useEffect(() => {
+        const onClickOutside = (e) => {
+            if (showNotifications) {
+                const target = e.target;
+                if (notiDropdownRef.current && !notiDropdownRef.current.contains(target) &&
+                    bellRef.current && !bellRef.current.contains(target)) {
+                    setShowNotifications(false);
+                }
+            }
+        };
+        document.addEventListener('click', onClickOutside);
+        return () => document.removeEventListener('click', onClickOutside);
+    }, [showNotifications]);
+
+    // Opcional: cargar notificaciones una vez al montar (sin abrir dropdown)
+    useEffect(() => {
+        fetchNotifications();
+        // eslint-disable-next-line
+    }, []);
+
+
     // Función para determinar el número de elementos por vista
     const updateItemsPerView = () => {
         const isMobile = window.innerWidth <= 768;
@@ -160,7 +195,7 @@ const Dashboard = () => {
         window.addEventListener('resize', updateItemsPerView);
         return () => window.removeEventListener('resize', updateItemsPerView);
     }, []);
-    
+
 
     // Las categorías ahora se obtienen dinámicamente desde la API
 
@@ -215,12 +250,12 @@ const Dashboard = () => {
     // Para PC pequeñas: permitir navegar por todas las categorías (3 por vista)
     // Para PC medianas: permitir navegar por todas las categorías (3 por vista)
     // Para desktop: mantener la lógica actual (4 por vista)
-    const effectiveMaxSlides = window.innerWidth <= 768 ? 
+    const effectiveMaxSlides = window.innerWidth <= 768 ?
         Math.ceil(categories.length / 2) - 1 : // Móvil: 8 categorías / 2 = 4 slides (0,1,2,3)
         (window.innerWidth >= 1000 && window.innerWidth <= 1300) || (window.innerWidth >= 1400 && window.innerWidth <= 1500) ?
-        Math.ceil(categories.length / 3) - 1 : // PC pequeña/mediana: 8 categorías / 3 = 3 slides (0,1,2)
-        1; // Desktop: mantener como está
-    
+            Math.ceil(categories.length / 3) - 1 : // PC pequeña/mediana: 8 categorías / 3 = 3 slides (0,1,2)
+            1; // Desktop: mantener como está
+
     // Debug: mostrar información del carrusel
     useEffect(() => {
         console.log('Categorías totales:', categories.length);
@@ -230,7 +265,7 @@ const Dashboard = () => {
         console.log('Slide actual:', currentSlide);
         console.log('Es móvil:', window.innerWidth <= 768);
     }, [categories, itemsPerView, maxSlides, effectiveMaxSlides, currentSlide]);
-    
+
     // Las flechas nunca se bloquean - siempre permiten navegación circular
     const canGoNext = true;
     const canGoPrev = true;
@@ -253,6 +288,76 @@ const Dashboard = () => {
         navigate('/');
     };
 
+    // Cargar notificaciones del usuario
+    const fetchNotifications = async () => {
+        const userDataRaw = localStorage.getItem('userData');
+        if (!userDataRaw) return;
+        const userData = JSON.parse(userDataRaw);
+        if (!userData?.id) return;
+
+        try {
+            setLoadingNotifications(true);
+            const res = await fetch(`http://localhost:3002/api/notificaciones/usuario/${userData.id}`);
+            const json = await res.json();
+            if (json && json.success && Array.isArray(json.data)) {
+                setNotifications(json.data);
+                setUnreadCount(json.data.filter(n => Number(n.leido) === 0).length);
+            } else {
+                console.warn('Notificaciones: respuesta inesperada', json);
+            }
+        } catch (err) {
+            console.error('Error fetchNotifications:', err);
+        } finally {
+            setLoadingNotifications(false);
+        }
+    };
+
+    const marcarComoLeida = async (notiId) => {
+        try {
+            const res = await fetch(`http://localhost:3002/api/notificaciones/${notiId}/leido`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const json = await res.json();
+            if (json && json.success !== false) {
+                setNotifications(prev => prev.map(n => n.id === notiId ? { ...n, leido: 1 } : n));
+                setUnreadCount(prev => Math.max(0, prev - 1));
+                
+                // Si es un profesional y la notificación es de tipo 'solicitud', cambiar a pestaña Buscar Trabajo
+                if (userType === 'profesional') {
+                    const notificacion = notifications.find(n => n.id === notiId);
+                    if (notificacion && notificacion.tipo_notificacion === 'solicitud') {
+                        setActiveTab('buscar-trabajo');
+                    }
+                }
+            } else {
+                console.warn('No se pudo marcar notificacion como leida', json);
+            }
+        } catch (err) {
+            console.error('Error marcarComoLeida:', err);
+        }
+    };
+
+    const marcarTodasComoLeidas = async () => {
+        const userDataRaw = localStorage.getItem('userData');
+        if (!userDataRaw) return;
+        const userData = JSON.parse(userDataRaw);
+        try {
+            const res = await fetch(`http://localhost:3002/api/notificaciones/marcar-todas/${userData.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const json = await res.json();
+            if (json && json.success !== false) {
+                setNotifications(prev => prev.map(n => ({ ...n, leido: 1 })));
+                setUnreadCount(0);
+            } else {
+                console.warn('No se pudieron marcar todas como leídas', json);
+            }
+        } catch (err) {
+            console.error('Error marcarTodasComoLeidas:', err);
+        }
+    };
 
 
     const toggleMobileMenu = () => {
@@ -276,6 +381,185 @@ const Dashboard = () => {
         // Aquí puedes agregar lógica adicional después de crear la solicitud
         // Por ejemplo, actualizar una lista de solicitudes, mostrar notificación, etc.
     };
+
+    // Función para renderizar el contenido según la pestaña activa
+    const renderTabContent = () => {
+        switch (activeTab) {
+            case 'buscar-trabajo':
+                return <BuscarTrabajo isTab={true} />;
+            case 'trabajos-asignados':
+                return (
+                    <div className="tab-content">
+                        <h2>Trabajos Asignados</h2>
+                        <p>Esta funcionalidad estará disponible próximamente.</p>
+                    </div>
+                );
+            case 'calendario':
+                return (
+                    <div className="tab-content">
+                        <h2>Mi Calendario</h2>
+                        <p>Esta funcionalidad estará disponible próximamente.</p>
+                    </div>
+                );
+            case 'cancelaciones':
+                return (
+                    <div className="tab-content">
+                        <h2>Trabajos Cancelados</h2>
+                        <p>Esta funcionalidad estará disponible próximamente.</p>
+                    </div>
+                );
+            case 'estadisticas':
+                return (
+                    <div className="tab-content">
+                        <h2>Estadísticas de Mis Servicios</h2>
+                        <p>Esta funcionalidad estará disponible próximamente.</p>
+                    </div>
+                );
+            case 'contacto':
+                return (
+                    <div className="tab-content">
+                        <h2>Contacto y Soporte</h2>
+                        <p>Esta funcionalidad estará disponible próximamente.</p>
+                    </div>
+                );
+            default:
+                return renderDashboardContent();
+        }
+    };
+
+    // Función para renderizar el contenido del dashboard principal
+    const renderDashboardContent = () => (
+        <>
+            {/* Greeting Section */}
+            <div className="greeting-section">
+                <div className="greeting-content">
+                    <div className="greeting-text">
+                        <h1 className="greeting-title">¿Necesitas ayuda en tu hogar?</h1>
+                        <p className="greeting-subtitle">Conectamos con los mejores profesionales cerca tuyo</p>
+                    </div>
+                    {/* Post Problem Button - oculto para profesionales */}
+                    {userType !== 'profesional' && (
+                        <div className="post-problem-section">
+                            <button
+                                className="post-problem-button"
+                                onClick={handleOpenProblemaForm}
+                            >
+                                <FaPlus />
+                                <span>Publicar un problema</span>
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Search Bar */}
+            <div className="search-section">
+                <form onSubmit={handleSearch} className="search-form">
+                    <input
+                        type="text"
+                        placeholder="¿Qué necesitas arreglar hoy?"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="search-input"
+                    />
+                    <button type="submit" className="search-button">
+                        <FaSearch />
+                    </button>
+                </form>
+            </div>
+
+            {/* Categories Section */}
+            <div className="categories-section">
+                <h2 className="section-title">Categorías destacadas</h2>
+                {loading ? (
+                    <div className="loading-container">
+                        <div className="loading-spinner"></div>
+                        <p>Cargando categorías...</p>
+                    </div>
+                ) : (
+                    <div className="categories-container">
+                        <button
+                            className={`nav-button prev ${!canGoPrev ? 'disabled' : ''}`}
+                            onClick={prevSlide}
+                            disabled={!canGoPrev}
+                        >
+                            <FaChevronLeft />
+                        </button>
+
+                        <div className="categories-carousel">
+                            <div
+                                className="categories-track"
+                                style={{
+                                    transform: isMediumScreen
+                                        ? `translateX(-${currentSlide * (100 / 2.8)}%)`
+                                        : isLargeScreen
+                                            ? `translateX(-${currentSlide * (110 / 1)}%)`
+                                            : `translateX(-${currentSlide * (110 / itemsPerView) * itemsPerView}%)`
+                                }}
+                            >
+                                {displayCategories.map((category, index) => (
+                                    <div key={index} className="category-card">
+                                        <div className="category-image-container">
+                                            <img
+                                                src={category.image}
+                                                alt={category.name}
+                                                className="category-image"
+                                            />
+                                        </div>
+                                        <h3 className="category-name">{category.name}</h3>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <button
+                            className={`nav-button next ${!canGoNext ? 'disabled' : ''}`}
+                            onClick={nextSlide}
+                            disabled={!canGoNext}
+                        >
+                            <FaChevronRight />
+                        </button>
+                    </div>
+                )}
+            </div>
+
+            {/* Featured Professionals Section */}
+            <div className="professionals-section">
+                <h2 className="section-title">Profesionales destacados</h2>
+                <div className="professionals-list">
+                    <div className="professional-card">
+                        <img src={perfil} alt="Ricardo M." className="professional-image" />
+                        <div className="professional-info">
+                            <h3 className="professional-name">Ricardo M.</h3>
+                            <p className="professional-profession">Plomero • ★ 4.8 (120 trabajos)</p>
+                        </div>
+                        <button className="contact-button">✓ Contactar</button>
+                    </div>
+
+                    <div className="professional-card">
+                        <img src={perfil} alt="Sofía L." className="professional-image" />
+                        <div className="professional-info">
+                            <h3 className="professional-name">Sofía L.</h3>
+                            <p className="professional-profession">Electricista • ★ 4.9 (150 trabajos)</p>
+                        </div>
+                        <button className="contact-button">✓ Contactar</button>
+                    </div>
+
+                    <div className="professional-card">
+                        <img src={perfil} alt="Javier P." className="professional-image" />
+                        <div className="professional-info">
+                            <h3 className="professional-name">Javier P.</h3>
+                            <p className="professional-profession">Carpintero • ★ 4.7 (90 trabajos)</p>
+                        </div>
+                        <button className="contact-button">✓ Contactar</button>
+                    </div>
+                </div>
+                <div className="load-more">
+                    <FaChevronDown />
+                </div>
+            </div>
+        </>
+    );
 
     // Handle body scroll lock when mobile menu is open
     useEffect(() => {
@@ -306,419 +590,403 @@ const Dashboard = () => {
     return (
         <>
             <div className="dashboard">
-            {/* Mobile Menu Toggle */}
-            <button className="mobile-menu-toggle" onClick={toggleMobileMenu}>
-                <FaBars />
-            </button>
+                {/* Mobile Menu Toggle */}
+                <button className="mobile-menu-toggle" onClick={toggleMobileMenu}>
+                    <FaBars />
+                </button>
 
-            {/* Mobile Overlay */}
-            <div 
-                className={`mobile-overlay ${mobileMenuOpen ? 'active' : ''}`} 
-                onClick={closeMobileMenu}
-            />
+                {/* Mobile Overlay */}
+                <div
+                    className={`mobile-overlay ${mobileMenuOpen ? 'active' : ''}`}
+                    onClick={closeMobileMenu}
+                />
 
-            {/* Sidebar */}
-            <aside className={`sidebar ${mobileMenuOpen ? 'active' : ''}`}>
-                <div className="sidebar-header">
-                    <img src={logoHomeHelp} alt="Home Help" className="sidebar-logo" />
-                    {/* Solo mostrar el botón de cerrar en móvil */}
-                    {mobileMenuOpen && (
-                        <button className="mobile-close" onClick={closeMobileMenu}>
-                            <FaTimes />
-                        </button>
-                    )}
-                </div>
-                
-                <nav className="sidebar-nav">
-                    <div className="nav-section">
-                        <h3 className="nav-section-title">MENU</h3>
-                        <ul className="nav-menu">
-                            <li className="nav-item" onClick={closeMobileMenu}>
-                                <FaHome className="nav-icon" />
-                                <span>Dashboard</span>
-                            </li>
-                        </ul>
+                {/* Sidebar */}
+                <aside className={`sidebar ${mobileMenuOpen ? 'active' : ''}`}>
+                    <div className="sidebar-header">
+                        <img src={logoHomeHelp} alt="Home Help" className="sidebar-logo" />
+                        {/* Solo mostrar el botón de cerrar en móvil */}
+                        {mobileMenuOpen && (
+                            <button className="mobile-close" onClick={closeMobileMenu}>
+                                <FaTimes />
+                            </button>
+                        )}
                     </div>
 
-                    {/* 
+                    <nav className="sidebar-nav">
+                        <div className="nav-section">
+                            <h3 className="nav-section-title">MENU</h3>
+                            <ul className="nav-menu">
+                                <li className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => {
+                                    closeMobileMenu();
+                                    setActiveTab('dashboard');
+                                }}>
+                                    <FaHome className="nav-icon" />
+                                    <span>Dashboard</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        {/* 
                         LÓGICA DEL SIDEBAR BASADA EN EL ROL DEL USUARIO
                         El sidebar se muestra según el valor del campo 'rol' de la base de datos:
                         - 'cliente': Muestra opciones para clientes (categorías, servicios, etc.)
                         - 'profesional': Muestra opciones para profesionales (trabajos, calendario, etc.)
                         - 'admin': Muestra opciones para administradores (gestión, reportes, etc.)
                     */}
-                    
-                    {/* Debug: mostrar qué sidebar se está renderizando */}
-                    {console.log('Renderizando sidebar para userType:', userType)}
 
-                    {/* Sidebar para Clientes */}
-                    {userType === 'cliente' && (
-                        <>
-                            <div className="nav-section">
-                                <div className="nav-section-header" onClick={toggleCategories}>
-                                    <h3 className="nav-section-title">
-                                        <FaTags className="nav-icon" />
-                                        CATEGORIAS
-                                    </h3>
-                                    {categoriesExpanded ? <FaChevronUp className="expand-icon" /> : <FaChevronDown className="expand-icon" />}
+                        {/* Debug: mostrar qué sidebar se está renderizando */}
+                        {console.log('Renderizando sidebar para userType:', userType)}
+
+                        {/* Sidebar para Clientes */}
+                        {userType === 'cliente' && (
+                            <>
+                                <div className="nav-section">
+                                    <div className="nav-section-header" onClick={toggleCategories}>
+                                        <h3 className="nav-section-title">
+                                            <FaTags className="nav-icon" />
+                                            CATEGORIAS
+                                        </h3>
+                                        {categoriesExpanded ? <FaChevronUp className="expand-icon" /> : <FaChevronDown className="expand-icon" />}
+                                    </div>
+                                    {categoriesExpanded && (
+                                        <ul className="nav-submenu">
+                                            {categories.map((category, index) => (
+                                                <li key={index} className="nav-subitem" onClick={closeMobileMenu} data-user-type="cliente">
+                                                    <span>{category.name}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
                                 </div>
-                                {categoriesExpanded && (
-                                    <ul className="nav-submenu">
-                                        {categories.map((category, index) => (
-                                            <li key={index} className="nav-subitem" onClick={closeMobileMenu} data-user-type="cliente">
-                                                <span>{category.name}</span>
-                                            </li>
-                                        ))}
+
+                                <div className="nav-section">
+                                    <h3 className="nav-section-title">SERVICIOS CONTRATADOS</h3>
+                                    <ul className="nav-menu">
+                                        <li className="nav-item" onClick={closeMobileMenu} data-user-type="cliente">
+                                            <FaClipboardList className="nav-icon" />
+                                            <span>Mis Servicios</span>
+                                        </li>
                                     </ul>
-                                )}
-                            </div>
+                                </div>
 
-                            <div className="nav-section">
-                                <h3 className="nav-section-title">SERVICIOS CONTRATADOS</h3>
-                                <ul className="nav-menu">
-                                    <li className="nav-item" onClick={closeMobileMenu} data-user-type="cliente">
-                                        <FaClipboardList className="nav-icon" />
-                                        <span>Mis Servicios</span>
-                                    </li>
-                                </ul>
-                            </div>
+                                <div className="nav-section">
+                                    <h3 className="nav-section-title">CONTACTO</h3>
+                                    <ul className="nav-menu">
+                                        <li className="nav-item" onClick={closeMobileMenu} data-user-type="cliente">
+                                            <FaEnvelope className="nav-icon" />
+                                            <span>Soporte</span>
+                                        </li>
+                                    </ul>
+                                </div>
 
-                            <div className="nav-section">
-                                <h3 className="nav-section-title">CONTACTO</h3>
-                                <ul className="nav-menu">
-                                    <li className="nav-item" onClick={closeMobileMenu} data-user-type="cliente">
-                                        <FaEnvelope className="nav-icon" />
-                                        <span>Soporte</span>
-                                    </li>
-                                </ul>
-                            </div>
+                                <div className="nav-section">
+                                    <h3 className="nav-section-title">GRAFICOS</h3>
+                                    <ul className="nav-menu">
+                                        <li className="nav-item" onClick={closeMobileMenu} data-user-type="cliente">
+                                            <FaChartBar className="nav-icon" />
+                                            <span>Estadísticas</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </>
+                        )}
 
-                            <div className="nav-section">
-                                <h3 className="nav-section-title">GRAFICOS</h3>
-                                <ul className="nav-menu">
-                                    <li className="nav-item" onClick={closeMobileMenu} data-user-type="cliente">
-                                        <FaChartBar className="nav-icon" />
-                                        <span>Estadísticas</span>
-                                    </li>
-                                </ul>
-                            </div>
-                        </>
-                    )}
+                        {/* Sidebar para Profesionales */}
+                        {userType === 'profesional' && (
+                            <>
+                                <div className="nav-section">
+                                    <h3 className="nav-section-title">TRABAJOS</h3>
+                                    <ul className="nav-menu">
+                                        <li className={`nav-item ${activeTab === 'trabajos-asignados' ? 'active' : ''}`} onClick={() => {
+                                            closeMobileMenu();
+                                            setActiveTab('trabajos-asignados');
+                                        }} data-user-type="profesional">
+                                            <FaTools className="nav-icon" />
+                                            <span>Trabajos Asignados</span>
+                                        </li>
+                                        <li className={`nav-item ${activeTab === 'buscar-trabajo' ? 'active' : ''}`} onClick={() => {
+                                            closeMobileMenu();
+                                            setActiveTab('buscar-trabajo');
+                                        }} data-user-type="profesional">
+                                            <FaBriefcase className="nav-icon" />
+                                            <span>Buscar Trabajo</span>
+                                        </li>
+                                    </ul>
+                                </div>
 
-                    {/* Sidebar para Profesionales */}
-                    {userType === 'profesional' && (
-                        <>
-                            <div className="nav-section">
-                                <h3 className="nav-section-title">TRABAJOS</h3>
-                                <ul className="nav-menu">
-                                    <li className="nav-item" onClick={closeMobileMenu} data-user-type="profesional">
-                                        <FaTools className="nav-icon" />
-                                        <span>Trabajos Asignados</span>
-                                    </li>
-                                </ul>
-                            </div>
+                                <div className="nav-section">
+                                    <h3 className="nav-section-title">CALENDARIO</h3>
+                                    <ul className="nav-menu">
+                                        <li className={`nav-item ${activeTab === 'calendario' ? 'active' : ''}`} onClick={() => {
+                                            closeMobileMenu();
+                                            setActiveTab('calendario');
+                                        }} data-user-type="profesional">
+                                            <FaCalendarAlt className="nav-icon" />
+                                            <span>Mi Calendario</span>
+                                        </li>
+                                    </ul>
+                                </div>
 
-                            <div className="nav-section">
-                                <h3 className="nav-section-title">CALENDARIO</h3>
-                                <ul className="nav-menu">
-                                    <li className="nav-item" onClick={closeMobileMenu} data-user-type="profesional">
-                                        <FaCalendarAlt className="nav-icon" />
-                                        <span>Mi Calendario</span>
-                                    </li>
-                                </ul>
-                            </div>
+                                <div className="nav-section">
+                                    <h3 className="nav-section-title">CANCELACIONES</h3>
+                                    <ul className="nav-menu">
+                                        <li className={`nav-item ${activeTab === 'cancelaciones' ? 'active' : ''}`} onClick={() => {
+                                            closeMobileMenu();
+                                            setActiveTab('cancelaciones');
+                                        }} data-user-type="profesional">
+                                            <FaTimesCircle className="nav-icon" />
+                                            <span>Trabajos Cancelados</span>
+                                        </li>
+                                    </ul>
+                                </div>
 
-                            <div className="nav-section">
-                                <h3 className="nav-section-title">CANCELACIONES</h3>
-                                <ul className="nav-menu">
-                                    <li className="nav-item" onClick={closeMobileMenu} data-user-type="profesional">
-                                        <FaTimesCircle className="nav-icon" />
-                                        <span>Trabajos Cancelados</span>
-                                    </li>
-                                </ul>
-                            </div>
+                                <div className="nav-section">
+                                    <h3 className="nav-section-title">ESTADISTICAS</h3>
+                                    <ul className="nav-menu">
+                                        <li className={`nav-item ${activeTab === 'estadisticas' ? 'active' : ''}`} onClick={() => {
+                                            closeMobileMenu();
+                                            setActiveTab('estadisticas');
+                                        }} data-user-type="profesional">
+                                            <FaChartBar className="nav-icon" />
+                                            <span>Estadísticas de Mis Servicios</span>
+                                        </li>
+                                    </ul>
+                                </div>
 
-                            <div className="nav-section">
-                                <h3 className="nav-section-title">ESTADISTICAS</h3>
-                                <ul className="nav-menu">
-                                    <li className="nav-item" onClick={closeMobileMenu} data-user-type="profesional">
-                                        <FaChartBar className="nav-icon" />
-                                        <span>Estadísticas de Mis Servicios</span>
-                                    </li>
-                                </ul>
-                            </div>
+                                <div className="nav-section">
+                                    <h3 className="nav-section-title">CONTACTO</h3>
+                                    <ul className="nav-menu">
+                                        <li className={`nav-item ${activeTab === 'contacto' ? 'active' : ''}`} onClick={() => {
+                                            closeMobileMenu();
+                                            setActiveTab('contacto');
+                                        }} data-user-type="profesional">
+                                            <FaEnvelope className="nav-icon" />
+                                            <span>Soporte</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </>
+                        )}
 
-                            <div className="nav-section">
-                                <h3 className="nav-section-title">CONTACTO</h3>
-                                <ul className="nav-menu">
-                                    <li className="nav-item" onClick={closeMobileMenu} data-user-type="profesional">
-                                        <FaEnvelope className="nav-icon" />
-                                        <span>Soporte</span>
-                                    </li>
-                                </ul>
-                            </div>
-                        </>
-                    )}
+                        {/* Sidebar para Administradores */}
+                        {userType === 'admin' && (
+                            <>
+                                <div className="nav-section">
+                                    <h3 className="nav-section-title">GESTION DE USUARIOS</h3>
+                                    <ul className="nav-menu">
+                                        <li className="nav-item" onClick={closeMobileMenu} data-user-type="admin">
+                                            <FaUserTie className="nav-icon" />
+                                            <span>Usuarios</span>
+                                        </li>
+                                        <li className="nav-item" onClick={closeMobileMenu} data-user-type="admin">
+                                            <FaUserTie className="nav-icon" />
+                                            <span>Clientes</span>
+                                        </li>
+                                        <li className="nav-item" onClick={closeMobileMenu} data-user-type="admin">
+                                            <FaUserTie className="nav-icon" />
+                                            <span>Profesionales</span>
+                                        </li>
+                                    </ul>
+                                </div>
 
-                    {/* Sidebar para Administradores */}
-                    {userType === 'admin' && (
-                        <>
-                            <div className="nav-section">
-                                <h3 className="nav-section-title">GESTION DE USUARIOS</h3>
-                                <ul className="nav-menu">
-                                    <li className="nav-item" onClick={closeMobileMenu} data-user-type="admin">
-                                        <FaUserTie className="nav-icon" />
-                                        <span>Usuarios</span>
-                                    </li>
-                                    <li className="nav-item" onClick={closeMobileMenu} data-user-type="admin">
-                                        <FaUserTie className="nav-icon" />
-                                        <span>Clientes</span>
-                                    </li>
-                                    <li className="nav-item" onClick={closeMobileMenu} data-user-type="admin">
-                                        <FaUserTie className="nav-icon" />
-                                        <span>Profesionales</span>
-                                    </li>
-                                </ul>
-                            </div>
+                                <div className="nav-section">
+                                    <h3 className="nav-section-title">GESTION DE SERVICIOS</h3>
+                                    <ul className="nav-menu">
+                                        <li className="nav-item" onClick={closeMobileMenu} data-user-type="admin">
+                                            <FaTools className="nav-icon" />
+                                            <span>Servicios</span>
+                                        </li>
+                                        <li className="nav-item" onClick={closeMobileMenu} data-user-type="admin">
+                                            <FaTags className="nav-icon" />
+                                            <span>Categorías</span>
+                                        </li>
+                                        <li className="nav-item" onClick={closeMobileMenu} data-user-type="admin">
+                                            <FaClipboardList className="nav-icon" />
+                                            <span>Solicitudes</span>
+                                        </li>
+                                    </ul>
+                                </div>
 
-                            <div className="nav-section">
-                                <h3 className="nav-section-title">GESTION DE SERVICIOS</h3>
-                                <ul className="nav-menu">
-                                    <li className="nav-item" onClick={closeMobileMenu} data-user-type="admin">
-                                        <FaTools className="nav-icon" />
-                                        <span>Servicios</span>
-                                    </li>
-                                    <li className="nav-item" onClick={closeMobileMenu} data-user-type="admin">
-                                        <FaTags className="nav-icon" />
-                                        <span>Categorías</span>
-                                    </li>
-                                    <li className="nav-item" onClick={closeMobileMenu} data-user-type="admin">
-                                        <FaClipboardList className="nav-icon" />
-                                        <span>Solicitudes</span>
-                                    </li>
-                                </ul>
-                            </div>
+                                <div className="nav-section">
+                                    <h3 className="nav-section-title">REPORTES</h3>
+                                    <ul className="nav-menu">
+                                        <li className="nav-item" onClick={closeMobileMenu} data-user-type="admin">
+                                            <FaChartBar className="nav-icon" />
+                                            <span>Estadísticas Generales</span>
+                                        </li>
+                                        <li className="nav-item" onClick={closeMobileMenu} data-user-type="admin">
+                                            <FaChartBar className="nav-icon" />
+                                            <span>Reportes de Ingresos</span>
+                                        </li>
+                                        <li className="nav-item" onClick={closeMobileMenu} data-user-type="admin">
+                                            <FaChartBar className="nav-icon" />
+                                            <span>Análisis de Usuarios</span>
+                                        </li>
+                                    </ul>
+                                </div>
 
-                            <div className="nav-section">
-                                <h3 className="nav-section-title">REPORTES</h3>
-                                <ul className="nav-menu">
-                                    <li className="nav-item" onClick={closeMobileMenu} data-user-type="admin">
-                                        <FaChartBar className="nav-icon" />
-                                        <span>Estadísticas Generales</span>
-                                    </li>
-                                    <li className="nav-item" onClick={closeMobileMenu} data-user-type="admin">
-                                        <FaChartBar className="nav-icon" />
-                                        <span>Reportes de Ingresos</span>
-                                    </li>
-                                    <li className="nav-item" onClick={closeMobileMenu} data-user-type="admin">
-                                        <FaChartBar className="nav-icon" />
-                                        <span>Análisis de Usuarios</span>
-                                    </li>
-                                </ul>
-                            </div>
+                                <div className="nav-section">
+                                    <h3 className="nav-section-title">CONFIGURACION</h3>
+                                    <ul className="nav-menu">
+                                        <li className="nav-item" onClick={closeMobileMenu} data-user-type="admin">
+                                            <FaEnvelope className="nav-icon" />
+                                            <span>Configuración del Sistema</span>
+                                        </li>
+                                        <li className="nav-item" onClick={closeMobileMenu} data-user-type="admin">
+                                            <FaEnvelope className="nav-icon" />
+                                            <span>Backup y Restauración</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </>
+                        )}
 
-                            <div className="nav-section">
-                                <h3 className="nav-section-title">CONFIGURACION</h3>
-                                <ul className="nav-menu">
-                                    <li className="nav-item" onClick={closeMobileMenu} data-user-type="admin">
-                                        <FaEnvelope className="nav-icon" />
-                                        <span>Configuración del Sistema</span>
-                                    </li>
-                                    <li className="nav-item" onClick={closeMobileMenu} data-user-type="admin">
-                                        <FaEnvelope className="nav-icon" />
-                                        <span>Backup y Restauración</span>
-                                    </li>
-                                </ul>
-                            </div>
-                        </>
-                    )}
+                        {/* Logout Section */}
+                        <div className="nav-section logout-section">
+                            <ul className="nav-menu">
+                                <li className="nav-item logout-item" onClick={() => {
+                                    closeMobileMenu();
+                                    handleLogout();
+                                }}>
+                                    <FaSignOutAlt className="nav-icon" />
+                                    <span>Cerrar Sesión</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </nav>
+                </aside>
 
-                    {/* Logout Section */}
-                    <div className="nav-section logout-section">
-                        <ul className="nav-menu">
-                            <li className="nav-item logout-item" onClick={() => {
-                                closeMobileMenu();
-                                handleLogout();
-                            }}>
-                                <FaSignOutAlt className="nav-icon" />
-                                <span>Cerrar Sesión</span>
-                            </li>
-                        </ul>
-                    </div>
-                </nav>
-            </aside>
-
-            {/* Main Content Area */}
-            <div className="main-content">
-                {/* Header */}
-                <header className="dashboard-header">
-                    <div className="header-right">
-                        {/* 
+                {/* Main Content Area */}
+                <div className="main-content">
+                    {/* Header */}
+                    <header className="dashboard-header">
+                        <div className="header-right">
+                            {/* 
                             INDICADOR DEL TIPO DE USUARIO
                             Muestra el rol del usuario obtenido desde la base de datos (campo 'rol')
                             Se aplican estilos específicos según el tipo: cliente, profesional o admin
                         */}
-                        <div className="user-type-indicator">
-                            {/* Debug: mostrar qué tipo de usuario se está mostrando */}
-                            {console.log('Mostrando badge para userType:', userType)}
-                            <span className="user-type-badge" data-user-type={userType}>
-                                {userType === 'cliente' ? 'Cliente' : 
-                                 userType === 'profesional' ? 'Profesional' : 'Administrador'}
-                            </span>
-                        </div>
-                        <div className="notification-icon">
-                            <FaBell />
-                        </div>
-                        <img 
-                            src={userData && userData.foto_perfil 
-                                ? `http://localhost:3002/uploads/profiles/${userData.foto_perfil}` 
-                                : perfil} 
-                            alt="Perfil" 
-                            className="profile-image" 
-                        />
-                    </div>
-                </header>
-
-                {/* Main Content */}
-                <main className="dashboard-main">
-                    {/* Greeting Section */}
-                    <div className="greeting-section">
-                        <div className="greeting-content">
-                            <div className="greeting-text">
-                                <h1 className="greeting-title">¿Necesitas ayuda en tu hogar?</h1>
-                                <p className="greeting-subtitle">Conectamos con los mejores profesionales cerca tuyo</p>
+                            <div className="user-type-indicator">
+                                {/* Debug: mostrar qué tipo de usuario se está mostrando */}
+                                {console.log('Mostrando badge para userType:', userType)}
+                                <span className="user-type-badge" data-user-type={userType}>
+                                    {userType === 'cliente' ? 'Cliente' :
+                                        userType === 'profesional' ? 'Profesional' : 'Administrador'}
+                                </span>
                             </div>
-                            {/* Post Problem Button - oculto para profesionales */}
-                            {userType !== 'profesional' && (
-                                <div className="post-problem-section">
-                                    <button 
-                                        className="post-problem-button"
-                                        onClick={handleOpenProblemaForm}
-                                    >
-                                        <FaPlus />
-                                        <span>Publicar un problema</span>
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Search Bar */}
-                    <div className="search-section">
-                        <form onSubmit={handleSearch} className="search-form">
-                            <input
-                                type="text"
-                                placeholder="¿Qué necesitas arreglar hoy?"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="search-input"
-                            />
-                            <button type="submit" className="search-button">
-                                <FaSearch />
-                            </button>
-                        </form>
-                    </div>
-
-                    {/* Categories Section */}
-                    <div className="categories-section">
-                        <h2 className="section-title">Categorías destacadas</h2>
-                        {loading ? (
-                            <div className="loading-container">
-                                <div className="loading-spinner"></div>
-                                <p>Cargando categorías...</p>
-                            </div>
-                        ) : (
-                            <div className="categories-container">
-                            <button 
-                                className={`nav-button prev ${!canGoPrev ? 'disabled' : ''}`} 
-                                onClick={prevSlide}
-                                disabled={!canGoPrev}
-                            >
-                                <FaChevronLeft />
-                            </button>
                             
-                                                        <div className="categories-carousel">
-                                <div 
-                                    className="categories-track"
-                                    style={{ 
-                                        transform: isMediumScreen 
-                                            ? `translateX(-${currentSlide * (100 / 2.8)}%)`
-                                            : isLargeScreen
-                                            ? `translateX(-${currentSlide * (110 / 1)}%)`
-                                            : `translateX(-${currentSlide * (110 / itemsPerView) * itemsPerView}%)`
-                                    }}
+                            {/* NOTIFICATIONS ICON + DROPDOWN */}
+                            <div className="notification-wrapper" style={{ position: 'relative' }}>
+                                <div
+                                    className="notification-icon"
+                                    ref={bellRef}
+                                    onClick={() => { const next = !showNotifications; setShowNotifications(next); if (!showNotifications) fetchNotifications(); }}
+                                    style={{ cursor: 'pointer', position: 'relative' }}
+                                    aria-label="Notificaciones"
                                 >
-                                    {displayCategories.map((category, index) => (
-                                        <div key={index} className="category-card">
-                                            <div className="category-image-container">
-                                                <img 
-                                                    src={category.image} 
-                                                    alt={category.name} 
-                                                    className="category-image"
-                                                />
+                                    <FaBell />
+                                    {unreadCount > 0 && (
+                                        <span className="notification-badge" style={{
+                                            position: 'absolute',
+                                            top: -6,
+                                            right: -6,
+                                            background: '#ff5a1f',
+                                            color: '#fff',
+                                            borderRadius: '50%',
+                                            padding: '2px 6px',
+                                            fontSize: 12,
+                                            fontWeight: 700
+                                        }}>{unreadCount}</span>
+                                    )}
+                                </div>
+
+                                {showNotifications && (
+                                    <div
+                                        className="notifications-dropdown"
+                                        ref={notiDropdownRef}
+                                        style={{
+                                            position: 'absolute',
+                                            right: 0,
+                                            top: 36,
+                                            width: 320,
+                                            maxHeight: 360,
+                                            overflowY: 'auto',
+                                            background: '#fff',
+                                            color: '#111',
+                                            boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+                                            borderRadius: 8,
+                                            zIndex: 9999,
+                                            padding: 8
+                                        }}
+                                    >
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 8px' }}>
+                                            <strong>Notificaciones</strong>
+                                            <div>
+                                                <button onClick={marcarTodasComoLeidas} style={{
+                                                    background: 'transparent',
+                                                    border: 'none',
+                                                    color: '#0077cc',
+                                                    cursor: 'pointer',
+                                                    fontSize: 13
+                                                }}>Marcar todas</button>
                                             </div>
-                                            <h3 className="category-name">{category.name}</h3>
                                         </div>
-                                    ))}
-                                </div>
+
+                                        <div style={{ borderTop: '1px solid rgba(0,0,0,0.06)', marginTop: 6 }} />
+
+                                        {loadingNotifications ? (
+                                            <div style={{ padding: 12 }}>Cargando...</div>
+                                        ) : notifications.length === 0 ? (
+                                            <div style={{ padding: 12 }}>No hay notificaciones</div>
+                                        ) : (
+                                            notifications.map(n => (
+                                                <div
+                                                    key={n.id}
+                                                    onClick={() => marcarComoLeida(n.id)}
+                                                    style={{
+                                                        padding: 10,
+                                                        borderRadius: 6,
+                                                        background: Number(n.leido) === 0 ? 'rgba(255,154,0,0.08)' : 'transparent',
+                                                        marginTop: 8,
+                                                        cursor: 'pointer'
+                                                    }}
+                                                >
+                                                    <div style={{ fontSize: 14, fontWeight: Number(n.leido) === 0 ? 700 : 500 }}>
+                                                        {n.mensaje}
+                                                    </div>
+                                                    <div style={{ fontSize: 12, color: '#666', marginTop: 6 }}>
+                                                        {new Date(n.creado_en).toLocaleString()}
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                )}
                             </div>
 
-                            <button 
-                                className={`nav-button next ${!canGoNext ? 'disabled' : ''}`} 
-                                onClick={nextSlide}
-                                disabled={!canGoNext}
-                            >
-                                <FaChevronRight />
-                            </button>
+                            <img
+                                src={userData && userData.foto_perfil
+                                    ? `http://localhost:3002/uploads/profiles/${userData.foto_perfil}`
+                                    : perfil}
+                                alt="Perfil"
+                                className="profile-image"
+                            />
                         </div>
-                        )}
-                    </div>
+                    </header>
 
-                    {/* Featured Professionals Section */}
-                    <div className="professionals-section">
-                        <h2 className="section-title">Profesionales destacados</h2>
-                        <div className="professionals-list">
-                            <div className="professional-card">
-                                <img src={perfil} alt="Ricardo M." className="professional-image" />
-                                <div className="professional-info">
-                                    <h3 className="professional-name">Ricardo M.</h3>
-                                    <p className="professional-profession">Plomero • ★ 4.8 (120 trabajos)</p>
-                                </div>
-                                <button className="contact-button">✓ Contactar</button>
-                            </div>
-                            
-                            <div className="professional-card">
-                                <img src={perfil} alt="Sofía L." className="professional-image" />
-                                <div className="professional-info">
-                                    <h3 className="professional-name">Sofía L.</h3>
-                                    <p className="professional-profession">Electricista • ★ 4.9 (150 trabajos)</p>
-                                </div>
-                                <button className="contact-button">✓ Contactar</button>
-                            </div>
-                            
-                            <div className="professional-card">
-                                <img src={perfil} alt="Javier P." className="professional-image" />
-                                <div className="professional-info">
-                                    <h3 className="professional-name">Javier P.</h3>
-                                    <p className="professional-profession">Carpintero • ★ 4.7 (90 trabajos)</p>
-                                </div>
-                                <button className="contact-button">✓ Contactar</button>
-                            </div>
-                        </div>
-                        <div className="load-more">
-                            <FaChevronDown />
-                        </div>
-                    </div>
+                    {/* Main Content */}
+                    <main className="dashboard-main">
+                        {renderTabContent()}
+                    </main>
+                </div>
 
-                </main>
-            </div>
-
-            {/* Modal del formulario de publicar problema */}
-            <PublicarProblemaForm
-                isOpen={showProblemaForm}
-                onClose={handleCloseProblemaForm}
-                onSubmit={handleProblemaSubmit}
-            />
+                {/* Modal del formulario de publicar problema */}
+                <PublicarProblemaForm
+                    isOpen={showProblemaForm}
+                    onClose={handleCloseProblemaForm}
+                    onSubmit={handleProblemaSubmit}
+                />
 
             </div>
         </>

@@ -270,6 +270,8 @@ body.menu-open {
     background: rgba(255, 255, 255, 0.05);
     backdrop-filter: blur(10px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    position: relative;
+    z-index: 100 !important;
 }
 
 /* User Type Indicator */
@@ -329,6 +331,17 @@ body.menu-open {
     font-size: 1.2rem;
 }
 
+/* Asegurar que el dropdown de notificaciones tenga máxima prioridad */
+.notification-wrapper {
+    position: relative !important;
+    z-index: 10000 !important;
+}
+
+.notifications-dropdown {
+    z-index: 10001 !important;
+    position: absolute !important;
+}
+
 .nav-button svg {
     color: #fff;
     font-size: 1.5rem;
@@ -339,7 +352,7 @@ body.menu-open {
     background: #a74924 !important;
     border: 3px solid #fff !important;
     box-shadow: 0 0 20px rgba(167, 73, 36, 0.8) !important;
-    z-index: 10;
+    z-index: 1 !important;
 }
 
 .profile-image {
@@ -374,7 +387,7 @@ body.menu-open {
     text-align: center;
     flex: 1;
     position: relative;
-    z-index: 1;
+    z-index: 1 !important;
     padding-left: 15rem;
 }
 
@@ -692,7 +705,7 @@ body.menu-open {
 /* Post Problem Button */
 .post-problem-section {
     position: relative;
-    z-index: 10;
+    z-index: 1 !important;
     pointer-events: auto;
 }
 
@@ -713,7 +726,7 @@ body.menu-open {
     min-width: 180px;
     justify-content: center;
     position: relative;
-    z-index: 10;
+    z-index: 1 !important;
 }
 
 .post-problem-button:hover {
@@ -2277,6 +2290,41 @@ body.menu-open .post-problem-button {
         z-index: 9999 !important;
         cursor: pointer !important;
     }
+}
+
+/* Estilos para pestañas activas */
+.nav-item.active {
+    background: rgba(255, 90, 31, 0.1);
+    border-left: 3px solid #ff5a1f;
+}
+
+.nav-item.active .nav-icon {
+    color: #ff5a1f;
+}
+
+.nav-item.active span {
+    color: #ff5a1f;
+    font-weight: 600;
+}
+
+/* Estilos para contenido de pestañas */
+.tab-content {
+    padding: 40px;
+    text-align: center;
+    background: #f8f9fa;
+    border-radius: 10px;
+    margin: 20px;
+}
+
+.tab-content h2 {
+    color: #333;
+    margin-bottom: 20px;
+    font-size: 2rem;
+}
+
+.tab-content p {
+    color: #666;
+    font-size: 1.1rem;
 }
 
 

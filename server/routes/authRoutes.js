@@ -43,4 +43,7 @@ router.get('/cliente/:usuario_id', authController.getClienteData);
 // Obtener datos de la persona por usuario_id
 router.get('/persona/:usuario_id', authController.getPersonaByUsuarioId);
 
+// Obtener datos completos del profesional
+router.get('/profesional/:usuario_id', authController.getProfesionalData);
+
 module.exports = router;

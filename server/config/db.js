@@ -6,7 +6,8 @@ const pool = mysql.createPool({
   host: 'localhost',
   user: 'vale',
   password: '1234',
-  database: 'home_help',
+  database: 'bd_home_help',
 });
 
+// Exportamos el pool con promesa integrada
 module.exports = pool.promise();
