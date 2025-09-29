@@ -4,6 +4,7 @@ const HistorialServicio = require('../models/historialServicioModel');
 const EstadoSolServicio = require('../models/estadoSolServicioModel');
 const TipoProfesional = require('../models/tipoProfesionalModel');
 const db = require('../config/db');
+const Notificacion = require('../models/notificacionModel');
 
 /**
  * Obtiene los tipos de trabajo (tipos de profesional) activos
@@ -109,6 +110,35 @@ const crearSolicitud = async (req, res) => {
     });
 
     await historial.save();
+
+    // Obtener el nombre del cliente que creó la solicitud
+    const [clienteRows] = await connection.query(
+      'SELECT nombre_apellido FROM persona WHERE id = ? LIMIT 1',
+      [cliente_persona_id]
+    );
+    const clienteNombre = (clienteRows[0] && clienteRows[0].nombre_apellido) || 'Cliente';
+
+    // Buscar usuarios profesionales que coinciden con rubro y localidad
+    const [profesionalesUsuarios] = await connection.query(`
+      SELECT u.id AS usuario_id
+      FROM profesional pr
+      JOIN persona p ON pr.id = p.id
+      JOIN usuario u ON p.usuario_id = u.id
+      WHERE pr.tipo_profesional_id = ?
+        AND pr.localidad_id = ?
+        AND u.rol = 'profesional'
+    `, [tipo_profesional_id, localidad_id]);
+
+    // Crear notificación para cada profesional encontrado
+    const mensaje = `${clienteNombre} creó una nueva solicitud de servicio: ${titulo}`;
+    for (const row of profesionalesUsuarios) {
+      await Notificacion.crear({
+        usuario_id: row.usuario_id,
+        tipo_notificacion: 'solicitud',
+        referencia_id: solicitud.id,
+        mensaje
+      }, connection);
+    }
 
     // Confirmar la transacción
     await connection.commit();
