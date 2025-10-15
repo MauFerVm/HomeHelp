@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './BuscarTrabajo.css';
+import PresupuestoForm from '../../components/PresupuestoForm';
 import {
     FaArrowLeft,
     FaMapMarkerAlt,
@@ -13,7 +14,8 @@ import {
     FaCheckCircle,
     FaSpinner,
     FaEye,
-    FaHandshake
+    FaHandshake,
+    FaFileInvoiceDollar
 } from 'react-icons/fa';
 
 const BuscarTrabajo = ({ 
@@ -27,7 +29,9 @@ const BuscarTrabajo = ({
     const [error, setError] = useState(null);
     const [selectedSolicitud, setSelectedSolicitud] = useState(null);
     const [showModal, setShowModal] = useState(false);
+    const [showPresupuestoForm, setShowPresupuestoForm] = useState(false);
     const [userData, setUserData] = useState(null);
+    const [presupuestosExistentes, setPresupuestosExistentes] = useState({});
 
     // Obtener datos del usuario del localStorage
     useEffect(() => {
@@ -45,6 +49,58 @@ const BuscarTrabajo = ({
     useEffect(() => {
         fetchSolicitudesDisponibles();
     }, []);
+
+    // Verificar presupuestos existentes cuando cambien las solicitudes o el usuario
+    useEffect(() => {
+        if (solicitudes.length > 0 && userData?.id) {
+            verificarPresupuestosExistentes();
+        }
+    }, [solicitudes, userData]);
+
+    const verificarPresupuestosExistentes = async () => {
+        try {
+            const verificaciones = solicitudes.map(async (solicitud) => {
+                try {
+                    const response = await fetch(`http://localhost:3002/api/presupuestos/verificar/${solicitud.id}/${userData.id}`);
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        return {
+                            solicitudId: solicitud.id,
+                            existe: data.data.existe,
+                            presupuesto: data.data.presupuesto
+                        };
+                    }
+                    return {
+                        solicitudId: solicitud.id,
+                        existe: false,
+                        presupuesto: null
+                    };
+                } catch (error) {
+                    console.error(`Error verificando presupuesto para solicitud ${solicitud.id}:`, error);
+                    return {
+                        solicitudId: solicitud.id,
+                        existe: false,
+                        presupuesto: null
+                    };
+                }
+            });
+
+            const resultados = await Promise.all(verificaciones);
+            const presupuestosMap = {};
+            
+            resultados.forEach(resultado => {
+                presupuestosMap[resultado.solicitudId] = {
+                    existe: resultado.existe,
+                    presupuesto: resultado.presupuesto
+                };
+            });
+
+            setPresupuestosExistentes(presupuestosMap);
+        } catch (error) {
+            console.error('Error al verificar presupuestos existentes:', error);
+        }
+    };
 
     const fetchSolicitudesDisponibles = async () => {
         try {
@@ -93,19 +149,50 @@ const BuscarTrabajo = ({
         }
     };
 
-    const handleAplicarTrabajo = async (solicitudId) => {
+    const handleAplicarTrabajo = () => {
+        // Mostrar el formulario de presupuesto
+        setShowPresupuestoForm(true);
+        setShowModal(false);
+    };
+
+    const handleEnviarPresupuesto = async (presupuestoData) => {
         try {
-            // Aquí implementarías la lógica para aplicar al trabajo
-            // Por ahora solo mostramos un mensaje
-            alert('Funcionalidad de aplicación al trabajo en desarrollo');
-            
-            // Cerrar modal
-            setShowModal(false);
-            setSelectedSolicitud(null);
+            const response = await fetch('http://localhost:3002/api/presupuestos', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(presupuestoData)
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Actualizar el estado de presupuestos existentes
+                setPresupuestosExistentes(prev => ({
+                    ...prev,
+                    [presupuestoData.solicitud_id]: {
+                        existe: true,
+                        presupuesto: data.data
+                    }
+                }));
+                
+                // No recargar las solicitudes inmediatamente para permitir que se muestre el modal de éxito
+                console.log('Presupuesto enviado exitosamente, no recargando solicitudes aún');
+            } else {
+                throw new Error(data.message || 'Error al enviar el presupuesto');
+            }
         } catch (error) {
-            console.error('Error al aplicar al trabajo:', error);
-            alert('Error al aplicar al trabajo: ' + error.message);
+            console.error('Error al enviar presupuesto:', error);
+            throw error; // Re-lanzar el error para que el componente PresupuestoForm lo maneje
         }
+    };
+
+    const handleCerrarPresupuestoForm = () => {
+        setShowPresupuestoForm(false);
+        setSelectedSolicitud(null);
+        // Recargar las solicitudes cuando se cierre el formulario
+        fetchSolicitudesDisponibles();
     };
 
     const formatFecha = (fecha) => {
@@ -269,6 +356,12 @@ const BuscarTrabajo = ({
                             </div>
 
                             <div className="solicitud-actions">
+                                {presupuestosExistentes[solicitud.id]?.existe && (
+                                    <div className="presupuestada-badge">
+                                        <FaFileInvoiceDollar />
+                                        <span>Presupuestada</span>
+                                    </div>
+                                )}
                                 <button 
                                     className="ver-detalle-button"
                                     onClick={() => handleVerDetalle(solicitud)}
@@ -386,16 +479,32 @@ const BuscarTrabajo = ({
                             >
                                 Cancelar
                             </button>
-                            <button 
-                                className="aplicar-button"
-                                onClick={() => handleAplicarTrabajo(selectedSolicitud.solicitud.id)}
-                            >
-                                <FaHandshake />
-                                Aplicar a este Trabajo
-                            </button>
+                            {presupuestosExistentes[selectedSolicitud?.solicitud?.id]?.existe ? (
+                                <div className="presupuestada-info">
+                                    <FaFileInvoiceDollar />
+                                    <span>Ya has enviado un presupuesto para esta solicitud</span>
+                                </div>
+                            ) : (
+                                <button 
+                                    className="aplicar-button"
+                                    onClick={handleAplicarTrabajo}
+                                >
+                                    <FaHandshake />
+                                    Aplicar a este Trabajo
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Formulario de Presupuesto */}
+            {showPresupuestoForm && selectedSolicitud && (
+                <PresupuestoForm
+                    solicitud={selectedSolicitud.solicitud}
+                    onClose={handleCerrarPresupuestoForm}
+                    onSubmit={handleEnviarPresupuesto}
+                />
             )}
         </div>
     );

@@ -8,6 +8,7 @@ const locationRoutes = require('./routes/locationRoutes'); // <— importa tu nu
 const categoryRoutes = require('./routes/categoryRoutes');
 const solicitudRoutes = require('./routes/solicitudRoutes');
 const notificacionRoutes = require('./routes/notificacionRoutes');
+const presupuestoRoutes = require('./routes/presupuestoRoutes');
 
 const app = express();
 app.use(cors());
@@ -57,5 +58,6 @@ app.use('/api/location', locationRoutes);   // <— monta los endpoints /provinc
 app.use('/api/categories', categoryRoutes);
 app.use('/api/solicitudes', solicitudRoutes);
 app.use('/api/notificaciones', notificacionRoutes);
+app.use('/api/presupuestos', presupuestoRoutes);
 
 app.listen(3002, () => console.log('Server running on http://localhost:3002'));
