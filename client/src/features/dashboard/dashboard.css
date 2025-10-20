@@ -2328,3 +2328,332 @@ body.menu-open .post-problem-button {
 }
 
 
+/* MisPresupuestos styles */
+.presupuestos-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.presupuesto-group {
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 10px;
+    background: #fff;
+}
+
+.presupuesto-group + .presupuesto-group {
+    border-top: 3px solid #ff9a00;
+}
+
+.presupuesto-group-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+
+.presupuesto-solicitud-title {
+    margin: 0;
+    font-size: 18px;
+    color: #333;
+    font-weight: 600;
+}
+
+.presupuesto-solicitud-desc {
+    margin: 6px 0 0;
+    color: #555;
+    font-size: 14px;
+}
+
+.presupuesto-solicitud-meta {
+    display: flex;
+    gap: 10px;
+    color: #666;
+    font-size: 12px;
+}
+
+.presupuesto-group-body {
+    padding: 12px 16px 16px;
+}
+
+.presupuesto-empty {
+    color: #777;
+    font-style: italic;
+}
+
+.presupuesto-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.presupuesto-item {
+    border: 1px solid rgba(0,0,0,0.06);
+    border-radius: 8px;
+    padding: 12px;
+    background: #fafafa;
+}
+
+/* Two-column grid similar to BuscarTrabajo cards */
+.presupuesto-grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.presupuesto-card {
+    background: #fff;
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 12px;
+    padding: 14px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.06);
+}
+
+.presupuesto-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.presupuesto-card-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 12px;
+}
+
+.ver-detalle-button {
+    background: #ff6b35;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+}
+
+.ver-detalle-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 107, 53, 0.4);
+    background: #e55a2b;
+}
+
+/* Modal styles adapted from BuscarTrabajo */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 15px;
+    max-width: 600px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 25px 25px 0 25px;
+    border-bottom: 1px solid #eee;
+    margin-bottom: 20px;
+}
+
+.modal-header h2 {
+    margin: 0;
+    color: #333;
+    font-size: 1.5rem;
+}
+
+.close-button {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #666;
+    padding: 5px;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.close-button:hover {
+    background: #f0f0f0;
+    color: #333;
+}
+
+.modal-body {
+    padding: 0 25px;
+}
+
+.detalle-section {
+    margin-bottom: 25px;
+}
+
+.detalle-section h3 {
+    color: #333;
+    margin: 0 0 10px 0;
+    font-size: 1.3rem;
+}
+
+.detalle-section h4 {
+    color: #555;
+    margin: 0 0 10px 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
+    padding: 20px 25px 25px 25px;
+    border-top: 1px solid #eee;
+    margin-top: 20px;
+}
+
+.cancel-button {
+    background: #6c757d;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.cancel-button:hover {
+    background: #5a6268;
+    transform: translateY(-2px);
+}
+
+.aplicar-button {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+}
+
+.aplicar-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+}
+
+.solicitud-prioridad-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 15px;
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.solicitud-prioridad-badge .prioridad-text {
+    text-transform: uppercase;
+    color: inherit;
+}
+
+@media (max-width: 768px) {
+    .presupuesto-grid-2 {
+        grid-template-columns: 1fr;
+    }
+}
+
+.presupuesto-item-main {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.presupuesto-pro-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.presupuesto-pro-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: #eee;
+}
+
+.presupuesto-pro-avatar.placeholder {
+    display: inline-block;
+}
+
+.presupuesto-pro-name {
+    font-weight: 600;
+    color: #333;
+}
+
+.presupuesto-pro-role {
+    font-size: 12px;
+    color: #666;
+}
+
+.presupuesto-amount {
+    font-weight: 700;
+}
+
+.presupuesto-desc {
+    margin-top: 8px;
+    color: #444;
+}
+
+.presupuesto-status {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #333;
+}
+
+.presupuesto-status.aceptado {
+    color: #0a7a2f;
+}
+
+.presupuesto-status.rechazado {
+    color: #b31312;
+}
+
+.presupuesto-date {
+    margin-top: 4px;
+    font-size: 12px;
+    color: #777;
+}

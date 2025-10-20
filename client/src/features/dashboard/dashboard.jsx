@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import './dashboard.css';
 import PublicarProblemaForm from '../../components/PublicarProblemaForm';
 import BuscarTrabajo from '../buscarTrabajo/BuscarTrabajo';
+import MisPresupuestos from './MisPresupuestos';
 import {
     FaBell,
     FaSearch,
@@ -394,6 +395,8 @@ const Dashboard = () => {
                         <p>Esta funcionalidad estará disponible próximamente.</p>
                     </div>
                 );
+            case 'mis-presupuestos':
+                return <MisPresupuestos />;
             case 'calendario':
                 return (
                     <div className="tab-content">
@@ -666,6 +669,10 @@ const Dashboard = () => {
                                         <li className="nav-item" onClick={closeMobileMenu} data-user-type="cliente">
                                             <FaClipboardList className="nav-icon" />
                                             <span>Mis Servicios</span>
+                                        </li>
+                                        <li className={`nav-item ${activeTab === 'mis-presupuestos' ? 'active' : ''}`} onClick={() => { closeMobileMenu(); setActiveTab('mis-presupuestos'); }} data-user-type="cliente">
+                                            <FaClipboardList className="nav-icon" />
+                                            <span>Mis presupuestos</span>
                                         </li>
                                     </ul>
                                 </div>
