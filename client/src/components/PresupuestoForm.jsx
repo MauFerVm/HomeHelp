@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { FaDollarSign, FaFileAlt, FaCheck, FaTimes, FaSpinner } from 'react-icons/fa';
 import SuccessModal from './SuccessModal';
+import { HHMMToMinutos, validarFormatoTiempo } from '../utils/timeUtils';
 import './PresupuestoForm.css';
 
 const PresupuestoForm = ({ 
@@ -10,7 +11,8 @@ const PresupuestoForm = ({
 }) => {
     const [formData, setFormData] = useState({
         monto: '',
-        descripcion: ''
+        descripcion: '',
+        duracion: ''
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -46,6 +48,17 @@ const PresupuestoForm = ({
             return;
         }
 
+        if (!formData.duracion.trim()) {
+            setError('La duración aproximada es obligatoria');
+            return;
+        }
+
+        // Validar formato de duración (HH:MM)
+        if (!validarFormatoTiempo(formData.duracion)) {
+            setError('La duración debe estar en formato HH:MM (ejemplo: 04:30)');
+            return;
+        }
+
         try {
             setLoading(true);
             setError('');
@@ -68,11 +81,15 @@ const PresupuestoForm = ({
                 .replace(/\./g, '') // Remover puntos (separadores de miles)
                 .replace(',', '.'); // Convertir coma a punto para decimales
             
+            // Convertir duración de HH:MM a minutos
+            const duracionEnMinutos = HHMMToMinutos(formData.duracion);
+
             const presupuestoData = {
                 solicitud_id: solicitud.id,
                 profesional_persona_id: user.id, // Asumiendo que el ID del usuario corresponde al ID de la persona
                 monto: parseFloat(montoSinFormato),
                 descripcion: formData.descripcion.trim(),
+                duracion: duracionEnMinutos,
                 estado: 'enviado'
             };
 
@@ -139,7 +156,7 @@ const PresupuestoForm = ({
     const handleSuccessModalClose = () => {
         setShowSuccessModal(false);
         // Limpiar el estado del formulario
-        setFormData({ monto: '', descripcion: '' });
+        setFormData({ monto: '', descripcion: '', duracion: '' });
         setError('');
         // Cerrar el modal de presupuesto
         onClose();
@@ -204,6 +221,26 @@ const PresupuestoForm = ({
                                         required
                                     />
                                 </div>
+                            </div>
+
+                            <div className="form-group duracion-group">
+                                <label htmlFor="duracion" className="form-label">
+                                    Duración Aproximada
+                                </label>
+                                <input
+                                    type="text"
+                                    id="duracion"
+                                    name="duracion"
+                                    value={formData.duracion}
+                                    onChange={handleInputChange}
+                                    placeholder="04:30"
+                                    className="duracion-input"
+                                    disabled={loading}
+                                    required
+                                />
+                                <small className="form-help-text">
+                                    Ingresa la duración en formato horas:minutos (ejemplo: 04:30)
+                                </small>
                             </div>
 
                             <div className="form-group">

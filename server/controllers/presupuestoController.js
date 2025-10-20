@@ -6,10 +6,10 @@ const db = require('../config/db');
  */
 const crearPresupuesto = async (req, res) => {
     try {
-        const { solicitud_id, profesional_persona_id, monto, descripcion, estado = 'enviado' } = req.body;
+        const { solicitud_id, profesional_persona_id, monto, descripcion, duracion, estado = 'enviado' } = req.body;
 
         // Validaciones
-        if (!solicitud_id || !profesional_persona_id || !monto || !descripcion) {
+        if (!solicitud_id || !profesional_persona_id || !monto || !descripcion || !duracion) {
             return res.status(400).json({
                 success: false,
                 message: 'Todos los campos son obligatorios'
@@ -20,6 +20,13 @@ const crearPresupuesto = async (req, res) => {
             return res.status(400).json({
                 success: false,
                 message: 'El monto debe ser mayor a 0'
+            });
+        }
+
+        if (duracion <= 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'La duración debe ser mayor a 0'
             });
         }
 
@@ -72,8 +79,8 @@ const crearPresupuesto = async (req, res) => {
 
         // Insertar el presupuesto
         const insertQuery = `
-            INSERT INTO presupuesto (solicitud_id, profesional_persona_id, monto, descripcion, estado, creado_en)
-            VALUES (?, ?, ?, ?, ?, NOW())
+            INSERT INTO presupuesto (solicitud_id, profesional_persona_id, monto, descripcion, duracion, estado, creado_en)
+            VALUES (?, ?, ?, ?, ?, ?, NOW())
         `;
         
         const [result] = await db.execute(insertQuery, [
@@ -81,6 +88,7 @@ const crearPresupuesto = async (req, res) => {
             personaId,
             monto,
             descripcion,
+            duracion,
             estado
         ]);
 
@@ -93,6 +101,7 @@ const crearPresupuesto = async (req, res) => {
                 profesional_persona_id: personaId,
                 monto,
                 descripcion,
+                duracion,
                 estado,
                 creado_en: new Date()
             }
@@ -122,6 +131,7 @@ const getPresupuestosBySolicitud = async (req, res) => {
                 p.profesional_persona_id,
                 p.monto,
                 p.descripcion,
+                p.duracion,
                 p.estado,
                 p.creado_en,
                 per.nombre_apellido as profesional_nombre,
@@ -168,6 +178,7 @@ const getPresupuestosByProfesional = async (req, res) => {
                 p.profesional_persona_id,
                 p.monto,
                 p.descripcion,
+                p.duracion,
                 p.estado,
                 p.creado_en,
                 ss.titulo as solicitud_titulo,

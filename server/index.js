@@ -60,4 +60,21 @@ app.use('/api/solicitudes', solicitudRoutes);
 app.use('/api/notificaciones', notificacionRoutes);
 app.use('/api/presupuestos', presupuestoRoutes);
 
+// Middleware de manejo de errores global
+app.use((err, req, res, next) => {
+  console.error('Error global:', err);
+  res.status(500).json({ 
+    error: 'Error interno del servidor', 
+    message: err.message 
+  });
+});
+
+// Middleware para rutas no encontradas
+app.use('*', (req, res) => {
+  res.status(404).json({ 
+    error: 'Ruta no encontrada', 
+    message: `La ruta ${req.originalUrl} no existe` 
+  });
+});
+
 app.listen(3002, () => console.log('Server running on http://localhost:3002'));

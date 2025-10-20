@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import './dashboard.css';
 import { FaClock, FaExclamationTriangle, FaCheckCircle, FaEye } from 'react-icons/fa';
+import { minutosToHHMM } from '../../utils/timeUtils';
 
 const MisPresupuestos = () => {
     const [loading, setLoading] = useState(true);
@@ -206,6 +207,15 @@ const MisPresupuestos = () => {
                                 <h4>Monto</h4>
                                 <div className="presupuesto-amount">${Number(presupuestoSeleccionado.monto).toFixed(2)}</div>
                             </div>
+                            {presupuestoSeleccionado.duracion && (
+                                <div className="detalle-section">
+                                    <h4>Duración Aproximada</h4>
+                                    <div className="presupuesto-duracion">
+                                        <FaClock style={{ marginRight: '8px', color: '#FF6B35' }} />
+                                        {minutosToHHMM(presupuestoSeleccionado.duracion)}
+                                    </div>
+                                </div>
+                            )}
                             {presupuestoSeleccionado.descripcion && (
                                 <div className="detalle-section">
                                     <h4>Descripción</h4>

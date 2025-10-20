@@ -254,9 +254,71 @@
 }
 
 .monto-input:disabled {
+    background-color: #000000;
+    color: #6b7280;
+    cursor: not-allowed;
+}
+
+/* Campo de duración con texto más grande y en negrita - Actualizado */
+.duracion-input {
+    width: 100%;
+    padding: 16px;
+    border: 2px solid #d1d5db;
+    border-radius: 12px;
+    font-size: 1.3rem !important;
+    font-weight: 1000 !important;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    background: white;
+    height: 60px;
+    text-align: center;
+    font-family: 'Courier New', monospace;
+}
+
+.duracion-input:focus {
+    outline: none;
+    border-color: #FF6B35;
+    box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+}
+
+.duracion-input:disabled {
     background-color: #f9fafb;
     color: #6b7280;
     cursor: not-allowed;
+}
+
+.duracion-input::placeholder {
+    color: #9ca3af;
+    font-family: inherit;
+}
+
+.form-help-text {
+    color: #6b7280;
+    font-size: 0.85rem;
+    margin-top: 4px;
+    font-style: normal;
+    text-align: center;
+}
+
+/* Estilos específicos para el grupo de duración */
+.duracion-group {
+    align-items: center;
+    text-align: center;
+}
+
+.duracion-group .form-label {
+    text-align: center !important;
+    justify-content: center !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+.duracion-group .duracion-input {
+    text-align: center;
+    margin: 0 auto;
+}
+
+.duracion-group .form-help-text {
+    text-align: center !important;
 }
 
 .descripcion-textarea {
