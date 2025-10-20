@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import './dashboard.css';
 import { FaClock, FaExclamationTriangle, FaCheckCircle, FaEye } from 'react-icons/fa';
 import { minutosToHHMM } from '../../utils/timeUtils';
+import CalendarioHorarios from '../../components/CalendarioHorarios';
 
 const MisPresupuestos = () => {
     const [loading, setLoading] = useState(true);
@@ -9,6 +10,8 @@ const MisPresupuestos = () => {
     const [solicitudesConPresupuestos, setSolicitudesConPresupuestos] = useState([]);
     const [detalleAbierto, setDetalleAbierto] = useState(false);
     const [presupuestoSeleccionado, setPresupuestoSeleccionado] = useState(null);
+    const [calendarioAbierto, setCalendarioAbierto] = useState(false);
+    const [confirmandoHorario, setConfirmandoHorario] = useState(false);
 
     const getPrioridadColor = (prioridad) => {
         switch (prioridad) {
@@ -91,6 +94,69 @@ const MisPresupuestos = () => {
 
         fetchData();
     }, []);
+
+    // Función para abrir el calendario
+    const abrirCalendario = () => {
+        setCalendarioAbierto(true);
+    };
+
+    // Función para cerrar el calendario
+    const cerrarCalendario = () => {
+        setCalendarioAbierto(false);
+    };
+
+    // Función para manejar la selección de horario
+    const manejarSeleccionHorario = async (horarioSeleccionado) => {
+        try {
+            setConfirmandoHorario(true);
+            
+            const response = await fetch(
+                `http://localhost:3002/api/horarios/presupuesto/${presupuestoSeleccionado.id}/confirmar`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        fecha: horarioSeleccionado.fecha,
+                        horaInicio: horarioSeleccionado.horaInicio,
+                        horaFin: horarioSeleccionado.horaFin
+                    })
+                }
+            );
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Actualizar el estado del presupuesto en la lista local
+                setSolicitudesConPresupuestos(prev => 
+                    prev.map(item => ({
+                        ...item,
+                        presupuestos: item.presupuestos.map(p => 
+                            p.id === presupuestoSeleccionado.id 
+                                ? { ...p, estado: 'aceptado' }
+                                : p
+                        )
+                    }))
+                );
+
+                // Cerrar modales
+                setCalendarioAbierto(false);
+                setDetalleAbierto(false);
+                setPresupuestoSeleccionado(null);
+
+                // Mostrar mensaje de éxito
+                alert('¡Horario confirmado exitosamente! El profesional ha sido notificado.');
+            } else {
+                alert('Error al confirmar el horario: ' + (data.message || 'Error desconocido'));
+            }
+        } catch (error) {
+            console.error('Error al confirmar horario:', error);
+            alert('Error al confirmar el horario. Por favor, inténtalo nuevamente.');
+        } finally {
+            setConfirmandoHorario(false);
+        }
+    };
 
     return (
         <div className="tab-content">
@@ -233,12 +299,32 @@ const MisPresupuestos = () => {
                         </div>
                         <div className="modal-footer">
                             <button className="cancel-button" onClick={() => { setDetalleAbierto(false); setPresupuestoSeleccionado(null); }}>Cerrar</button>
-                            <button className="aplicar-button" onClick={() => { /* TODO: Implementar aceptar presupuesto */ }}>
-                                Aceptar Presupuesto
-                            </button>
+                            {presupuestoSeleccionado.estado === 'enviado' ? (
+                                <button 
+                                    className="aplicar-button" 
+                                    onClick={abrirCalendario}
+                                    disabled={confirmandoHorario}
+                                >
+                                    {confirmandoHorario ? 'Procesando...' : 'Aceptar Presupuesto'}
+                                </button>
+                            ) : (
+                                <button className="aplicar-button" disabled>
+                                    {presupuestoSeleccionado.estado === 'aceptado' ? 'Presupuesto Aceptado' : 'Presupuesto Rechazado'}
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
+            )}
+            
+            {/* Modal del Calendario */}
+            {calendarioAbierto && presupuestoSeleccionado && (
+                <CalendarioHorarios
+                    profesionalId={presupuestoSeleccionado.profesional_persona_id}
+                    duracion={presupuestoSeleccionado.duracion}
+                    onHorarioSeleccionado={manejarSeleccionHorario}
+                    onCerrar={cerrarCalendario}
+                />
             )}
         </div>
     );

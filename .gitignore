@@ -70,3 +70,6 @@ server/public/uploads/certificates/*
 
 server/public/uploads/profiles/*
 !server/public/uploads/profiles/.gitkeep
+
+# Ignorar archivo de configuracion de la BD
+server/config/db.js

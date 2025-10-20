@@ -9,10 +9,12 @@ const categoryRoutes = require('./routes/categoryRoutes');
 const solicitudRoutes = require('./routes/solicitudRoutes');
 const notificacionRoutes = require('./routes/notificacionRoutes');
 const presupuestoRoutes = require('./routes/presupuestoRoutes');
+const horarioRoutes = require('./routes/horarioRoutes');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
 
 // Configurar multer para subida de archivos
 const storage = multer.diskStorage({
@@ -59,9 +61,12 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/solicitudes', solicitudRoutes);
 app.use('/api/notificaciones', notificacionRoutes);
 app.use('/api/presupuestos', presupuestoRoutes);
+app.use('/api/horarios', horarioRoutes);
+
+
 
 // Middleware de manejo de errores global
-app.use((err, req, res, next) => {
+/*app.use((err, req, res, next) => {
   console.error('Error global:', err);
   res.status(500).json({ 
     error: 'Error interno del servidor', 
@@ -70,11 +75,12 @@ app.use((err, req, res, next) => {
 });
 
 // Middleware para rutas no encontradas
-app.use('*', (req, res) => {
+app.use('/', (req, res) => {
   res.status(404).json({ 
     error: 'Ruta no encontrada', 
     message: `La ruta ${req.originalUrl} no existe` 
   });
-});
+});*/
+
 
 app.listen(3002, () => console.log('Server running on http://localhost:3002'));
