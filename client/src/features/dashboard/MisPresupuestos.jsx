@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import './dashboard.css';
-import { FaClock, FaExclamationTriangle, FaCheckCircle, FaEye } from 'react-icons/fa';
+import { FaClock, FaExclamationTriangle, FaCheckCircle, FaEye, FaFilter } from 'react-icons/fa';
 import { minutosToHHMM } from '../../utils/timeUtils';
 import CalendarioHorarios from '../../components/CalendarioHorarios';
 
@@ -8,10 +8,17 @@ const MisPresupuestos = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [solicitudesConPresupuestos, setSolicitudesConPresupuestos] = useState([]);
+    const [solicitudesFiltradas, setSolicitudesFiltradas] = useState([]);
     const [detalleAbierto, setDetalleAbierto] = useState(false);
     const [presupuestoSeleccionado, setPresupuestoSeleccionado] = useState(null);
     const [calendarioAbierto, setCalendarioAbierto] = useState(false);
     const [confirmandoHorario, setConfirmandoHorario] = useState(false);
+    const [filtros, setFiltros] = useState({
+        prioridad: '',
+        dias: ''
+    });
+    const [showFiltros, setShowFiltros] = useState(false);
+    const [prioridadesDisponibles, setPrioridadesDisponibles] = useState([]);
 
     const getPrioridadColor = (prioridad) => {
         switch (prioridad) {
@@ -38,6 +45,26 @@ const MisPresupuestos = () => {
                 return <FaClock />;
         }
     };
+
+    // Cargar prioridades disponibles desde la base de datos
+    useEffect(() => {
+        const fetchPrioridadesDisponibles = async () => {
+            try {
+                const response = await fetch('http://localhost:3002/api/solicitudes/prioridades');
+                const data = await response.json();
+                
+                if (data.success) {
+                    setPrioridadesDisponibles(data.data);
+                } else {
+                    console.error('Error al obtener prioridades:', data.message);
+                }
+            } catch (error) {
+                console.error('Error al cargar prioridades:', error);
+            }
+        };
+
+        fetchPrioridadesDisponibles();
+    }, []);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -94,6 +121,45 @@ const MisPresupuestos = () => {
 
         fetchData();
     }, []);
+
+    // Aplicar filtros cuando cambien los filtros o las solicitudes
+    useEffect(() => {
+        let resultado = [...solicitudesConPresupuestos];
+
+        // Filtro por prioridad
+        if (filtros.prioridad) {
+            resultado = resultado.filter(item => 
+                item.solicitud.prioridad === filtros.prioridad
+            );
+        }
+
+        // Filtro por fecha (últimos X días)
+        if (filtros.dias) {
+            const diasAtras = parseInt(filtros.dias);
+            const fechaLimite = new Date();
+            fechaLimite.setDate(fechaLimite.getDate() - diasAtras);
+            
+            resultado = resultado.filter(item => 
+                new Date(item.solicitud.creado_en) >= fechaLimite
+            );
+        }
+
+        setSolicitudesFiltradas(resultado);
+    }, [filtros, solicitudesConPresupuestos]);
+
+    const handleFiltroChange = (campo, valor) => {
+        setFiltros(prev => ({
+            ...prev,
+            [campo]: valor
+        }));
+    };
+
+    const limpiarFiltros = () => {
+        setFiltros({
+            prioridad: '',
+            dias: ''
+        });
+    };
 
     // Función para abrir el calendario
     const abrirCalendario = () => {
@@ -174,11 +240,68 @@ const MisPresupuestos = () => {
                 <div className="error-message" style={{ marginTop: 12 }}>{error}</div>
             )}
             {!loading && !error && (
-                <div className="presupuestos-wrapper">
-                    {solicitudesConPresupuestos.length === 0 ? (
-                        <p>No tienes solicitudes creadas aún.</p>
-                    ) : (
-                        solicitudesConPresupuestos.map(({ solicitud, presupuestos }) => (
+                <>
+                    {/* Filtros */}
+                    <div className="filtros-container">
+                        <button 
+                            className="toggle-filtros-btn"
+                            onClick={() => setShowFiltros(!showFiltros)}
+                        >
+                            <FaFilter />
+                            {showFiltros ? 'Ocultar Filtros' : 'Mostrar Filtros'}
+                        </button>
+
+                        {showFiltros && (
+                            <div className="filtros-content">
+                                <div className="filtro-grupo">
+                                    <label htmlFor="filtro-prioridad">Prioridad:</label>
+                                    <select
+                                        id="filtro-prioridad"
+                                        value={filtros.prioridad}
+                                        onChange={(e) => handleFiltroChange('prioridad', e.target.value)}
+                                    >
+                                        <option value="">Todas</option>
+                                        {prioridadesDisponibles.map((prioridad) => (
+                                            <option key={prioridad} value={prioridad}>
+                                                {prioridad.charAt(0).toUpperCase() + prioridad.slice(1)}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="filtro-grupo">
+                                    <label htmlFor="filtro-dias">Fecha:</label>
+                                    <select
+                                        id="filtro-dias"
+                                        value={filtros.dias}
+                                        onChange={(e) => handleFiltroChange('dias', e.target.value)}
+                                    >
+                                        <option value="">Todas las fechas</option>
+                                        <option value="5">Últimos 5 días</option>
+                                        <option value="10">Últimos 10 días</option>
+                                        <option value="20">Últimos 20 días</option>
+                                    </select>
+                                </div>
+
+                                <button 
+                                    className="limpiar-filtros-btn"
+                                    onClick={limpiarFiltros}
+                                >
+                                    Limpiar Filtros
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="presupuestos-wrapper">
+                        {solicitudesFiltradas.length === 0 ? (
+                            <p>
+                                {solicitudesConPresupuestos.length === 0 
+                                    ? 'No tienes solicitudes creadas aún.' 
+                                    : 'No hay solicitudes que coincidan con los filtros seleccionados.'}
+                            </p>
+                        ) : (
+                            solicitudesFiltradas.map(({ solicitud, presupuestos }) => (
                             <div key={solicitud.id} className="presupuesto-group">
                                 <div className="presupuesto-group-header">
                                     <div>
@@ -237,9 +360,10 @@ const MisPresupuestos = () => {
                                     )}
                                 </div>
                             </div>
-                        ))
-                    )}
-                </div>
+                            ))
+                        )}
+                    </div>
+                </>
             )}
             {detalleAbierto && presupuestoSeleccionado && (
                 <div className="modal-overlay" onClick={() => { setDetalleAbierto(false); setPresupuestoSeleccionado(null); }}>

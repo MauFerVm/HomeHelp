@@ -46,6 +46,125 @@
     transform: translateY(-2px);
 }
 
+/* Estilos para filtros */
+.filtros-container {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+}
+
+.toggle-filtros-btn {
+    background: #A74924;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(167, 73, 36, 0.3);
+}
+
+.toggle-filtros-btn:hover {
+    background: #bc5532;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(167, 73, 36, 0.4);
+}
+
+.filtros-content {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.filtro-grupo {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.filtro-grupo label {
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.filtro-grupo select {
+    padding: 10px 15px;
+    border-radius: 8px;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+.filtro-grupo select:focus {
+    border-color: #667eea;
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.filtro-grupo select option {
+    background: #2d3748;
+    color: #fff;
+}
+
+.limpiar-filtros-btn {
+    padding: 10px 20px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    align-self: flex-end;
+}
+
+.limpiar-filtros-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+}
+
+/* Responsive para filtros */
+@media (max-width: 768px) {
+    .filtros-content {
+        grid-template-columns: 1fr;
+    }
+    
+    .limpiar-filtros-btn {
+        align-self: stretch;
+    }
+}
+
 /* Estilos para pestaña del dashboard */
 .buscar-trabajo-tab {
     padding: 20px;

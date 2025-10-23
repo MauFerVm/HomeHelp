@@ -27,6 +27,57 @@ const getTiposTrabajo = async (req, res) => {
 };
 
 /**
+ * Obtiene los valores posibles del enum de prioridad desde la base de datos
+ */
+const getPrioridades = async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT COLUMN_TYPE 
+      FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_SCHEMA = 'bd_home_help' 
+        AND TABLE_NAME = 'solicitud_servicio' 
+        AND COLUMN_NAME = 'prioridad'
+    `);
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No se pudo obtener la información de prioridades'
+      });
+    }
+
+    // Extraer los valores del enum
+    // El formato es: enum('baja','media','alta')
+    const enumString = rows[0].COLUMN_TYPE;
+    const match = enumString.match(/enum\((.*)\)/);
+    
+    if (!match) {
+      return res.status(500).json({
+        success: false,
+        message: 'Error al parsear los valores del enum'
+      });
+    }
+
+    // Convertir 'baja','media','alta' a ['baja', 'media', 'alta']
+    const prioridades = match[1]
+      .split(',')
+      .map(val => val.replace(/'/g, '').trim());
+
+    res.json({
+      success: true,
+      data: prioridades
+    });
+  } catch (error) {
+    console.error('Error al obtener prioridades:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor',
+      error: error.message
+    });
+  }
+};
+
+/**
  * Obtiene los estados de solicitud disponibles
  */
 const getEstadosSolicitud = async (req, res) => {
@@ -246,10 +297,12 @@ const getAllSolicitudes = async (req, res) => {
 /**
  * Obtiene solicitudes disponibles para un profesional específico
  * Filtra por tipo de profesional y localidad
+ * Acepta filtros opcionales: prioridad, dias, presupuestada
  */
 const getSolicitudesDisponibles = async (req, res) => {
   try {
     const { usuario_id } = req.params;
+    const { prioridad, dias, presupuestada } = req.query;
     
     // Primero obtener los datos del profesional
     const [profesionalRows] = await db.query(`
@@ -271,10 +324,17 @@ const getSolicitudesDisponibles = async (req, res) => {
 
     const profesional = profesionalRows[0];
 
+    // Construir objeto de filtros
+    const filtros = {};
+    if (prioridad) filtros.prioridad = prioridad;
+    if (dias) filtros.dias = dias;
+    if (presupuestada) filtros.presupuestada = presupuestada;
+
     // Obtener solicitudes que coincidan con el tipo de profesional y localidad
     const solicitudes = await SolicitudServicio.getDisponiblesParaProfesional(
       profesional.tipo_profesional_id,
-      profesional.localidad_id
+      profesional.localidad_id,
+      filtros
     );
     
     res.json({
@@ -298,5 +358,6 @@ module.exports = {
   getSolicitudesByCliente,
   getSolicitudById,
   getAllSolicitudes,
-  getSolicitudesDisponibles
+  getSolicitudesDisponibles,
+  getPrioridades
 };

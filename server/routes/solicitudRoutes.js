@@ -49,6 +49,13 @@ const upload = multer({
 router.get('/tipos-trabajo', solicitudController.getTiposTrabajo);
 
 /**
+ * @route GET /api/solicitudes/prioridades
+ * @desc Obtiene los valores posibles del enum de prioridad
+ * @access Public (por ahora)
+ */
+router.get('/prioridades', solicitudController.getPrioridades);
+
+/**
  * @route GET /api/solicitudes/estados
  * @desc Obtiene los estados de solicitud disponibles
  * @access Public (por ahora)

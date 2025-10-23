@@ -115,11 +115,11 @@ class SolicitudServicio {
    * Filtra por tipo de profesional y localidad, solo solicitudes abiertas
    * @param {number} tipoProfesionalId 
    * @param {number} localidadId 
+   * @param {Object} filtros - Filtros opcionales: prioridad, dias, presupuestada
    * @returns {Promise<Array>}
    */
-  static async getDisponiblesParaProfesional(tipoProfesionalId, localidadId) {
-    const [rows] = await db.query(
-      `SELECT 
+  static async getDisponiblesParaProfesional(tipoProfesionalId, localidadId, filtros = {}) {
+    let query = `SELECT 
         ss.id, ss.titulo, ss.descripcion, ss.direccion, ss.prioridad, 
         ss.foto, ss.creado_en, ss.tipo_profesional_id, ss.localidad_id,
         CONCAT(p.nombre_apellido) as cliente_nombre,
@@ -127,7 +127,8 @@ class SolicitudServicio {
         p.foto_perfil as cliente_foto,
         tp.nombre as tipo_profesional_nombre,
         l.nombre as localidad_nombre,
-        ess.nombre as estado_nombre, ess.vencimiento_dias
+        ess.nombre as estado_nombre, ess.vencimiento_dias,
+        (SELECT COUNT(*) FROM presupuesto pr WHERE pr.solicitud_id = ss.id) as presupuestos_count
        FROM solicitud_servicio ss
        JOIN persona p ON ss.cliente_persona_id = p.id
        JOIN usuario u ON p.usuario_id = u.id
@@ -136,16 +137,40 @@ class SolicitudServicio {
        JOIN estado_sol_servicio ess ON ss.estado_id = ess.id
        WHERE ss.tipo_profesional_id = ? 
          AND ss.localidad_id = ? 
-         AND ess.nombre = 'abierta'
-       ORDER BY 
+         AND ess.nombre = 'abierta'`;
+
+    const params = [tipoProfesionalId, localidadId];
+
+    // Filtro por prioridad
+    if (filtros.prioridad && ['alta', 'media', 'baja'].includes(filtros.prioridad.toLowerCase())) {
+      query += ` AND ss.prioridad = ?`;
+      params.push(filtros.prioridad.toLowerCase());
+    }
+
+    // Filtro por fecha (últimos X días)
+    if (filtros.dias && [5, 10, 20].includes(parseInt(filtros.dias))) {
+      query += ` AND ss.creado_en >= DATE_SUB(NOW(), INTERVAL ? DAY)`;
+      params.push(parseInt(filtros.dias));
+    }
+
+    // Filtro por presupuestada/no presupuestada
+    if (filtros.presupuestada !== undefined) {
+      if (filtros.presupuestada === 'si' || filtros.presupuestada === true) {
+        query += ` AND (SELECT COUNT(*) FROM presupuesto pr WHERE pr.solicitud_id = ss.id) > 0`;
+      } else if (filtros.presupuestada === 'no' || filtros.presupuestada === false) {
+        query += ` AND (SELECT COUNT(*) FROM presupuesto pr WHERE pr.solicitud_id = ss.id) = 0`;
+      }
+    }
+
+    query += ` ORDER BY 
          CASE ss.prioridad 
            WHEN 'alta' THEN 1 
            WHEN 'media' THEN 2 
            WHEN 'baja' THEN 3 
          END,
-         ss.creado_en DESC`,
-      [tipoProfesionalId, localidadId]
-    );
+         ss.creado_en DESC`;
+
+    const [rows] = await db.query(query, params);
     return rows;
   }
 

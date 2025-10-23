@@ -15,7 +15,8 @@ import {
     FaSpinner,
     FaEye,
     FaHandshake,
-    FaFileInvoiceDollar
+    FaFileInvoiceDollar,
+    FaFilter
 } from 'react-icons/fa';
 
 const BuscarTrabajo = ({ 
@@ -32,6 +33,13 @@ const BuscarTrabajo = ({
     const [showPresupuestoForm, setShowPresupuestoForm] = useState(false);
     const [userData, setUserData] = useState(null);
     const [presupuestosExistentes, setPresupuestosExistentes] = useState({});
+    const [filtros, setFiltros] = useState({
+        prioridad: '',
+        dias: '',
+        presupuestada: ''
+    });
+    const [showFiltros, setShowFiltros] = useState(false);
+    const [prioridadesDisponibles, setPrioridadesDisponibles] = useState([]);
 
     // Obtener datos del usuario del localStorage
     useEffect(() => {
@@ -45,10 +53,15 @@ const BuscarTrabajo = ({
         }
     }, []);
 
+    // Cargar prioridades disponibles desde la base de datos
+    useEffect(() => {
+        fetchPrioridadesDisponibles();
+    }, []);
+
     // Cargar solicitudes disponibles para el profesional
     useEffect(() => {
         fetchSolicitudesDisponibles();
-    }, []);
+    }, [filtros]);
 
     // Verificar presupuestos existentes cuando cambien las solicitudes o el usuario
     useEffect(() => {
@@ -56,6 +69,21 @@ const BuscarTrabajo = ({
             verificarPresupuestosExistentes();
         }
     }, [solicitudes, userData]);
+
+    const fetchPrioridadesDisponibles = async () => {
+        try {
+            const response = await fetch('http://localhost:3002/api/solicitudes/prioridades');
+            const data = await response.json();
+            
+            if (data.success) {
+                setPrioridadesDisponibles(data.data);
+            } else {
+                console.error('Error al obtener prioridades:', data.message);
+            }
+        } catch (error) {
+            console.error('Error al cargar prioridades:', error);
+        }
+    };
 
     const verificarPresupuestosExistentes = async () => {
         try {
@@ -118,8 +146,16 @@ const BuscarTrabajo = ({
                 throw new Error('No se encontró el ID del usuario');
             }
 
+            // Construir la URL con los parámetros de filtro
+            const queryParams = new URLSearchParams();
+            if (filtros.prioridad) queryParams.append('prioridad', filtros.prioridad);
+            if (filtros.dias) queryParams.append('dias', filtros.dias);
+            if (filtros.presupuestada) queryParams.append('presupuestada', filtros.presupuestada);
+
+            const url = `http://localhost:3002/api/solicitudes/disponibles/${user.id}${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+
             // Usar el nuevo endpoint específico para profesionales
-            const response = await fetch(`http://localhost:3002/api/solicitudes/disponibles/${user.id}`);
+            const response = await fetch(url);
             const data = await response.json();
 
             if (data.success) {
@@ -193,6 +229,21 @@ const BuscarTrabajo = ({
         setSelectedSolicitud(null);
         // Recargar las solicitudes cuando se cierre el formulario
         fetchSolicitudesDisponibles();
+    };
+
+    const handleFiltroChange = (campo, valor) => {
+        setFiltros(prev => ({
+            ...prev,
+            [campo]: valor
+        }));
+    };
+
+    const limpiarFiltros = () => {
+        setFiltros({
+            prioridad: '',
+            dias: '',
+            presupuestada: ''
+        });
     };
 
     const formatFecha = (fecha) => {
@@ -316,6 +367,71 @@ const BuscarTrabajo = ({
                     <p>Trabajos disponibles en tu área de especialización</p>
                 </div>
             )}
+
+            {/* Filtros */}
+            <div className="filtros-container">
+                <button 
+                    className="toggle-filtros-btn"
+                    onClick={() => setShowFiltros(!showFiltros)}
+                >
+                    <FaFilter />
+                    {showFiltros ? 'Ocultar Filtros' : 'Mostrar Filtros'}
+                </button>
+
+                {showFiltros && (
+                    <div className="filtros-content">
+                        <div className="filtro-grupo">
+                            <label htmlFor="filtro-prioridad">Prioridad:</label>
+                            <select
+                                id="filtro-prioridad"
+                                value={filtros.prioridad}
+                                onChange={(e) => handleFiltroChange('prioridad', e.target.value)}
+                            >
+                                <option value="">Todas</option>
+                                {prioridadesDisponibles.map((prioridad) => (
+                                    <option key={prioridad} value={prioridad}>
+                                        {prioridad.charAt(0).toUpperCase() + prioridad.slice(1)}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="filtro-grupo">
+                            <label htmlFor="filtro-dias">Fecha:</label>
+                            <select
+                                id="filtro-dias"
+                                value={filtros.dias}
+                                onChange={(e) => handleFiltroChange('dias', e.target.value)}
+                            >
+                                <option value="">Todas las fechas</option>
+                                <option value="5">Últimos 5 días</option>
+                                <option value="10">Últimos 10 días</option>
+                                <option value="20">Últimos 20 días</option>
+                            </select>
+                        </div>
+
+                        <div className="filtro-grupo">
+                            <label htmlFor="filtro-presupuestada">Estado:</label>
+                            <select
+                                id="filtro-presupuestada"
+                                value={filtros.presupuestada}
+                                onChange={(e) => handleFiltroChange('presupuestada', e.target.value)}
+                            >
+                                <option value="">Todas</option>
+                                <option value="si">Presupuestada</option>
+                                <option value="no">No Presupuestada</option>
+                            </select>
+                        </div>
+
+                        <button 
+                            className="limpiar-filtros-btn"
+                            onClick={limpiarFiltros}
+                        >
+                            Limpiar Filtros
+                        </button>
+                    </div>
+                )}
+            </div>
 
             {/* Lista de solicitudes */}
             <div className="solicitudes-list">
