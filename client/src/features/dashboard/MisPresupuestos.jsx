@@ -212,7 +212,7 @@ const MisPresupuestos = () => {
                 setPresupuestoSeleccionado(null);
 
                 // Mostrar mensaje de éxito
-                alert('¡Horario confirmado exitosamente! El profesional ha sido notificado.');
+                alert('¡Horario confirmado exitosamente! Se ha creado la orden de trabajo y el profesional ha sido notificado.');
             } else {
                 alert('Error al confirmar el horario: ' + (data.message || 'Error desconocido'));
             }

@@ -34,7 +34,7 @@ const getPrioridades = async (req, res) => {
     const [rows] = await db.query(`
       SELECT COLUMN_TYPE 
       FROM INFORMATION_SCHEMA.COLUMNS 
-      WHERE TABLE_SCHEMA = 'bd_home_help' 
+      WHERE TABLE_SCHEMA = DATABASE() 
         AND TABLE_NAME = 'solicitud_servicio' 
         AND COLUMN_NAME = 'prioridad'
     `);

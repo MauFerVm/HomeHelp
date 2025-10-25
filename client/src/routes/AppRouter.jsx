@@ -5,6 +5,7 @@ import Register from '../features/auth/Register';
 import RegistroForm from '../features/auth/RegistroForm';
 import Dashboard from '../features/dashboard/dashboard';
 import BuscarTrabajo from '../features/buscarTrabajo/BuscarTrabajo';
+import TrabajosAsignados from '../features/trabajos asignados/trabajoasignado';
 
 function AppRouter() {
   return (
@@ -15,6 +16,7 @@ function AppRouter() {
         <Route path="/registro" element={<RegistroForm />} />
         <Route path="/main" element={<Dashboard />} />
         <Route path="/buscar-trabajo" element={<BuscarTrabajo />} />
+        <Route path="/trabajos-asignados" element={<TrabajosAsignados />} />
       </Routes>
     </Router>
   );

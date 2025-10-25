@@ -1,5 +1,7 @@
 // controllers/horarioController.js
 const horarioModel = require('../models/horarioProfesionalModel');
+const ordenTrabajoModel = require('../models/ordenTrabajoModel');
+const Notificacion = require('../models/notificacionModel');
 const db = require('../config/db');
 
 /**
@@ -92,7 +94,7 @@ const getHorariosDisponibles = async (req, res) => {
 };
 
 /**
- * Confirmar horario seleccionado y crear entrada en agenda
+ * Confirmar horario seleccionado y crear entrada en agenda y orden de trabajo
  */
 const confirmarHorario = async (req, res) => {
     try {
@@ -106,14 +108,16 @@ const confirmarHorario = async (req, res) => {
             });
         }
 
-        // Obtener información del presupuesto
+        // Obtener información del presupuesto completa (incluyendo monto y descripcion)
         const presupuestoQuery = `
             SELECT 
                 p.id,
                 p.solicitud_id,
                 p.profesional_persona_id,
                 p.duracion,
-                p.estado
+                p.estado,
+                p.monto,
+                p.descripcion
             FROM presupuesto p
             WHERE p.id = ?
         `;
@@ -136,23 +140,27 @@ const confirmarHorario = async (req, res) => {
             });
         }
 
-        // Obtener ID del profesional
-        const profesionalQuery = `
-            SELECT prof.id as profesional_id
-            FROM profesional prof
-            WHERE prof.id = ?
+        // El profesional_persona_id del presupuesto ES el ID de la tabla persona/profesional
+        // (profesional.id = persona.id por la relación 1:1)
+        const profesionalId = presupuesto.profesional_persona_id;
+
+        // Obtener ID del cliente (persona) desde la solicitud
+        const solicitudQuery = `
+            SELECT cliente_persona_id
+            FROM solicitud_servicio
+            WHERE id = ?
         `;
         
-        const [profesionalRows] = await db.execute(profesionalQuery, [presupuesto.profesional_persona_id]);
+        const [solicitudRows] = await db.execute(solicitudQuery, [presupuesto.solicitud_id]);
         
-        if (profesionalRows.length === 0) {
+        if (solicitudRows.length === 0) {
             return res.status(404).json({
                 success: false,
-                message: 'Profesional no encontrado'
+                message: 'Solicitud no encontrada'
             });
         }
 
-        const profesionalId = profesionalRows[0].profesional_id;
+        const clientePersonaId = solicitudRows[0].cliente_persona_id;
 
         // Verificar disponibilidad
         const disponible = await horarioModel.verificarDisponibilidad(
@@ -169,8 +177,8 @@ const confirmarHorario = async (req, res) => {
             });
         }
 
-        // Iniciar transacción
-        await db.execute('START TRANSACTION');
+        // Iniciar transacción (usar query() porque execute() no soporta comandos de transacción)
+        await db.query('START TRANSACTION');
 
         try {
             // Crear entrada en agenda
@@ -190,15 +198,97 @@ const confirmarHorario = async (req, res) => {
                 ['aceptado', presupuestoId]
             );
 
+            // Crear orden de trabajo
+            const ordenTrabajoId = await ordenTrabajoModel.crearOrdenTrabajo({
+                presupuesto_id: presupuestoId,
+                solicitud_id: presupuesto.solicitud_id,
+                profesional_id: profesionalId,
+                cliente_persona_id: clientePersonaId,
+                monto: presupuesto.monto,
+                descripcion: presupuesto.descripcion,
+                fecha_programada: fecha,
+                horarioInicio: horaInicio,
+                horaFin: horaFin,
+                estado: 'pendiente',
+                is_active: 1,
+                previous_orden_id: null
+            });
+
+            // Crear registro en historial_servicio con estado "presupuesto aceptado"
+            // Primero obtener el ID del estado y sus vencimiento_dias
+            const [estadoRows] = await db.execute(
+                'SELECT id, vencimiento_dias FROM estado_sol_servicio WHERE nombre = ?',
+                ['presupuesto aceptado']
+            );
+
+            if (estadoRows.length > 0) {
+                const estadoPresupuestoAceptado = estadoRows[0];
+                const fechaCreacion = new Date();
+                
+                // Calcular fecha de vencimiento si tiene días configurados
+                let fechaVencimiento = null;
+                if (estadoPresupuestoAceptado.vencimiento_dias > 0) {
+                    fechaVencimiento = new Date(fechaCreacion);
+                    fechaVencimiento.setDate(fechaVencimiento.getDate() + estadoPresupuestoAceptado.vencimiento_dias);
+                }
+
+                // Insertar en historial_servicio
+                await db.execute(
+                    `INSERT INTO historial_servicio 
+                    (solicitud_id, fecha_creacion, fecha_vencimiento, estado_id, notas) 
+                    VALUES (?, ?, ?, ?, ?)`,
+                    [
+                        presupuesto.solicitud_id,
+                        fechaCreacion,
+                        fechaVencimiento,
+                        estadoPresupuestoAceptado.id,
+                        'Presupuesto aceptado'
+                    ]
+                );
+
+                // Actualizar el estado de la solicitud de servicio
+                await db.execute(
+                    'UPDATE solicitud_servicio SET estado_id = ? WHERE id = ?',
+                    [estadoPresupuestoAceptado.id, presupuesto.solicitud_id]
+                );
+            }
+
+            // Crear notificación para el profesional
+            // Obtener nombre del cliente y título de la solicitud
+            const [datosNotificacion] = await db.execute(
+                `SELECT 
+                    p.nombre_apellido as nombre_cliente,
+                    ss.titulo as titulo_solicitud,
+                    prof.usuario_id as profesional_usuario_id
+                FROM solicitud_servicio ss
+                INNER JOIN persona p ON ss.cliente_persona_id = p.id
+                INNER JOIN persona prof ON prof.id = ?
+                WHERE ss.id = ?`,
+                [profesionalId, presupuesto.solicitud_id]
+            );
+
+            if (datosNotificacion.length > 0) {
+                const { nombre_cliente, titulo_solicitud, profesional_usuario_id } = datosNotificacion[0];
+                const mensajeNotificacion = `${nombre_cliente} aceptó tu presupuesto: ${titulo_solicitud}`;
+
+                await Notificacion.crear({
+                    usuario_id: profesional_usuario_id,
+                    tipo_notificacion: 'solicitud',
+                    referencia_id: presupuesto.solicitud_id,
+                    mensaje: mensajeNotificacion
+                }, db);
+            }
+
             // Confirmar transacción
-            await db.execute('COMMIT');
+            await db.query('COMMIT');
 
             res.json({
                 success: true,
-                message: 'Horario confirmado exitosamente',
+                message: 'Horario confirmado y orden de trabajo creada exitosamente',
                 data: {
                     agendaId,
                     presupuestoId,
+                    ordenTrabajoId,
                     fecha,
                     horaInicio,
                     horaFin
@@ -206,7 +296,7 @@ const confirmarHorario = async (req, res) => {
             });
 
         } catch (error) {
-            await db.execute('ROLLBACK');
+            await db.query('ROLLBACK');
             throw error;
         }
 

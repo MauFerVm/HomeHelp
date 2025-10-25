@@ -4,6 +4,7 @@ import './dashboard.css';
 import PublicarProblemaForm from '../../components/PublicarProblemaForm';
 import BuscarTrabajo from '../buscarTrabajo/BuscarTrabajo';
 import MisPresupuestos from './MisPresupuestos';
+import TrabajosAsignados from '../trabajos asignados/trabajoasignado';
 import {
     FaBell,
     FaSearch,
@@ -389,12 +390,7 @@ const Dashboard = () => {
             case 'buscar-trabajo':
                 return <BuscarTrabajo isTab={true} />;
             case 'trabajos-asignados':
-                return (
-                    <div className="tab-content">
-                        <h2>Trabajos Asignados</h2>
-                        <p>Esta funcionalidad estará disponible próximamente.</p>
-                    </div>
-                );
+                return <TrabajosAsignados isTab={true} />;
             case 'mis-presupuestos':
                 return <MisPresupuestos />;
             case 'calendario':
