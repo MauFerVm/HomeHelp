@@ -9,6 +9,13 @@ const getHorariosDisponibles = async (req, res) => {
     try {
         const { profesionalId } = req.params;
         const { fechaInicio, duracion } = req.query;
+        
+        console.log('\n========================================');
+        console.log('[DEBUG] getHorariosDisponibles llamado');
+        console.log('[DEBUG] profesionalId:', profesionalId);
+        console.log('[DEBUG] fechaInicio:', fechaInicio);
+        console.log('[DEBUG] duracion:', duracion);
+        console.log('========================================\n');
 
         if (!fechaInicio || !duracion) {
             return res.status(400).json({
@@ -56,12 +63,14 @@ const getHorariosDisponibles = async (req, res) => {
         );
 
         // Procesar horarios disponibles
+        console.log('[DEBUG] Procesando horarios disponibles...');
         const horariosDisponibles = procesarHorariosDisponibles(
             horariosActivos,
             agendaOcupada,
             fechaInicio,
             parseInt(duracion)
         );
+        console.log('[DEBUG] Horarios procesados:', JSON.stringify(horariosDisponibles, null, 2));
 
         res.json({
             success: true,
@@ -226,19 +235,24 @@ function procesarHorariosDisponibles(horariosActivos, agendaOcupada, fechaInicio
     for (let i = 0; i < 7; i++) {
         const fecha = new Date(fechaInicioObj);
         fecha.setDate(fecha.getDate() + i);
-        const diaSemana = diasSemana[i];
+        
+        // Calcular el día de la semana real de esta fecha
+        const diaNumero = fecha.getDay(); // 0=Domingo, 1=Lunes, ..., 6=Sábado
+        // Convertir a índice donde Lunes=0, Domingo=6
+        const diaIndex = diaNumero === 0 ? 6 : diaNumero - 1;
+        const diaSemana = diasSemana[diaIndex];
         
         // Solo incluir días futuros o hoy
         if (fecha >= hoy) {
             horariosPorDia[diaSemana] = {
-                fecha: fecha.toISOString().split('T')[0],
+                fecha: getFechaLocal(fecha), // Usar fecha local en lugar de UTC
                 horarios: [],
                 esPasado: fecha < hoy
             };
         }
     }
 
-    // Agrupar horarios por día
+    // Agrupar horarios por día, manteniendo información de rango de fechas
     const horariosPorDiaSemana = {};
     horariosActivos.forEach(horario => {
         if (!horariosPorDiaSemana[horario.dia_semana]) {
@@ -246,7 +260,9 @@ function procesarHorariosDisponibles(horariosActivos, agendaOcupada, fechaInicio
         }
         horariosPorDiaSemana[horario.dia_semana].push({
             horaInicio: horario.horaInicio,
-            horaFin: horario.horaFin
+            horaFin: horario.horaFin,
+            fechaInicio: horario.fechaInicio,
+            fechaFin: horario.fechaFin
         });
     });
 
@@ -268,15 +284,34 @@ function procesarHorariosDisponibles(horariosActivos, agendaOcupada, fechaInicio
         const fecha = diaInfo.fecha;
         
         if (horariosPorDiaSemana[diaSemana]) {
-            horariosPorDiaSemana[diaSemana].forEach(horario => {
-                const horariosDisponibles = calcularHorariosDisponibles(
-                    horario,
-                    agendaPorFecha[fecha] || [],
-                    duracionMinutos
-                );
+            // Filtrar horarios que son válidos para esta fecha específica
+            const horariosValidosParaFecha = horariosPorDiaSemana[diaSemana].filter(horario => {
+                const fechaActual = new Date(fecha);
+                const fechaInicioHorario = new Date(horario.fechaInicio);
+                const fechaFinHorario = horario.fechaFin ? new Date(horario.fechaFin) : null;
                 
-                diaInfo.horarios.push(...horariosDisponibles);
+                // Verificar que la fecha esté dentro del rango del horario
+                const despuesDeFechaInicio = fechaActual >= fechaInicioHorario;
+                const antesDeFechaFin = !fechaFinHorario || fechaActual <= fechaFinHorario;
+                
+                return despuesDeFechaInicio && antesDeFechaFin;
             });
+            
+            // Si hay horarios válidos para esta fecha, fusionarlos y calcular disponibilidad
+            if (horariosValidosParaFecha.length > 0) {
+                const rangosFusionados = fusionarRangosHorarios(horariosValidosParaFecha);
+                
+                rangosFusionados.forEach(horario => {
+                    const horariosDisponibles = calcularHorariosDisponibles(
+                        horario,
+                        agendaPorFecha[fecha] || [],
+                        duracionMinutos,
+                        fecha // Pasar la fecha para filtrar horarios pasados
+                    );
+                    
+                    diaInfo.horarios.push(...horariosDisponibles);
+                });
+            }
         }
     });
 
@@ -284,9 +319,44 @@ function procesarHorariosDisponibles(horariosActivos, agendaOcupada, fechaInicio
 }
 
 /**
+ * Fusionar rangos horarios que se superponen o son contiguos
+ */
+function fusionarRangosHorarios(rangos) {
+    if (rangos.length === 0) return [];
+    
+    // Convertir a formato decimal y ordenar por hora de inicio
+    const rangosDecimales = rangos.map(r => ({
+        inicio: parseTime(r.horaInicio),
+        fin: parseTime(r.horaFin)
+    })).sort((a, b) => a.inicio - b.inicio);
+    
+    const rangosFusionados = [rangosDecimales[0]];
+    
+    for (let i = 1; i < rangosDecimales.length; i++) {
+        const rangoActual = rangosDecimales[i];
+        const ultimoFusionado = rangosFusionados[rangosFusionados.length - 1];
+        
+        // Si el rango actual se superpone o es contiguo al último fusionado
+        if (rangoActual.inicio <= ultimoFusionado.fin) {
+            // Extender el último rango fusionado si es necesario
+            ultimoFusionado.fin = Math.max(ultimoFusionado.fin, rangoActual.fin);
+        } else {
+            // No hay superposición, agregar como nuevo rango
+            rangosFusionados.push(rangoActual);
+        }
+    }
+    
+    // Convertir de vuelta a formato de string
+    return rangosFusionados.map(r => ({
+        horaInicio: formatTime(r.inicio),
+        horaFin: formatTime(r.fin)
+    }));
+}
+
+/**
  * Calcular horarios disponibles dentro de un rango, excluyendo los ocupados
  */
-function calcularHorariosDisponibles(horario, agendaOcupada, duracionMinutos) {
+function calcularHorariosDisponibles(horario, agendaOcupada, duracionMinutos, fecha) {
     const horariosDisponibles = [];
     const horaInicio = parseTime(horario.horaInicio);
     const horaFin = parseTime(horario.horaFin);
@@ -294,11 +364,34 @@ function calcularHorariosDisponibles(horario, agendaOcupada, duracionMinutos) {
     // Convertir duración a minutos
     const duracionHoras = duracionMinutos / 60;
     
+    // Verificar si es hoy para filtrar horarios pasados
+    const hoy = new Date();
+    const fechaHoyStr = getFechaLocal(hoy);
+    const esHoy = fecha === fechaHoyStr;
+    
+    console.log(`[DEBUG] Comparando fechas - fecha slot: ${fecha}, hoy: ${fechaHoyStr}, esHoy: ${esHoy}`);
+    console.log(`[DEBUG] Fecha completa hoy:`, hoy.toString());
+    
+    // Obtener hora actual en formato decimal
+    let horaActualDelDia = null;
+    if (esHoy) {
+        horaActualDelDia = hoy.getHours() + hoy.getMinutes() / 60;
+        console.log(`[DEBUG] Es hoy (${fecha}). Hora actual: ${horaActualDelDia.toFixed(2)} (${hoy.getHours()}:${hoy.getMinutes()})`);
+    }
+    
     // Generar slots de 30 minutos
     let horaActual = horaInicio;
     
     while (horaActual + duracionHoras <= horaFin) {
         const horaFinSlot = horaActual + duracionHoras;
+        
+        // Si es hoy, saltar slots que ya pasaron o están en curso
+        // Un slot debe empezar después de la hora actual para estar disponible
+        if (esHoy && horaActual <= horaActualDelDia) {
+            console.log(`[DEBUG] Saltando slot ${formatTime(horaActual)}-${formatTime(horaFinSlot)} (ya pasó)`);
+            horaActual += 0.5;
+            continue;
+        }
         
         // Verificar si este slot está disponible
         const estaDisponible = agendaOcupada.every(ocupado => {
@@ -321,6 +414,16 @@ function calcularHorariosDisponibles(horario, agendaOcupada, duracionMinutos) {
     }
     
     return horariosDisponibles;
+}
+
+/**
+ * Obtener fecha local en formato YYYY-MM-DD
+ */
+function getFechaLocal(date = new Date()) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
 }
 
 /**
