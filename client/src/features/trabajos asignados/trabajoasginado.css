@@ -432,6 +432,94 @@
     transform: translateY(-2px);
 }
 
+.cancel-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.cerrar-orden-button {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+}
+
+.cerrar-orden-button:hover:not(:disabled) {
+    background: #218838;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+}
+
+.cerrar-orden-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.spinner-small {
+    font-size: 1rem;
+    animation: spin 1s linear infinite;
+}
+
+.cerrar-definitivamente-button {
+    background: #17a2b8;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+}
+
+.cerrar-definitivamente-button:hover:not(:disabled) {
+    background: #138496;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(23, 162, 184, 0.4);
+}
+
+.cerrar-definitivamente-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.calificar-button {
+    background: #ffc107;
+    color: #333;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+}
+
+.calificar-button:hover:not(:disabled) {
+    background: #e0a800;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 193, 7, 0.4);
+}
+
+.calificar-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .trabajos-asignados-container,
@@ -469,7 +557,10 @@
         flex-direction: column;
     }
     
-    .cancel-button {
+    .cancel-button,
+    .cerrar-orden-button,
+    .cerrar-definitivamente-button,
+    .calificar-button {
         width: 100%;
         justify-content: center;
     }

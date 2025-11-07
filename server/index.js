@@ -11,6 +11,7 @@ const notificacionRoutes = require('./routes/notificacionRoutes');
 const presupuestoRoutes = require('./routes/presupuestoRoutes');
 const horarioRoutes = require('./routes/horarioRoutes');
 const ordenTrabajoRoutes = require('./routes/ordenTrabajoRoutes');
+const calificacionesRoutes = require('./routes/calificacionesRoutes');
 
 const app = express();
 app.use(cors());
@@ -64,6 +65,7 @@ app.use('/api/notificaciones', notificacionRoutes);
 app.use('/api/presupuestos', presupuestoRoutes);
 app.use('/api/horarios', horarioRoutes);
 app.use('/api/ordenes', ordenTrabajoRoutes);
+app.use('/api/calificaciones', calificacionesRoutes);
 
 
 

@@ -5,6 +5,7 @@ import PublicarProblemaForm from '../../components/PublicarProblemaForm';
 import BuscarTrabajo from '../buscarTrabajo/BuscarTrabajo';
 import MisPresupuestos from './MisPresupuestos';
 import TrabajosAsignados from '../trabajos asignados/trabajoasignado';
+import MisServicios from './MisServicios';
 import {
     FaBell,
     FaSearch,
@@ -393,6 +394,8 @@ const Dashboard = () => {
                 return <TrabajosAsignados isTab={true} />;
             case 'mis-presupuestos':
                 return <MisPresupuestos />;
+            case 'mis-servicios':
+                return <MisServicios isTab={true} />;
             case 'calendario':
                 return (
                     <div className="tab-content">
@@ -662,7 +665,7 @@ const Dashboard = () => {
                                 <div className="nav-section">
                                     <h3 className="nav-section-title">SERVICIOS CONTRATADOS</h3>
                                     <ul className="nav-menu">
-                                        <li className="nav-item" onClick={closeMobileMenu} data-user-type="cliente">
+                                        <li className={`nav-item ${activeTab === 'mis-servicios' ? 'active' : ''}`} onClick={() => { closeMobileMenu(); setActiveTab('mis-servicios'); }} data-user-type="cliente">
                                             <FaClipboardList className="nav-icon" />
                                             <span>Mis Servicios</span>
                                         </li>

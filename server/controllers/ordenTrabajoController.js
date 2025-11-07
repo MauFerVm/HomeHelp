@@ -1,5 +1,7 @@
 // controllers/ordenTrabajoController.js
 const ordenTrabajoModel = require('../models/ordenTrabajoModel');
+const HistorialServicio = require('../models/historialServicioModel');
+const EstadoSolServicio = require('../models/estadoSolServicioModel');
 
 /**
  * Obtener orden de trabajo por ID
@@ -88,7 +90,7 @@ const actualizarEstadoOrden = async (req, res) => {
         const { ordenId } = req.params;
         const { estado } = req.body;
 
-        const estadosValidos = ['pendiente', 'represupuestada', 'en_curso', 'completado', 'cancelado', 'reprogramado'];
+        const estadosValidos = ['pendiente', 'represupuestada', 'en_curso', 'completado', 'cancelado', 'reprogramado', 'cerradoprofesional', 'cerradocliente'];
         
         if (!estado || !estadosValidos.includes(estado)) {
             return res.status(400).json({
@@ -104,6 +106,37 @@ const actualizarEstadoOrden = async (req, res) => {
                 success: false,
                 message: 'Orden de trabajo no encontrada'
             });
+        }
+
+        // Si el estado es "completado", crear registro en historial_servicio
+        if (estado === 'completado') {
+            try {
+                // Obtener la orden de trabajo para obtener el solicitud_id
+                const orden = await ordenTrabajoModel.getOrdenTrabajoById(ordenId);
+                
+                if (orden && orden.solicitud_id) {
+                    // Obtener el estado "cerrada" de la tabla estado_sol_servicio
+                    const estadoCerrada = await EstadoSolServicio.getByName('cerrada');
+                    
+                    if (estadoCerrada) {
+                        // Crear registro en historial_servicio
+                        await HistorialServicio.crearRegistroEstado(
+                            orden.solicitud_id,
+                            estadoCerrada.id,
+                            'Orden de trabajo completada',
+                            null // fecha_vencimiento es null para estado cerrada según la BD
+                        );
+                        console.log(`Historial de servicio creado para solicitud ${orden.solicitud_id} con estado cerrada`);
+                    } else {
+                        console.error('No se encontró el estado "cerrada" en la tabla estado_sol_servicio');
+                    }
+                } else {
+                    console.error('No se pudo obtener el solicitud_id de la orden de trabajo');
+                }
+            } catch (error) {
+                // Log del error pero no fallar la actualización del estado
+                console.error('Error al crear historial de servicio:', error);
+            }
         }
 
         res.json({

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './trabajoasginado.css';
+import '../trabajos asignados/trabajoasginado.css';
 import CalificacionModal from '../../components/CalificacionModal';
 import {
     FaArrowLeft,
@@ -18,7 +18,7 @@ import {
     FaStar
 } from 'react-icons/fa';
 
-const TrabajosAsignados = ({ 
+const MisServicios = ({ 
     isTab = false, 
     onClose = null 
 }) => {
@@ -69,7 +69,7 @@ const TrabajosAsignados = ({
         fetchPersonaId();
     }, [userData]);
 
-    // Cargar órdenes de trabajo del profesional
+    // Cargar órdenes de trabajo del cliente
     useEffect(() => {
         if (personaId) {
             fetchOrdenesTrabajos();
@@ -83,11 +83,11 @@ const TrabajosAsignados = ({
             setError(null);
 
             if (!personaId) {
-                throw new Error('No se encontró el ID del profesional');
+                throw new Error('No se encontró el ID del cliente');
             }
 
-            console.log('Obteniendo órdenes de trabajo para profesional_id:', personaId);
-            const response = await fetch(`http://localhost:3002/api/ordenes/profesional/${personaId}`);
+            console.log('Obteniendo órdenes de trabajo para cliente_id:', personaId);
+            const response = await fetch(`http://localhost:3002/api/ordenes/cliente/${personaId}`);
             const data = await response.json();
 
             console.log('Respuesta de órdenes de trabajo:', data);
@@ -110,10 +110,10 @@ const TrabajosAsignados = ({
         setShowModal(true);
         
         // Verificar si ya existe una calificación solo para órdenes completadas
-        if (orden.estado === 'completado' && personaId && orden.cliente_persona_id) {
+        if (orden.estado === 'completado' && personaId && orden.profesional_id) {
             try {
                 const response = await fetch(
-                    `http://localhost:3002/api/calificaciones/verificar?solicitud_id=${orden.solicitud_id}&calificador_persona_id=${personaId}&calificado_persona_id=${orden.cliente_persona_id}`
+                    `http://localhost:3002/api/calificaciones/verificar?solicitud_id=${orden.solicitud_id}&calificador_persona_id=${personaId}&calificado_persona_id=${orden.profesional_id}`
                 );
                 const data = await response.json();
                 setYaCalificado(data.success && data.data.existe);
@@ -126,8 +126,8 @@ const TrabajosAsignados = ({
         }
     };
 
-    const handleCalificarCliente = () => {
-        if (selectedOrden && selectedOrden.cliente_persona_id) {
+    const handleCalificarProfesional = () => {
+        if (selectedOrden && selectedOrden.profesional_id) {
             setShowCalificacionModal(true);
         }
     };
@@ -151,7 +151,7 @@ const TrabajosAsignados = ({
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ estado: 'cerradoprofesional' })
+                body: JSON.stringify({ estado: 'cerradocliente' })
             });
 
             const data = await response.json();
@@ -197,7 +197,7 @@ const TrabajosAsignados = ({
                 await fetchOrdenesTrabajos();
                 // Cerrar el modal de detalles
                 setShowModal(false);
-                // Mostrar modal de calificación automáticamente (el profesional califica al cliente)
+                // Mostrar modal de calificación automáticamente (el cliente califica al profesional)
                 setShowCalificacionModal(true);
             } else {
                 throw new Error(data.message || 'Error al cerrar definitivamente la orden de trabajo');
@@ -306,19 +306,19 @@ const TrabajosAsignados = ({
                             <FaArrowLeft />
                             Volver al Dashboard
                         </button>
-                        <h1>Trabajos Asignados</h1>
-                        <p>Órdenes de trabajo que tienes asignadas</p>
+                        <h1>Mis Servicios</h1>
+                        <p>Órdenes de trabajo asociadas a tus solicitudes</p>
                     </div>
                 )}
                 {isTab && (
                     <div className="tab-header">
-                        <h2>Trabajos Asignados</h2>
-                        <p>Órdenes de trabajo que tienes asignadas</p>
+                        <h2>Mis Servicios</h2>
+                        <p>Órdenes de trabajo asociadas a tus solicitudes</p>
                     </div>
                 )}
                 <div className="loading-container">
                     <FaSpinner className="spinner" />
-                    <p>Cargando trabajos asignados...</p>
+                    <p>Cargando servicios...</p>
                 </div>
             </div>
         );
@@ -336,18 +336,18 @@ const TrabajosAsignados = ({
                             <FaArrowLeft />
                             Volver al Dashboard
                         </button>
-                        <h1>Trabajos Asignados</h1>
-                        <p>Órdenes de trabajo que tienes asignadas</p>
+                        <h1>Mis Servicios</h1>
+                        <p>Órdenes de trabajo asociadas a tus solicitudes</p>
                     </div>
                 )}
                 {isTab && (
                     <div className="tab-header">
-                        <h2>Trabajos Asignados</h2>
-                        <p>Órdenes de trabajo que tienes asignadas</p>
+                        <h2>Mis Servicios</h2>
+                        <p>Órdenes de trabajo asociadas a tus solicitudes</p>
                     </div>
                 )}
                 <div className="error-container">
-                    <h2>Error al cargar trabajos</h2>
+                    <h2>Error al cargar servicios</h2>
                     <p>{error}</p>
                     <button onClick={fetchOrdenesTrabajos} className="retry-button">
                         Reintentar
@@ -369,14 +369,14 @@ const TrabajosAsignados = ({
                         <FaArrowLeft />
                         Volver al Dashboard
                     </button>
-                    <h1>Trabajos Asignados</h1>
-                    <p>Órdenes de trabajo que tienes asignadas</p>
+                    <h1>Mis Servicios</h1>
+                    <p>Órdenes de trabajo asociadas a tus solicitudes</p>
                 </div>
             )}
             {isTab && (
                 <div className="tab-header">
-                    <h2>Trabajos Asignados</h2>
-                    <p>Órdenes de trabajo que tienes asignadas</p>
+                    <h2>Mis Servicios</h2>
+                    <p>Órdenes de trabajo asociadas a tus solicitudes</p>
                 </div>
             )}
 
@@ -385,8 +385,8 @@ const TrabajosAsignados = ({
                 {ordenesTrabajos.length === 0 ? (
                     <div className="no-ordenes">
                         <FaBriefcase className="no-ordenes-icon" />
-                        <h3>No tienes trabajos asignados</h3>
-                        <p>Aún no tienes órdenes de trabajo asignadas.</p>
+                        <h3>No tienes servicios contratados</h3>
+                        <p>Aún no tienes órdenes de trabajo asociadas a tus solicitudes.</p>
                     </div>
                 ) : (
                     ordenesTrabajos.map((orden) => (
@@ -402,7 +402,7 @@ const TrabajosAsignados = ({
                             <div className="orden-info">
                                 <div className="info-item">
                                     <FaUser className="info-icon" />
-                                    <span><strong>Cliente:</strong> {orden.cliente_nombre}</span>
+                                    <span><strong>Profesional:</strong> {orden.profesional_nombre}</span>
                                 </div>
                                 <div className="info-item">
                                     <FaMapMarkerAlt className="info-icon" />
@@ -469,11 +469,11 @@ const TrabajosAsignados = ({
                             </div>
 
                             <div className="detalle-section">
-                                <h4>Información del Cliente</h4>
+                                <h4>Información del Profesional</h4>
                                 <div className="cliente-info">
                                     <div className="info-item">
                                         <FaUser className="info-icon" />
-                                        <span>{selectedOrden.cliente_nombre}</span>
+                                        <span>{selectedOrden.profesional_nombre}</span>
                                     </div>
                                 </div>
                             </div>
@@ -537,7 +537,7 @@ const TrabajosAsignados = ({
                                     )}
                                 </button>
                             )}
-                            {selectedOrden.estado === 'cerradocliente' && (
+                            {selectedOrden.estado === 'cerradoprofesional' && (
                                 <button 
                                     className="cerrar-definitivamente-button"
                                     onClick={handleCerrarDefinitivamente}
@@ -559,11 +559,11 @@ const TrabajosAsignados = ({
                             {selectedOrden.estado === 'completado' && !yaCalificado && (
                                 <button 
                                     className="calificar-button"
-                                    onClick={handleCalificarCliente}
+                                    onClick={handleCalificarProfesional}
                                     disabled={cerrandoOrden}
                                 >
                                     <FaStar />
-                                    Calificar Cliente
+                                    Calificar Profesional
                                 </button>
                             )}
                             <button 
@@ -588,8 +588,8 @@ const TrabajosAsignados = ({
                     }}
                     solicitudId={selectedOrden.solicitud_id}
                     calificadorPersonaId={personaId}
-                    calificadoPersonaId={selectedOrden.cliente_persona_id}
-                    calificadoNombre={selectedOrden.cliente_nombre}
+                    calificadoPersonaId={selectedOrden.profesional_id}
+                    calificadoNombre={selectedOrden.profesional_nombre}
                     onCalificacionEnviada={handleCalificacionEnviada}
                 />
             )}
@@ -597,5 +597,5 @@ const TrabajosAsignados = ({
     );
 };
 
-export default TrabajosAsignados;
+export default MisServicios;
 
