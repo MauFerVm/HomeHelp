@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import './BuscarTrabajo.css';
 import PresupuestoForm from '../../components/PresupuestoForm';
 import {
@@ -36,7 +38,9 @@ const BuscarTrabajo = ({
     const [filtros, setFiltros] = useState({
         prioridad: '',
         dias: '',
-        presupuestada: ''
+        presupuestada: '',
+        fechaDesde: '',
+        fechaHasta: ''
     });
     const [showFiltros, setShowFiltros] = useState(false);
     const [prioridadesDisponibles, setPrioridadesDisponibles] = useState([]);
@@ -151,6 +155,8 @@ const BuscarTrabajo = ({
             if (filtros.prioridad) queryParams.append('prioridad', filtros.prioridad);
             if (filtros.dias) queryParams.append('dias', filtros.dias);
             if (filtros.presupuestada) queryParams.append('presupuestada', filtros.presupuestada);
+            if (filtros.fechaDesde) queryParams.append('fechaDesde', filtros.fechaDesde);
+            if (filtros.fechaHasta) queryParams.append('fechaHasta', filtros.fechaHasta);
 
             const url = `http://localhost:3002/api/solicitudes/disponibles/${user.id}${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
 
@@ -238,11 +244,90 @@ const BuscarTrabajo = ({
         }));
     };
 
+    // Manejar cambio de fecha desde react-datepicker
+    const handleFechaChange = (tipoFecha, fecha) => {
+        if (fecha) {
+            // Normalizar la fecha a medianoche en hora local para evitar problemas de zona horaria
+            // Creamos una nueva fecha usando solo año, mes y día en hora local
+            const año = fecha.getFullYear();
+            const mes = fecha.getMonth();
+            const dia = fecha.getDate();
+            
+            // Crear una nueva fecha a medianoche local (sin hora, sin zona horaria)
+            const fechaNormalizada = new Date(año, mes, dia, 0, 0, 0, 0);
+            
+            // Extraer los componentes de la fecha normalizada (por seguridad)
+            const añoFormato = fechaNormalizada.getFullYear();
+            const mesFormato = String(fechaNormalizada.getMonth() + 1).padStart(2, '0');
+            const diaFormato = String(fechaNormalizada.getDate()).padStart(2, '0');
+            const fechaFormateada = `${añoFormato}-${mesFormato}-${diaFormato}`;
+            
+            setFiltros(prev => {
+                // Validar que fechaDesde no sea mayor que fechaHasta (comparar strings YYYY-MM-DD)
+                if (tipoFecha === 'fechaDesde' && prev.fechaHasta) {
+                    if (fechaFormateada > prev.fechaHasta) {
+                        return prev;
+                    }
+                }
+                // Validar que fechaHasta no sea menor que fechaDesde (comparar strings YYYY-MM-DD)
+                if (tipoFecha === 'fechaHasta' && prev.fechaDesde) {
+                    if (fechaFormateada < prev.fechaDesde) {
+                        return prev;
+                    }
+                }
+                
+                return {
+                    ...prev,
+                    [tipoFecha]: fechaFormateada
+                };
+            });
+        } else {
+            // Si se limpia la fecha
+            setFiltros(prev => ({
+                ...prev,
+                [tipoFecha]: ''
+            }));
+        }
+    };
+
+    // Convertir string de fecha (YYYY-MM-DD) a objeto Date usando hora local (evita problemas de zona horaria)
+    const getFechaDate = (fechaString) => {
+        if (!fechaString) return null;
+        
+        // Parsear el string YYYY-MM-DD directamente
+        const partes = fechaString.split('-');
+        if (partes.length !== 3) return null;
+        
+        const año = parseInt(partes[0], 10);
+        const mes = parseInt(partes[1], 10) - 1; // Los meses en Date son 0-indexed
+        const dia = parseInt(partes[2], 10);
+        
+        // Validar que los valores sean números válidos
+        if (isNaN(año) || isNaN(mes) || isNaN(dia)) return null;
+        
+        // Crear fecha usando hora local a medianoche (0 horas, 0 minutos, 0 segundos, 0 milisegundos)
+        // Esto asegura que la fecha se crea en hora local y no en UTC
+        const fecha = new Date(año, mes, dia, 0, 0, 0, 0);
+        
+        // Validar que la fecha sea válida
+        if (isNaN(fecha.getTime())) return null;
+        
+        // Verificar que la fecha parseada coincide con lo que esperamos (evita problemas de desbordamiento)
+        // Por ejemplo, si intentamos crear el día 31 de febrero, se desbordará
+        if (fecha.getFullYear() !== año || fecha.getMonth() !== mes || fecha.getDate() !== dia) {
+            return null;
+        }
+        
+        return fecha;
+    };
+
     const limpiarFiltros = () => {
         setFiltros({
             prioridad: '',
             dias: '',
-            presupuestada: ''
+            presupuestada: '',
+            fechaDesde: '',
+            fechaHasta: ''
         });
     };
 
@@ -397,7 +482,7 @@ const BuscarTrabajo = ({
                         </div>
 
                         <div className="filtro-grupo">
-                            <label htmlFor="filtro-dias">Fecha:</label>
+                            <label htmlFor="filtro-dias">Últimos días:</label>
                             <select
                                 id="filtro-dias"
                                 value={filtros.dias}
@@ -408,6 +493,54 @@ const BuscarTrabajo = ({
                                 <option value="10">Últimos 10 días</option>
                                 <option value="20">Últimos 20 días</option>
                             </select>
+                        </div>
+
+                        <div className="filtro-grupo filtro-fecha-rango">
+                            <label htmlFor="filtro-fecha-desde">Fecha Desde:</label>
+                            <DatePicker
+                                id="filtro-fecha-desde"
+                                selected={getFechaDate(filtros.fechaDesde)}
+                                onChange={(fecha) => handleFechaChange('fechaDesde', fecha)}
+                                selectsStart
+                                startDate={getFechaDate(filtros.fechaDesde)}
+                                endDate={getFechaDate(filtros.fechaHasta)}
+                                maxDate={filtros.fechaHasta ? getFechaDate(filtros.fechaHasta) : undefined}
+                                dateFormat="dd/MM/yyyy"
+                                placeholderText="Seleccionar fecha"
+                                className="date-picker-input"
+                                wrapperClassName="date-picker-wrapper"
+                                showYearDropdown
+                                showMonthDropdown
+                                dropdownMode="select"
+                                yearDropdownItemNumber={100}
+                                scrollableYearDropdown
+                                isClearable
+                                adjustDateOnChange
+                            />
+                        </div>
+
+                        <div className="filtro-grupo filtro-fecha-rango">
+                            <label htmlFor="filtro-fecha-hasta">Fecha Hasta:</label>
+                            <DatePicker
+                                id="filtro-fecha-hasta"
+                                selected={getFechaDate(filtros.fechaHasta)}
+                                onChange={(fecha) => handleFechaChange('fechaHasta', fecha)}
+                                selectsEnd
+                                startDate={getFechaDate(filtros.fechaDesde)}
+                                endDate={getFechaDate(filtros.fechaHasta)}
+                                minDate={filtros.fechaDesde ? getFechaDate(filtros.fechaDesde) : undefined}
+                                dateFormat="dd/MM/yyyy"
+                                placeholderText="Seleccionar fecha"
+                                className="date-picker-input"
+                                wrapperClassName="date-picker-wrapper"
+                                showYearDropdown
+                                showMonthDropdown
+                                dropdownMode="select"
+                                yearDropdownItemNumber={100}
+                                scrollableYearDropdown
+                                isClearable
+                                adjustDateOnChange
+                            />
                         </div>
 
                         <div className="filtro-grupo">

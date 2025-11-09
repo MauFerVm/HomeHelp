@@ -336,7 +336,70 @@
     opacity: 1;
   }
 }
-
+@media (min-width: 1900px) and (max-width: 2500px) {
+  .modal-content {
+    max-width: 450px;
+    max-height: 95vh;
+  }
+  
+  .modal-header {
+    padding: 16px 16px 0 16px;
+    margin-bottom: 16px;
+  }
+  
+  .modal-header h2 {
+    font-size: 20px;
+  }
+  
+  .problema-form {
+    padding: 0 16px 16px 16px;
+  }
+  
+  .form-group {
+    margin-bottom: 12px;
+  }
+  
+  .form-group label {
+    font-size: 12px;
+    margin-bottom: 4px;
+  }
+  
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    padding: 8px;
+    font-size: 12px;
+  }
+  
+  .form-group textarea {
+    min-height: 60px;
+  }
+  
+  .form-row {
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  
+  .form-actions {
+    margin-top: 16px;
+    padding-top: 16px;
+  }
+  
+  .cancel-button,
+  .submit-button {
+    padding: 8px 16px;
+    font-size: 12px;
+  }
+  
+  .file-upload-label {
+    padding: 8px;
+    font-size: 12px;
+  }
+  
+  .error-message {
+    font-size: 11px;
+  }
+}
 /* Media query para pantallas entre 1500px y 1600px */
 @media (min-width: 1500px) and (max-width: 1600px) {
   .modal-content {
@@ -396,6 +459,80 @@
   .file-upload-label {
     padding: 8px;
     font-size: 12px;
+  }
+  
+  .error-message {
+    font-size: 11px;
+  }
+}
+
+@media (min-width: 1300px) and (max-width: 2500px) {
+  .modal-content {
+    max-width: 450px;
+    max-height: 95vh;
+  }
+  
+  .modal-header {
+    padding: 16px 16px 0 16px;
+    margin-bottom: 16px;
+  }
+  
+  .modal-header h2 {
+    font-size: 20px;
+  }
+  
+  .problema-form {
+    padding: 0 16px 16px 16px;
+  }
+  
+  .form-group {
+    margin-bottom: 10px;
+  }
+  
+  .form-group label {
+    font-size: 12px;
+    margin-bottom: 4px;
+  }
+  
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    padding: 8px;
+    font-size: 12px;
+  }
+  
+  .form-group textarea {
+    min-height: 50px;
+  }
+  
+  .form-row {
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+  
+  .form-actions {
+    margin-top: 12px;
+    padding-top: 12px;
+  }
+  
+  .cancel-button,
+  .submit-button {
+    padding: 8px 16px;
+    font-size: 12px;
+  }
+  
+  .file-upload-label {
+    padding: 8px;
+    font-size: 12px;
+  }
+  
+  .file-preview {
+    margin-top: 8px;
+  }
+  
+  .preview-image {
+    max-width: 120px;
+    max-height: 90px;
   }
   
   .error-message {

@@ -78,12 +78,14 @@ const CalificacionModal = ({
                 setComentario('');
                 setError(null);
                 
-                // Cerrar modal y notificar
+                // Cerrar modal de calificación
+                onClose();
+                
+                // Notificar al componente padre que la calificación se envió exitosamente
+                // El padre se encargará de mostrar el modal de éxito
                 if (onCalificacionEnviada) {
                     onCalificacionEnviada();
                 }
-                onClose();
-                alert('¡Calificación enviada exitosamente!');
             } else {
                 setError(data.message || 'Error al enviar la calificación');
             }

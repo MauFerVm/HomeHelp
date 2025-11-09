@@ -2819,6 +2819,182 @@ body.menu-open .post-problem-button {
     transform: translateY(-2px);
 }
 
+/* Estilos para react-datepicker */
+.date-picker-wrapper {
+    width: 100%;
+}
+
+.date-picker-input {
+    width: 100%;
+    padding: 10px 15px;
+    border-radius: 8px;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    outline: none;
+    font-family: inherit;
+}
+
+.date-picker-input:focus {
+    border-color: #667eea;
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.date-picker-input::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+/* Estilos para el calendario del DatePicker */
+.react-datepicker-wrapper {
+    width: 100%;
+}
+
+.react-datepicker {
+    font-family: inherit;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    background: #2d3748;
+    color: #fff;
+}
+
+.react-datepicker__header {
+    background: #1a202c;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px 12px 0 0;
+    padding: 8px 8px 6px 8px;
+}
+
+/* Estilos específicos para el mes en el calendario - alta especificidad */
+.filtros-container .react-datepicker__current-month,
+.filtros-container .react-datepicker__current-month--hasYearDropdown,
+.filtros-container .react-datepicker__current-month--hasMonthDropdown,
+.react-datepicker__current-month,
+.react-datepicker__current-month--hasYearDropdown,
+.react-datepicker__current-month--hasMonthDropdown {
+    color: #fff !important;
+    font-weight: 600 !important;
+    font-size: 0.875rem !important;
+    margin-bottom: 8px !important;
+    line-height: 1.2 !important;
+}
+
+/* Asegurar que el tamaño de fuente se aplique incluso con dropdowns */
+.filtros-container .react-datepicker__current-month--hasYearDropdown.react-datepicker__current-month--hasMonthDropdown,
+.react-datepicker__current-month--hasYearDropdown.react-datepicker__current-month--hasMonthDropdown {
+    font-size: 0.875rem !important;
+}
+
+.react-datepicker__day-name {
+    color: #a0aec0;
+    font-weight: 600;
+}
+
+.react-datepicker__day {
+    color: #fff;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.react-datepicker__day:hover {
+    background: rgba(102, 126, 234, 0.3);
+    border-radius: 8px;
+}
+
+.react-datepicker__day--selected,
+.react-datepicker__day--in-range,
+.react-datepicker__day--in-selecting-range {
+    background: #667eea;
+    color: #fff;
+    border-radius: 8px;
+}
+
+.react-datepicker__day--selected:hover,
+.react-datepicker__day--in-range:hover,
+.react-datepicker__day--in-selecting-range:hover {
+    background: #5a6fd8;
+}
+
+.react-datepicker__day--keyboard-selected {
+    background: rgba(102, 126, 234, 0.5);
+    color: #fff;
+}
+
+.react-datepicker__day--disabled {
+    color: #4a5568;
+    cursor: not-allowed;
+}
+
+.react-datepicker__day--outside-month {
+    color: #4a5568;
+}
+
+.react-datepicker__triangle {
+    display: none;
+}
+
+.react-datepicker__month-dropdown,
+.react-datepicker__year-dropdown {
+    background: #2d3748;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: #fff;
+}
+
+.react-datepicker__month-option,
+.react-datepicker__year-option {
+    color: #fff;
+}
+
+.react-datepicker__month-option:hover,
+.react-datepicker__year-option:hover {
+    background: rgba(102, 126, 234, 0.3);
+}
+
+.react-datepicker__month-option--selected,
+.react-datepicker__year-option--selected {
+    background: #667eea;
+    color: #fff;
+}
+
+.react-datepicker__navigation {
+    top: 6px;
+}
+
+.react-datepicker__navigation-icon::before {
+    border-color: #fff;
+}
+
+.react-datepicker__navigation:hover *::before {
+    border-color: #667eea;
+}
+
+/* Ajustar posición de las flechas de navegación para moverlas un poco más arriba */
+.react-datepicker__navigation--previous,
+.react-datepicker__navigation--next {
+    top: 6px !important;
+}
+
+.react-datepicker__close-icon {
+    color: #fff;
+}
+
+.react-datepicker__close-icon::after {
+    background-color: #fff;
+    color: #2d3748;
+}
+
+.react-datepicker__close-icon:hover::after {
+    background-color: #667eea;
+    color: #fff;
+}
+
+.filtro-fecha-rango {
+    min-width: 200px;
+}
+
 /* Responsive para filtros */
 @media (max-width: 768px) {
     .filtros-content {
@@ -2828,4 +3004,33 @@ body.menu-open .post-problem-button {
     .limpiar-filtros-btn {
         align-self: stretch;
     }
+    
+    .filtro-fecha-rango {
+        min-width: 100%;
+    }
+}
+
+/* Estilos adicionales para forzar el tamaño del mes en el datepicker - al final para sobrescribir */
+.react-datepicker__header h2.react-datepicker__current-month,
+.react-datepicker__header h2.react-datepicker__current-month--hasYearDropdown,
+.react-datepicker__header h2.react-datepicker__current-month--hasMonthDropdown,
+.filtros-container .react-datepicker__header h2.react-datepicker__current-month,
+.filtros-container .react-datepicker__header h2.react-datepicker__current-month--hasYearDropdown,
+.filtros-container .react-datepicker__header h2.react-datepicker__current-month--hasMonthDropdown,
+.react-datepicker h2.react-datepicker__current-month,
+.react-datepicker h2.react-datepicker__current-month--hasYearDropdown,
+.react-datepicker h2.react-datepicker__current-month--hasMonthDropdown {
+    font-size: 0.875rem !important;
+    line-height: 1.2 !important;
+    margin: 0 0 8px 0 !important;
+    padding: 0 !important;
+    font-weight: 600 !important;
+    display: inline-block !important;
+    width: auto !important;
+    height: auto !important;
+}
+
+/* Reset adicional para cualquier estilo que pueda estar aumentando el tamaño */
+.react-datepicker__header h2 {
+    font-size: 0.875rem !important;
 }

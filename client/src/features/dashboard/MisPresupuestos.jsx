@@ -1,8 +1,17 @@
 import React, { useEffect, useState } from 'react';
+import DatePicker from 'react-datepicker';
+import { registerLocale, setDefaultLocale } from 'react-datepicker';
+import es from 'date-fns/locale/es';
+import 'react-datepicker/dist/react-datepicker.css';
 import './dashboard.css';
-import { FaClock, FaExclamationTriangle, FaCheckCircle, FaEye, FaFilter } from 'react-icons/fa';
+import { FaClock, FaExclamationTriangle, FaCheckCircle, FaEye, FaFilter, FaCheck } from 'react-icons/fa';
 import { minutosToHHMM } from '../../utils/timeUtils';
 import CalendarioHorarios from '../../components/CalendarioHorarios';
+import '../../components/HorarioConfirmadoModal.css';
+
+// Registrar el locale en español
+registerLocale('es', es);
+setDefaultLocale('es');
 
 const MisPresupuestos = () => {
     const [loading, setLoading] = useState(true);
@@ -13,9 +22,12 @@ const MisPresupuestos = () => {
     const [presupuestoSeleccionado, setPresupuestoSeleccionado] = useState(null);
     const [calendarioAbierto, setCalendarioAbierto] = useState(false);
     const [confirmandoHorario, setConfirmandoHorario] = useState(false);
+    const [showHorarioConfirmadoModal, setShowHorarioConfirmadoModal] = useState(false);
     const [filtros, setFiltros] = useState({
         prioridad: '',
-        dias: ''
+        dias: '',
+        fechaDesde: '',
+        fechaHasta: ''
     });
     const [showFiltros, setShowFiltros] = useState(false);
     const [prioridadesDisponibles, setPrioridadesDisponibles] = useState([]);
@@ -133,8 +145,44 @@ const MisPresupuestos = () => {
             );
         }
 
-        // Filtro por fecha (últimos X días)
-        if (filtros.dias) {
+        // Filtro por rango de fechas (tiene prioridad sobre el filtro de días)
+        if (filtros.fechaDesde || filtros.fechaHasta) {
+            resultado = resultado.filter(item => {
+                const fechaSolicitud = new Date(item.solicitud.creado_en);
+                const fechaSolicitudDate = new Date(
+                    fechaSolicitud.getFullYear(),
+                    fechaSolicitud.getMonth(),
+                    fechaSolicitud.getDate()
+                );
+                
+                if (filtros.fechaDesde) {
+                    const fechaDesde = new Date(filtros.fechaDesde);
+                    const fechaDesdeDate = new Date(
+                        fechaDesde.getFullYear(),
+                        fechaDesde.getMonth(),
+                        fechaDesde.getDate()
+                    );
+                    if (fechaSolicitudDate < fechaDesdeDate) {
+                        return false;
+                    }
+                }
+                
+                if (filtros.fechaHasta) {
+                    const fechaHasta = new Date(filtros.fechaHasta);
+                    const fechaHastaDate = new Date(
+                        fechaHasta.getFullYear(),
+                        fechaHasta.getMonth(),
+                        fechaHasta.getDate()
+                    );
+                    if (fechaSolicitudDate > fechaHastaDate) {
+                        return false;
+                    }
+                }
+                
+                return true;
+            });
+        } else if (filtros.dias) {
+            // Filtro por fecha (últimos X días) - solo si no hay rango de fechas
             const diasAtras = parseInt(filtros.dias);
             const fechaLimite = new Date();
             fechaLimite.setDate(fechaLimite.getDate() - diasAtras);
@@ -154,10 +202,86 @@ const MisPresupuestos = () => {
         }));
     };
 
+    // Manejar cambio de fecha desde react-datepicker
+    const handleFechaChange = (tipoFecha, fecha) => {
+        if (fecha) {
+            // Normalizar la fecha a medianoche en hora local para evitar problemas de zona horaria
+            const año = fecha.getFullYear();
+            const mes = fecha.getMonth();
+            const dia = fecha.getDate();
+            
+            // Crear una nueva fecha a medianoche local (sin hora, sin zona horaria)
+            const fechaNormalizada = new Date(año, mes, dia, 0, 0, 0, 0);
+            
+            // Extraer los componentes de la fecha normalizada (por seguridad)
+            const añoFormato = fechaNormalizada.getFullYear();
+            const mesFormato = String(fechaNormalizada.getMonth() + 1).padStart(2, '0');
+            const diaFormato = String(fechaNormalizada.getDate()).padStart(2, '0');
+            const fechaFormateada = `${añoFormato}-${mesFormato}-${diaFormato}`;
+            
+            setFiltros(prev => {
+                // Validar que fechaDesde no sea mayor que fechaHasta (comparar strings YYYY-MM-DD)
+                if (tipoFecha === 'fechaDesde' && prev.fechaHasta) {
+                    if (fechaFormateada > prev.fechaHasta) {
+                        return prev;
+                    }
+                }
+                // Validar que fechaHasta no sea menor que fechaDesde (comparar strings YYYY-MM-DD)
+                if (tipoFecha === 'fechaHasta' && prev.fechaDesde) {
+                    if (fechaFormateada < prev.fechaDesde) {
+                        return prev;
+                    }
+                }
+                
+                return {
+                    ...prev,
+                    [tipoFecha]: fechaFormateada
+                };
+            });
+        } else {
+            // Si se limpia la fecha
+            setFiltros(prev => ({
+                ...prev,
+                [tipoFecha]: ''
+            }));
+        }
+    };
+
+    // Convertir string de fecha (YYYY-MM-DD) a objeto Date usando hora local (evita problemas de zona horaria)
+    const getFechaDate = (fechaString) => {
+        if (!fechaString) return null;
+        
+        // Parsear el string YYYY-MM-DD directamente
+        const partes = fechaString.split('-');
+        if (partes.length !== 3) return null;
+        
+        const año = parseInt(partes[0], 10);
+        const mes = parseInt(partes[1], 10) - 1; // Los meses en Date son 0-indexed
+        const dia = parseInt(partes[2], 10);
+        
+        // Validar que los valores sean números válidos
+        if (isNaN(año) || isNaN(mes) || isNaN(dia)) return null;
+        
+        // Crear fecha usando hora local a medianoche (0 horas, 0 minutos, 0 segundos, 0 milisegundos)
+        const fecha = new Date(año, mes, dia, 0, 0, 0, 0);
+        
+        // Validar que la fecha sea válida
+        if (isNaN(fecha.getTime())) return null;
+        
+        // Verificar que la fecha parseada coincide con lo que esperamos (evita problemas de desbordamiento)
+        if (fecha.getFullYear() !== año || fecha.getMonth() !== mes || fecha.getDate() !== dia) {
+            return null;
+        }
+        
+        return fecha;
+    };
+
     const limpiarFiltros = () => {
         setFiltros({
             prioridad: '',
-            dias: ''
+            dias: '',
+            fechaDesde: '',
+            fechaHasta: ''
         });
     };
 
@@ -211,8 +335,13 @@ const MisPresupuestos = () => {
                 setDetalleAbierto(false);
                 setPresupuestoSeleccionado(null);
 
-                // Mostrar mensaje de éxito
-                alert('¡Horario confirmado exitosamente! Se ha creado la orden de trabajo y el profesional ha sido notificado.');
+                // Mostrar modal de éxito
+                setShowHorarioConfirmadoModal(true);
+                
+                // Cerrar modal después de 3 segundos
+                setTimeout(() => {
+                    setShowHorarioConfirmadoModal(false);
+                }, 3000);
             } else {
                 alert('Error al confirmar el horario: ' + (data.message || 'Error desconocido'));
             }
@@ -270,7 +399,7 @@ const MisPresupuestos = () => {
                                 </div>
 
                                 <div className="filtro-grupo">
-                                    <label htmlFor="filtro-dias">Fecha:</label>
+                                    <label htmlFor="filtro-dias">Últimos días:</label>
                                     <select
                                         id="filtro-dias"
                                         value={filtros.dias}
@@ -281,6 +410,56 @@ const MisPresupuestos = () => {
                                         <option value="10">Últimos 10 días</option>
                                         <option value="20">Últimos 20 días</option>
                                     </select>
+                                </div>
+
+                                <div className="filtro-grupo filtro-fecha-rango">
+                                    <label htmlFor="filtro-fecha-desde">Fecha Desde:</label>
+                                    <DatePicker
+                                        id="filtro-fecha-desde"
+                                        selected={getFechaDate(filtros.fechaDesde)}
+                                        onChange={(fecha) => handleFechaChange('fechaDesde', fecha)}
+                                        selectsStart
+                                        startDate={getFechaDate(filtros.fechaDesde)}
+                                        endDate={getFechaDate(filtros.fechaHasta)}
+                                        maxDate={filtros.fechaHasta ? getFechaDate(filtros.fechaHasta) : undefined}
+                                        dateFormat="dd/MM/yyyy"
+                                        placeholderText="Seleccionar fecha"
+                                        className="date-picker-input"
+                                        wrapperClassName="date-picker-wrapper"
+                                        locale="es"
+                                        showYearDropdown
+                                        showMonthDropdown
+                                        dropdownMode="select"
+                                        yearDropdownItemNumber={100}
+                                        scrollableYearDropdown
+                                        isClearable
+                                        adjustDateOnChange
+                                    />
+                                </div>
+
+                                <div className="filtro-grupo filtro-fecha-rango">
+                                    <label htmlFor="filtro-fecha-hasta">Fecha Hasta:</label>
+                                    <DatePicker
+                                        id="filtro-fecha-hasta"
+                                        selected={getFechaDate(filtros.fechaHasta)}
+                                        onChange={(fecha) => handleFechaChange('fechaHasta', fecha)}
+                                        selectsEnd
+                                        startDate={getFechaDate(filtros.fechaDesde)}
+                                        endDate={getFechaDate(filtros.fechaHasta)}
+                                        minDate={filtros.fechaDesde ? getFechaDate(filtros.fechaDesde) : undefined}
+                                        dateFormat="dd/MM/yyyy"
+                                        placeholderText="Seleccionar fecha"
+                                        className="date-picker-input"
+                                        wrapperClassName="date-picker-wrapper"
+                                        locale="es"
+                                        showYearDropdown
+                                        showMonthDropdown
+                                        dropdownMode="select"
+                                        yearDropdownItemNumber={100}
+                                        scrollableYearDropdown
+                                        isClearable
+                                        adjustDateOnChange
+                                    />
                                 </div>
 
                                 <button 
@@ -449,6 +628,19 @@ const MisPresupuestos = () => {
                     onHorarioSeleccionado={manejarSeleccionHorario}
                     onCerrar={cerrarCalendario}
                 />
+            )}
+
+            {/* Modal de Horario Confirmado */}
+            {showHorarioConfirmadoModal && (
+                <div className="horario-confirmado-modal-overlay">
+                    <div className="horario-confirmado-modal-content">
+                        <div className="horario-confirmado-icon">
+                            <FaCheck />
+                        </div>
+                        <h3>¡Horario confirmado exitosamente!</h3>
+                        <p>Se ha creado la orden de trabajo y el profesional ha sido notificado.</p>
+                    </div>
+                </div>
             )}
         </div>
     );

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './trabajoasginado.css';
 import CalificacionModal from '../../components/CalificacionModal';
+import ConfirmModal from '../../components/ConfirmModal';
+import CalificacionSuccessModal from '../../components/CalificacionSuccessModal';
 import {
     FaArrowLeft,
     FaMapMarkerAlt,
@@ -15,7 +17,8 @@ import {
     FaCheckCircle,
     FaHourglassHalf,
     FaTimesCircle,
-    FaStar
+    FaStar,
+    FaFilter
 } from 'react-icons/fa';
 
 const TrabajosAsignados = ({ 
@@ -33,6 +36,19 @@ const TrabajosAsignados = ({
     const [cerrandoOrden, setCerrandoOrden] = useState(false);
     const [showCalificacionModal, setShowCalificacionModal] = useState(false);
     const [yaCalificado, setYaCalificado] = useState(false);
+    const [ordenesCalificadas, setOrdenesCalificadas] = useState({}); // Mapa de ordenId -> boolean
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [confirmAction, setConfirmAction] = useState(null);
+    const [confirmMessage, setConfirmMessage] = useState('');
+    const [confirmTitle, setConfirmTitle] = useState('');
+    const [showCalificacionSuccessModal, setShowCalificacionSuccessModal] = useState(false);
+    const [filtros, setFiltros] = useState({
+        cliente: '',
+        dias: '',
+        estado: ''
+    });
+    const [showFiltros, setShowFiltros] = useState(false);
+    const [ordenesFiltradas, setOrdenesFiltradas] = useState([]);
 
     // Obtener datos del usuario del localStorage
     useEffect(() => {
@@ -77,6 +93,16 @@ const TrabajosAsignados = ({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [personaId]);
 
+    // Aplicar filtros cuando cambien los filtros o las órdenes
+    useEffect(() => {
+        if (ordenesTrabajos.length > 0) {
+            aplicarFiltros();
+        } else {
+            setOrdenesFiltradas([]);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [filtros, ordenesTrabajos]);
+
     const fetchOrdenesTrabajos = async () => {
         try {
             setLoading(true);
@@ -93,7 +119,30 @@ const TrabajosAsignados = ({
             console.log('Respuesta de órdenes de trabajo:', data);
             if (data.success) {
                 console.log('Órdenes de trabajo obtenidas:', data.data.length);
-                setOrdenesTrabajos(data.data);
+                const ordenes = data.data;
+                setOrdenesTrabajos(ordenes);
+                
+                // Verificar calificaciones para órdenes completadas
+                if (personaId) {
+                    const calificacionesMap = {};
+                    const verificaciones = ordenes
+                        .filter(orden => orden.estado === 'completado' && orden.cliente_persona_id)
+                        .map(async (orden) => {
+                            try {
+                                const response = await fetch(
+                                    `http://localhost:3002/api/calificaciones/verificar?solicitud_id=${orden.solicitud_id}&calificador_persona_id=${personaId}&calificado_persona_id=${orden.cliente_persona_id}`
+                                );
+                                const data = await response.json();
+                                calificacionesMap[orden.id] = data.success && data.data.existe;
+                            } catch (error) {
+                                console.error(`Error al verificar calificación para orden ${orden.id}:`, error);
+                                calificacionesMap[orden.id] = false;
+                            }
+                        });
+                    
+                    await Promise.all(verificaciones);
+                    setOrdenesCalificadas(calificacionesMap);
+                }
             } else {
                 throw new Error(data.message || 'Error al obtener las órdenes de trabajo');
             }
@@ -126,23 +175,36 @@ const TrabajosAsignados = ({
         }
     };
 
-    const handleCalificarCliente = () => {
-        if (selectedOrden && selectedOrden.cliente_persona_id) {
+    const handleCalificarCliente = (orden) => {
+        if (orden && orden.cliente_persona_id) {
+            setSelectedOrden(orden);
             setShowCalificacionModal(true);
         }
     };
 
     const handleCalificacionEnviada = () => {
+        if (selectedOrden) {
+            setOrdenesCalificadas(prev => ({
+                ...prev,
+                [selectedOrden.id]: true
+            }));
+        }
         setYaCalificado(true);
         fetchOrdenesTrabajos();
+        // Mostrar modal de éxito
+        setShowCalificacionSuccessModal(true);
     };
 
-    const handleCerrarOrden = async () => {
+    const handleCerrarOrden = () => {
         if (!selectedOrden) return;
+        setConfirmTitle('Cerrar Orden de Trabajo');
+        setConfirmMessage('¿Estás seguro de que deseas cerrar esta orden de trabajo?');
+        setConfirmAction(() => ejecutarCerrarOrden);
+        setShowConfirmModal(true);
+    };
 
-        // Confirmar acción
-        const confirmar = window.confirm('¿Estás seguro de que deseas cerrar esta orden de trabajo?');
-        if (!confirmar) return;
+    const ejecutarCerrarOrden = async () => {
+        if (!selectedOrden) return;
 
         try {
             setCerrandoOrden(true);
@@ -173,12 +235,16 @@ const TrabajosAsignados = ({
         }
     };
 
-    const handleCerrarDefinitivamente = async () => {
+    const handleCerrarDefinitivamente = () => {
         if (!selectedOrden) return;
+        setConfirmTitle('Cerrar Definitivamente');
+        setConfirmMessage('¿Estás seguro de que deseas cerrar definitivamente esta orden de trabajo? Esta acción no se puede deshacer.');
+        setConfirmAction(() => ejecutarCerrarDefinitivamente);
+        setShowConfirmModal(true);
+    };
 
-        // Confirmar acción
-        const confirmar = window.confirm('¿Estás seguro de que deseas cerrar definitivamente esta orden de trabajo? Esta acción no se puede deshacer.');
-        if (!confirmar) return;
+    const ejecutarCerrarDefinitivamente = async () => {
+        if (!selectedOrden) return;
 
         try {
             setCerrandoOrden(true);
@@ -197,8 +263,7 @@ const TrabajosAsignados = ({
                 await fetchOrdenesTrabajos();
                 // Cerrar el modal de detalles
                 setShowModal(false);
-                // Mostrar modal de calificación automáticamente (el profesional califica al cliente)
-                setShowCalificacionModal(true);
+                // No mostrar modal de calificación automáticamente - el botón estará en la tarjeta
             } else {
                 throw new Error(data.message || 'Error al cerrar definitivamente la orden de trabajo');
             }
@@ -208,6 +273,70 @@ const TrabajosAsignados = ({
         } finally {
             setCerrandoOrden(false);
         }
+    };
+
+    const handleConfirmAction = () => {
+        if (confirmAction) {
+            confirmAction();
+        }
+    };
+
+    // Aplicar filtros a las órdenes
+    const aplicarFiltros = () => {
+        if (ordenesTrabajos.length === 0) {
+            setOrdenesFiltradas([]);
+            return;
+        }
+
+        let resultado = [...ordenesTrabajos];
+
+        // Filtro por nombre de cliente
+        if (filtros.cliente && filtros.cliente.trim() !== '') {
+            const nombreCliente = filtros.cliente.toLowerCase().trim();
+            resultado = resultado.filter(orden => 
+                orden.cliente_nombre && 
+                orden.cliente_nombre.toLowerCase().includes(nombreCliente)
+            );
+        }
+
+        // Filtro por estado
+        if (filtros.estado && filtros.estado !== '') {
+            resultado = resultado.filter(orden => orden.estado === filtros.estado);
+        }
+
+        // Filtro por fecha (últimos X días)
+        if (filtros.dias && filtros.dias !== '') {
+            const diasAtras = parseInt(filtros.dias);
+            if (!isNaN(diasAtras)) {
+                const fechaLimite = new Date();
+                fechaLimite.setDate(fechaLimite.getDate() - diasAtras);
+                fechaLimite.setHours(0, 0, 0, 0);
+                
+                resultado = resultado.filter(orden => {
+                    if (!orden.creado_en) return false;
+                    const fechaOrden = new Date(orden.creado_en);
+                    fechaOrden.setHours(0, 0, 0, 0);
+                    return fechaOrden >= fechaLimite;
+                });
+            }
+        }
+
+        setOrdenesFiltradas(resultado);
+    };
+
+    const handleFiltroChange = (campo, valor) => {
+        setFiltros(prev => ({
+            ...prev,
+            [campo]: valor
+        }));
+    };
+
+    const limpiarFiltros = () => {
+        setFiltros({
+            cliente: '',
+            dias: '',
+            estado: ''
+        });
     };
 
     const formatFecha = (fecha) => {
@@ -380,6 +509,73 @@ const TrabajosAsignados = ({
                 </div>
             )}
 
+            {/* Filtros */}
+            <div className="filtros-container">
+                <button 
+                    className="toggle-filtros-btn"
+                    onClick={() => setShowFiltros(!showFiltros)}
+                >
+                    <FaFilter />
+                    {showFiltros ? 'Ocultar Filtros' : 'Mostrar Filtros'}
+                </button>
+
+                {showFiltros && (
+                    <div className="filtros-content">
+                        <div className="filtro-grupo">
+                            <label htmlFor="filtro-cliente">Cliente:</label>
+                            <input
+                                type="text"
+                                id="filtro-cliente"
+                                value={filtros.cliente}
+                                onChange={(e) => handleFiltroChange('cliente', e.target.value)}
+                                placeholder="Buscar por nombre de cliente"
+                                className="filtro-input-text"
+                            />
+                        </div>
+
+                        <div className="filtro-grupo">
+                            <label htmlFor="filtro-dias">Últimos días:</label>
+                            <select
+                                id="filtro-dias"
+                                value={filtros.dias}
+                                onChange={(e) => handleFiltroChange('dias', e.target.value)}
+                            >
+                                <option value="">Todas las fechas</option>
+                                <option value="5">Últimos 5 días</option>
+                                <option value="15">Últimos 15 días</option>
+                                <option value="20">Últimos 20 días</option>
+                            </select>
+                        </div>
+
+                        <div className="filtro-grupo">
+                            <label htmlFor="filtro-estado">Estado:</label>
+                            <select
+                                id="filtro-estado"
+                                value={filtros.estado}
+                                onChange={(e) => handleFiltroChange('estado', e.target.value)}
+                            >
+                                <option value="">Todos los estados</option>
+                                <option value="pendiente">Pendiente</option>
+                                <option value="represupuestada">Represupuestada</option>
+                                <option value="en_curso">En Curso</option>
+                                <option value="completado">Completado</option>
+                                <option value="cancelado">Cancelado</option>
+                                <option value="reprogramado">Reprogramado</option>
+                                <option value="cerradoprofesional">Cerrado por Profesional</option>
+                                <option value="cerradocliente">Cerrado por Cliente</option>
+                            </select>
+                        </div>
+
+                        <button 
+                            className="limpiar-filtros-btn"
+                            onClick={limpiarFiltros}
+                        >
+                            Limpiar Filtros
+                        </button>
+                    </div>
+                )}
+            </div>
+
             {/* Lista de órdenes de trabajo */}
             <div className="ordenes-list">
                 {ordenesTrabajos.length === 0 ? (
@@ -388,8 +584,14 @@ const TrabajosAsignados = ({
                         <h3>No tienes trabajos asignados</h3>
                         <p>Aún no tienes órdenes de trabajo asignadas.</p>
                     </div>
+                ) : ordenesFiltradas.length === 0 ? (
+                    <div className="no-ordenes">
+                        <FaBriefcase className="no-ordenes-icon" />
+                        <h3>No hay trabajos que coincidan con los filtros</h3>
+                        <p>Intenta ajustar los filtros de búsqueda.</p>
+                    </div>
                 ) : (
-                    ordenesTrabajos.map((orden) => (
+                    ordenesFiltradas.map((orden) => (
                         <div key={orden.id} className="orden-card">
                             <div className="orden-header">
                                 <h3 className="orden-titulo">{orden.solicitud_titulo}</h3>
@@ -427,6 +629,17 @@ const TrabajosAsignados = ({
                             </div>
 
                             <div className="orden-actions">
+                                {orden.estado === 'completado' && 
+                                 orden.cliente_persona_id && 
+                                 !ordenesCalificadas[orden.id] && (
+                                    <button 
+                                        className="calificar-button-card"
+                                        onClick={() => handleCalificarCliente(orden)}
+                                    >
+                                        <FaStar />
+                                        Calificar Cliente
+                                    </button>
+                                )}
                                 <button 
                                     className="ver-detalle-button"
                                     onClick={() => handleVerDetalle(orden)}
@@ -504,7 +717,7 @@ const TrabajosAsignados = ({
                                 <h4>Monto</h4>
                                 <div className="monto-info">
                                     <FaDollarSign className="info-icon" />
-                                    <span className="monto-valor">${parseFloat(selectedOrden.monto).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+                                    <span className="monto-valor">{parseFloat(selectedOrden.monto).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
                                 </div>
                             </div>
 
@@ -556,16 +769,6 @@ const TrabajosAsignados = ({
                                     )}
                                 </button>
                             )}
-                            {selectedOrden.estado === 'completado' && !yaCalificado && (
-                                <button 
-                                    className="calificar-button"
-                                    onClick={handleCalificarCliente}
-                                    disabled={cerrandoOrden}
-                                >
-                                    <FaStar />
-                                    Calificar Cliente
-                                </button>
-                            )}
                             <button 
                                 className="cancel-button"
                                 onClick={() => setShowModal(false)}
@@ -593,6 +796,23 @@ const TrabajosAsignados = ({
                     onCalificacionEnviada={handleCalificacionEnviada}
                 />
             )}
+
+            {/* Modal de Confirmación */}
+            <ConfirmModal
+                isOpen={showConfirmModal}
+                onClose={() => setShowConfirmModal(false)}
+                onConfirm={handleConfirmAction}
+                title={confirmTitle}
+                message={confirmMessage}
+                confirmText="Confirmar"
+                cancelText="Cancelar"
+            />
+
+            {/* Modal de Éxito de Calificación */}
+            <CalificacionSuccessModal
+                isOpen={showCalificacionSuccessModal}
+                onClose={() => setShowCalificacionSuccessModal(false)}
+            />
         </div>
     );
 };

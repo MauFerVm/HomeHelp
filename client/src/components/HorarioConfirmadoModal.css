@@ -1,0 +1,125 @@
+/* HorarioConfirmadoModal.css */
+.horario-confirmado-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.horario-confirmado-modal-content {
+  background: white;
+  border-radius: 16px;
+  padding: 40px 30px;
+  text-align: center;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  animation: slideIn 0.3s ease-out;
+  min-width: 300px;
+  max-width: 500px;
+}
+
+.horario-confirmado-icon {
+  width: 80px;
+  height: 80px;
+  background-color: #10b981;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  animation: scaleIn 0.4s ease-out 0.1s both;
+}
+
+.horario-confirmado-icon svg {
+  color: white;
+  font-size: 40px;
+}
+
+.horario-confirmado-modal-content h3 {
+  margin: 0 0 12px 0;
+  color: #1f2937;
+  font-size: 20px;
+  font-weight: 600;
+  animation: fadeInUp 0.4s ease-out 0.2s both;
+}
+
+.horario-confirmado-modal-content p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 14px;
+  line-height: 1.5;
+  animation: fadeInUp 0.4s ease-out 0.3s both;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .horario-confirmado-modal-content {
+    margin: 20px;
+    padding: 30px 20px;
+    min-width: auto;
+  }
+
+  .horario-confirmado-icon {
+    width: 60px;
+    height: 60px;
+  }
+
+  .horario-confirmado-icon svg {
+    font-size: 30px;
+  }
+
+  .horario-confirmado-modal-content h3 {
+    font-size: 18px;
+  }
+
+  .horario-confirmado-modal-content p {
+    font-size: 13px;
+  }
+}
+
