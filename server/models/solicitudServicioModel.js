@@ -115,7 +115,7 @@ class SolicitudServicio {
    * Filtra por tipo de profesional y localidad, solo solicitudes abiertas
    * @param {number} tipoProfesionalId 
    * @param {number} localidadId 
-   * @param {Object} filtros - Filtros opcionales: prioridad, dias, presupuestada
+   * @param {Object} filtros - Filtros opcionales: prioridad, dias, presupuestada, fechaDesde, fechaHasta
    * @returns {Promise<Array>}
    */
   static async getDisponiblesParaProfesional(tipoProfesionalId, localidadId, filtros = {}) {
@@ -147,8 +147,18 @@ class SolicitudServicio {
       params.push(filtros.prioridad.toLowerCase());
     }
 
-    // Filtro por fecha (últimos X días)
-    if (filtros.dias && [5, 10, 20].includes(parseInt(filtros.dias))) {
+    // Filtro por rango de fechas (tiene prioridad sobre el filtro de días)
+    if (filtros.fechaDesde || filtros.fechaHasta) {
+      if (filtros.fechaDesde) {
+        query += ` AND DATE(ss.creado_en) >= ?`;
+        params.push(filtros.fechaDesde);
+      }
+      if (filtros.fechaHasta) {
+        query += ` AND DATE(ss.creado_en) <= ?`;
+        params.push(filtros.fechaHasta);
+      }
+    } else if (filtros.dias && [5, 10, 20].includes(parseInt(filtros.dias))) {
+      // Filtro por fecha (últimos X días) - solo si no hay rango de fechas
       query += ` AND ss.creado_en >= DATE_SUB(NOW(), INTERVAL ? DAY)`;
       params.push(parseInt(filtros.dias));
     }

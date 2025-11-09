@@ -43,20 +43,21 @@ const getHorariosActivos = async (profesionalId, fechaInicio, fechaFin) => {
 
 /**
  * Obtener agenda ocupada de un profesional para un rango de fechas
+ * Incluye todos los estados excepto 'cancelado' para asegurar que los horarios ocupados no se muestren
  */
 const getAgendaOcupada = async (profesionalId, fechaInicio, fechaFin) => {
     try {
         const query = `
             SELECT 
                 id,
-                fecha,
+                DATE_FORMAT(fecha, '%Y-%m-%d') as fecha,
                 horaInicio,
                 horaFin,
                 estado
             FROM profesional_agenda
             WHERE profesional_id = ?
             AND fecha BETWEEN ? AND ?
-            AND estado IN ('pendiente', 'confirmado', 'en_curso')
+            AND estado != 'cancelado'
             ORDER BY fecha, horaInicio
         `;
         

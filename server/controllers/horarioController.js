@@ -65,14 +65,12 @@ const getHorariosDisponibles = async (req, res) => {
         );
 
         // Procesar horarios disponibles
-        console.log('[DEBUG] Procesando horarios disponibles...');
         const horariosDisponibles = procesarHorariosDisponibles(
             horariosActivos,
             agendaOcupada,
             fechaInicio,
             parseInt(duracion)
         );
-        console.log('[DEBUG] Horarios procesados:', JSON.stringify(horariosDisponibles, null, 2));
 
         res.json({
             success: true,
@@ -359,14 +357,20 @@ function procesarHorariosDisponibles(horariosActivos, agendaOcupada, fechaInicio
     // Crear agenda ocupada por fecha
     const agendaPorFecha = {};
     agendaOcupada.forEach(entrada => {
-        if (!agendaPorFecha[entrada.fecha]) {
-            agendaPorFecha[entrada.fecha] = [];
+        // Asegurarse de que la fecha esté en formato YYYY-MM-DD
+        const fechaFormateada = entrada.fecha instanceof Date 
+            ? getFechaLocal(entrada.fecha) 
+            : entrada.fecha.split('T')[0]; // Si viene como datetime, tomar solo la fecha
+        
+        if (!agendaPorFecha[fechaFormateada]) {
+            agendaPorFecha[fechaFormateada] = [];
         }
-        agendaPorFecha[entrada.fecha].push({
+        agendaPorFecha[fechaFormateada].push({
             horaInicio: entrada.horaInicio,
             horaFin: entrada.horaFin
         });
     });
+    
 
     // Procesar cada día
     Object.keys(horariosPorDia).forEach(diaSemana => {
@@ -392,9 +396,11 @@ function procesarHorariosDisponibles(horariosActivos, agendaOcupada, fechaInicio
                 const rangosFusionados = fusionarRangosHorarios(horariosValidosParaFecha);
                 
                 rangosFusionados.forEach(horario => {
+                    const horariosOcupadosParaEstaFecha = agendaPorFecha[fecha] || [];
+                    
                     const horariosDisponibles = calcularHorariosDisponibles(
                         horario,
-                        agendaPorFecha[fecha] || [],
+                        horariosOcupadosParaEstaFecha,
                         duracionMinutos,
                         fecha // Pasar la fecha para filtrar horarios pasados
                     );
@@ -459,15 +465,17 @@ function calcularHorariosDisponibles(horario, agendaOcupada, duracionMinutos, fe
     const fechaHoyStr = getFechaLocal(hoy);
     const esHoy = fecha === fechaHoyStr;
     
-    console.log(`[DEBUG] Comparando fechas - fecha slot: ${fecha}, hoy: ${fechaHoyStr}, esHoy: ${esHoy}`);
-    console.log(`[DEBUG] Fecha completa hoy:`, hoy.toString());
-    
     // Obtener hora actual en formato decimal
     let horaActualDelDia = null;
     if (esHoy) {
         horaActualDelDia = hoy.getHours() + hoy.getMinutes() / 60;
-        console.log(`[DEBUG] Es hoy (${fecha}). Hora actual: ${horaActualDelDia.toFixed(2)} (${hoy.getHours()}:${hoy.getMinutes()})`);
     }
+    
+    // Convertir todos los horarios ocupados a formato decimal para comparación más eficiente
+    const horariosOcupadosDecimales = agendaOcupada.map(ocupado => ({
+        inicio: parseTime(ocupado.horaInicio),
+        fin: parseTime(ocupado.horaFin)
+    }));
     
     // Generar slots de 30 minutos
     let horaActual = horaInicio;
@@ -478,20 +486,22 @@ function calcularHorariosDisponibles(horario, agendaOcupada, duracionMinutos, fe
         // Si es hoy, saltar slots que ya pasaron o están en curso
         // Un slot debe empezar después de la hora actual para estar disponible
         if (esHoy && horaActual <= horaActualDelDia) {
-            console.log(`[DEBUG] Saltando slot ${formatTime(horaActual)}-${formatTime(horaFinSlot)} (ya pasó)`);
             horaActual += 0.5;
             continue;
         }
         
-        // Verificar si este slot está disponible
-        const estaDisponible = agendaOcupada.every(ocupado => {
-            const ocupadoInicio = parseTime(ocupado.horaInicio);
-            const ocupadoFin = parseTime(ocupado.horaFin);
-            
-            return !(horaActual < ocupadoFin && horaFinSlot > ocupadoInicio);
+        // Verificar si este slot se superpone con algún horario ocupado
+        // Dos intervalos se superponen si: inicio1 < fin2 && fin1 > inicio2
+        const haySuperposicion = horariosOcupadosDecimales.some(ocupado => {
+            // El slot se superpone si:
+            // - El inicio del slot es menor que el fin del ocupado Y
+            // - El fin del slot es mayor que el inicio del ocupado
+            const seSuperpone = horaActual < ocupado.fin && horaFinSlot > ocupado.inicio;
+            return seSuperpone;
         });
         
-        if (estaDisponible) {
+        // Solo agregar si NO hay superposición (está disponible)
+        if (!haySuperposicion) {
             horariosDisponibles.push({
                 horaInicio: formatTime(horaActual),
                 horaFin: formatTime(horaFinSlot),

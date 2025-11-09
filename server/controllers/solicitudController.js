@@ -297,12 +297,12 @@ const getAllSolicitudes = async (req, res) => {
 /**
  * Obtiene solicitudes disponibles para un profesional específico
  * Filtra por tipo de profesional y localidad
- * Acepta filtros opcionales: prioridad, dias, presupuestada
+ * Acepta filtros opcionales: prioridad, dias, presupuestada, fechaDesde, fechaHasta
  */
 const getSolicitudesDisponibles = async (req, res) => {
   try {
     const { usuario_id } = req.params;
-    const { prioridad, dias, presupuestada } = req.query;
+    const { prioridad, dias, presupuestada, fechaDesde, fechaHasta } = req.query;
     
     // Primero obtener los datos del profesional
     const [profesionalRows] = await db.query(`
@@ -329,6 +329,8 @@ const getSolicitudesDisponibles = async (req, res) => {
     if (prioridad) filtros.prioridad = prioridad;
     if (dias) filtros.dias = dias;
     if (presupuestada) filtros.presupuestada = presupuestada;
+    if (fechaDesde) filtros.fechaDesde = fechaDesde;
+    if (fechaHasta) filtros.fechaHasta = fechaHasta;
 
     // Obtener solicitudes que coincidan con el tipo de profesional y localidad
     const solicitudes = await SolicitudServicio.getDisponiblesParaProfesional(
