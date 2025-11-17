@@ -19,8 +19,10 @@
   width: 100%;
   max-width: 600px;
   max-height: 90vh;
-  overflow-y: auto;
+  overflow: hidden;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
 }
 
 .modal-header {
@@ -30,6 +32,7 @@
   padding: 24px 24px 0 24px;
   border-bottom: 1px solid #e5e7eb;
   margin-bottom: 24px;
+  flex-shrink: 0;
 }
 
 .modal-header h2 {
@@ -62,6 +65,8 @@
 
 .problema-form {
   padding: 0 24px 24px 24px;
+  overflow-y: auto;
+  flex: 1;
 }
 
 .form-row {
