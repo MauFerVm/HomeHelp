@@ -159,10 +159,32 @@ const getCalificacionesByPersona = async (req, res) => {
     }
 };
 
+/**
+ * Obtener profesionales destacados ordenados por calificación
+ */
+const getProfesionalesDestacados = async (req, res) => {
+    try {
+        const profesionales = await calificacionesModel.getProfesionalesDestacados();
+
+        res.json({
+            success: true,
+            data: profesionales
+        });
+    } catch (error) {
+        console.error('Error al obtener profesionales destacados:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+};
+
 module.exports = {
     crearCalificacion,
     verificarCalificacion,
     getCalificacionesBySolicitud,
-    getCalificacionesByPersona
+    getCalificacionesByPersona,
+    getProfesionalesDestacados
 };
 

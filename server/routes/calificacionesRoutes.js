@@ -18,6 +18,13 @@ router.post('/', calificacionesController.crearCalificacion);
 router.get('/verificar', calificacionesController.verificarCalificacion);
 
 /**
+ * @route GET /api/calificaciones/destacados
+ * @desc Obtener profesionales destacados por calificación
+ * @access Public
+ */
+router.get('/destacados', calificacionesController.getProfesionalesDestacados);
+
+/**
  * @route GET /api/calificaciones/solicitud/:solicitud_id
  * @desc Obtener calificaciones por solicitud
  * @access Private

@@ -100,10 +100,47 @@ const getCalificacionesByPersona = async (persona_id) => {
     return rows;
 };
 
+/**
+ * Obtener profesionales destacados según promedio de calificaciones recibidas
+ */
+const getProfesionalesDestacados = async () => {
+    const query = `
+        SELECT 
+            p.id AS persona_id,
+            p.nombre_apellido,
+            p.foto_perfil,
+            ROUND(AVG(c.puntuacion), 1) AS promedio_calificacion,
+            COUNT(c.id) AS total_calificaciones,
+            (
+                SELECT COUNT(*)
+                FROM orden_de_trabajo ot
+                WHERE ot.profesional_id = p.id
+                AND ot.estado IN ('completado', 'cerradoprofesional', 'cerradocliente')
+                AND ot.is_active = 1
+            ) AS total_trabajos,
+            (
+                SELECT GROUP_CONCAT(tp.nombre ORDER BY tp.nombre SEPARATOR ', ')
+                FROM profesional_tipo pt
+                JOIN tipo_profesional tp ON pt.tipo_profesional_id = tp.id
+                WHERE pt.profesional_id = pr.id
+            ) AS tipo_profesional_nombre
+        FROM calificaciones c
+        JOIN persona p ON c.calificado_persona_id = p.id
+        JOIN profesional pr ON p.id = pr.id
+        WHERE c.activo = 1
+        GROUP BY p.id, p.nombre_apellido, p.foto_perfil, pr.id
+        ORDER BY promedio_calificacion DESC, total_calificaciones DESC, p.nombre_apellido ASC
+    `;
+
+    const [rows] = await db.execute(query);
+    return rows;
+};
+
 module.exports = {
     crearCalificacion,
     existeCalificacion,
     getCalificacionesBySolicitud,
-    getCalificacionesByPersona
+    getCalificacionesByPersona,
+    getProfesionalesDestacados
 };
 

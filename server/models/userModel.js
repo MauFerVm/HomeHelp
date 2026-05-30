@@ -1,5 +1,6 @@
 // Define la clase User y encapsula toda la lógica de acceso a la tabla `users`
 const db = require('../config/db');
+const { hashPassword, comparePassword } = require('../utils/password');
 
 class Usuario {
   constructor({ id = null, correo, nombre_usuario, contraseña, fecha_creacion = null, activo = true, rol = 'cliente', foto_perfil = null, nombre_apellido = null }) {
@@ -15,12 +16,13 @@ class Usuario {
   }
 
   static async crearUsuario({ correo, nombre_usuario, contraseña, rol = 'cliente' }) {
+    const hash = await hashPassword(contraseña);
     const [result] = await db.query(
       // IMPORTANTE: hay 6 columnas, por eso 4 valores + NOW()/TRUE + ? para rol
       'INSERT INTO usuario (correo, nombre_usuario, contraseña, fecha_creacion, activo, rol) VALUES (?,?,?, NOW(), TRUE, ?)',
-      [correo, nombre_usuario, contraseña, rol]
+      [correo, nombre_usuario, hash, rol]
     );
-    return new Usuario({ id: result.insertId, correo, nombre_usuario, contraseña, rol });
+    return new Usuario({ id: result.insertId, correo, nombre_usuario, contraseña: hash, rol });
   }
 
   static async buscarPorCredenciales(nombre_usuario, contraseña) {
@@ -28,10 +30,14 @@ class Usuario {
       `SELECT u.*, p.foto_perfil, p.nombre_apellido 
        FROM usuario u 
        LEFT JOIN persona p ON u.id = p.usuario_id 
-       WHERE u.nombre_usuario = ? AND u.contraseña = ?`,
-      [nombre_usuario, contraseña]
+       WHERE u.nombre_usuario = ?`,
+      [nombre_usuario]
     );
     if (rows.length === 0) return null;
+
+    const ok = await comparePassword(contraseña, rows[0].contraseña);
+    if (!ok) return null;
+
     return new Usuario(rows[0]);
   }
 

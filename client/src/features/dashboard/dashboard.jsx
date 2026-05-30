@@ -52,6 +52,9 @@ const Dashboard = () => {
     const [carouselWidth, setCarouselWidth] = useState(0);
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [featuredProfessionals, setFeaturedProfessionals] = useState([]);
+    const [loadingProfessionals, setLoadingProfessionals] = useState(true);
+    const [professionalsExpanded, setProfessionalsExpanded] = useState(false);
     const [showProblemaForm, setShowProblemaForm] = useState(false);
     const [showProfileMenu, setShowProfileMenu] = useState(false);
     const [showModificarPerfil, setShowModificarPerfil] = useState(false);
@@ -163,9 +166,44 @@ const Dashboard = () => {
         }
     };
 
+    const formatDisplayName = (nombreApellido) => {
+        if (!nombreApellido) return 'Profesional';
+        const parts = nombreApellido.trim().split(/\s+/);
+        if (parts.length === 1) return parts[0];
+        return `${parts[0]} ${parts[1].charAt(0)}.`;
+    };
+
+    const getProfessionalImage = (fotoPerfil) => {
+        if (fotoPerfil) {
+            return `http://localhost:3002/uploads/profiles/${fotoPerfil}`;
+        }
+        return perfil;
+    };
+
+    const fetchFeaturedProfessionals = async () => {
+        try {
+            setLoadingProfessionals(true);
+            const response = await fetch('http://localhost:3002/api/calificaciones/destacados');
+            const data = await response.json();
+
+            if (data.success) {
+                setFeaturedProfessionals(data.data);
+            } else {
+                console.error('Error al obtener profesionales destacados:', data.message);
+                setFeaturedProfessionals([]);
+            }
+        } catch (error) {
+            console.error('Error al conectar con la API de profesionales:', error);
+            setFeaturedProfessionals([]);
+        } finally {
+            setLoadingProfessionals(false);
+        }
+    };
+
     // Cargar categorías al montar el componente
     useEffect(() => {
         fetchActiveCategories();
+        fetchFeaturedProfessionals();
     }, []);
 
     // Cerrar dropdowns si clic fuera
@@ -581,36 +619,46 @@ const Dashboard = () => {
             <div className="professionals-section">
                 <h2 className="section-title">Profesionales destacados</h2>
                 <div className="professionals-list">
-                    <div className="professional-card">
-                        <img src={perfil} alt="Ricardo M." className="professional-image" />
-                        <div className="professional-info">
-                            <h3 className="professional-name">Ricardo M.</h3>
-                            <p className="professional-profession">Plomero • ★ 4.8 (120 trabajos)</p>
-                        </div>
-                        <button className="contact-button">✓ Contactar</button>
-                    </div>
-
-                    <div className="professional-card">
-                        <img src={perfil} alt="Sofía L." className="professional-image" />
-                        <div className="professional-info">
-                            <h3 className="professional-name">Sofía L.</h3>
-                            <p className="professional-profession">Electricista • ★ 4.9 (150 trabajos)</p>
-                        </div>
-                        <button className="contact-button">✓ Contactar</button>
-                    </div>
-
-                    <div className="professional-card">
-                        <img src={perfil} alt="Javier P." className="professional-image" />
-                        <div className="professional-info">
-                            <h3 className="professional-name">Javier P.</h3>
-                            <p className="professional-profession">Carpintero • ★ 4.7 (90 trabajos)</p>
-                        </div>
-                        <button className="contact-button">✓ Contactar</button>
-                    </div>
+                    {loadingProfessionals ? (
+                        <p className="professionals-status">Cargando profesionales...</p>
+                    ) : featuredProfessionals.length === 0 ? (
+                        <p className="professionals-status">No hay profesionales calificados aún.</p>
+                    ) : (
+                        (professionalsExpanded ? featuredProfessionals : featuredProfessionals.slice(0, 3)).map((professional) => (
+                            <div key={professional.persona_id} className="professional-card">
+                                <img
+                                    src={getProfessionalImage(professional.foto_perfil)}
+                                    alt={professional.nombre_apellido}
+                                    className="professional-image"
+                                />
+                                <div className="professional-info">
+                                    <h3 className="professional-name">
+                                        {formatDisplayName(professional.nombre_apellido)}
+                                    </h3>
+                                    <p className="professional-profession">
+                                        {professional.tipo_profesional_nombre || 'Profesional'} • ★ {professional.promedio_calificacion} ({professional.total_trabajos} trabajos)
+                                    </p>
+                                </div>
+                                <button className="contact-button">✓ Contactar</button>
+                            </div>
+                        ))
+                    )}
                 </div>
-                <div className="load-more">
-                    <FaChevronDown />
-                </div>
+                {!loadingProfessionals && featuredProfessionals.length > 3 && (
+                    <div
+                        className="load-more"
+                        onClick={() => setProfessionalsExpanded((prev) => !prev)}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                                setProfessionalsExpanded((prev) => !prev);
+                            }
+                        }}
+                    >
+                        {professionalsExpanded ? <FaChevronUp /> : <FaChevronDown />}
+                    </div>
+                )}
             </div>
         </>
     );

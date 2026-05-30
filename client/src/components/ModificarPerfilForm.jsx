@@ -1,9 +1,79 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { FaTimes, FaSpinner } from 'react-icons/fa';
 import api from '../services/api';
 import UsuarioFields from '../features/auth/UsuarioFields';
+import PerfilGuardadoModal from './PerfilGuardadoModal';
 import './ModificarPerfilForm.css';
+
+const truncateText = (text, max = 80) => {
+  const value = String(text || '').trim();
+  if (value.length <= max) return value;
+  return `${value.slice(0, max)}…`;
+};
+
+const getTipoNames = (ids, tiposList) =>
+  ids
+    .map(id => tiposList.find(t => String(t.id) === String(id))?.nombre)
+    .filter(Boolean)
+    .join(', ') || '—';
+
+const getLocationName = (id, list) =>
+  list.find(item => String(item.id) === String(id))?.nombre || '—';
+
+const computeChanges = (initial, current, { provincias, localidades, tipos, userType }) => {
+  const changes = [];
+
+  if (initial.correo !== current.correo) {
+    changes.push({ field: 'Correo electrónico', from: initial.correo, to: current.correo });
+  }
+  if (initial.nombre_usuario !== current.nombre_usuario) {
+    changes.push({ field: 'Nombre de usuario', from: initial.nombre_usuario, to: current.nombre_usuario });
+  }
+  if (current.contrasena && current.contrasena.trim() !== '') {
+    changes.push({ field: 'Contraseña', detail: 'Se actualizó la contraseña' });
+  }
+  if (current.foto_perfil) {
+    changes.push({
+      field: 'Foto de perfil',
+      detail: `Nueva imagen: ${current.foto_perfil.name}`
+    });
+  }
+  if (String(initial.provincia_id) !== String(current.provincia_id)) {
+    changes.push({
+      field: 'Provincia',
+      from: initial.provincia_nombre || getLocationName(initial.provincia_id, provincias),
+      to: getLocationName(current.provincia_id, provincias)
+    });
+  }
+  if (String(initial.localidad_id) !== String(current.localidad_id)) {
+    changes.push({
+      field: 'Localidad',
+      from: initial.localidad_nombre || getLocationName(initial.localidad_id, localidades),
+      to: getLocationName(current.localidad_id, localidades)
+    });
+  }
+  if (userType === 'profesional') {
+    const initialTipos = [...initial.tipo_profesional_ids].map(String).sort();
+    const currentTipos = [...current.tipo_profesional_ids].map(String).sort();
+    if (JSON.stringify(initialTipos) !== JSON.stringify(currentTipos)) {
+      changes.push({
+        field: 'Tipos de profesional',
+        from: getTipoNames(initial.tipo_profesional_ids, tipos),
+        to: getTipoNames(current.tipo_profesional_ids, tipos)
+      });
+    }
+    if (initial.presentacion !== current.presentacion) {
+      changes.push({
+        field: 'Presentación',
+        from: truncateText(initial.presentacion),
+        to: truncateText(current.presentacion)
+      });
+    }
+  }
+
+  return changes;
+};
 
 const ModificarPerfilForm = ({ isOpen, onClose, userType, usuarioId, onSuccess }) => {
   const [loading, setLoading] = useState(false);
@@ -12,6 +82,10 @@ const ModificarPerfilForm = ({ isOpen, onClose, userType, usuarioId, onSuccess }
   const [provincias, setProvincias] = useState([]);
   const [localidades, setLocalidades] = useState([]);
   const [tipos, setTipos] = useState([]);
+  const [initialData, setInitialData] = useState(null);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [savedChanges, setSavedChanges] = useState([]);
+  const updatedDataRef = useRef(null);
   const [formData, setFormData] = useState({
     correo: '',
     nombre_usuario: '',
@@ -24,11 +98,19 @@ const ModificarPerfilForm = ({ isOpen, onClose, userType, usuarioId, onSuccess }
   });
 
   useEffect(() => {
-    if (!isOpen || !usuarioId) return;
+    if (!isOpen) {
+      setShowSuccess(false);
+      setSavedChanges([]);
+      updatedDataRef.current = null;
+      return;
+    }
+    if (!usuarioId) return;
 
     const fetchData = async () => {
       setLoadingData(true);
       setError('');
+      setShowSuccess(false);
+      setSavedChanges([]);
       try {
         const endpoint = userType === 'profesional'
           ? `/auth/profesional/${usuarioId}`
@@ -50,7 +132,7 @@ const ModificarPerfilForm = ({ isOpen, onClose, userType, usuarioId, onSuccess }
           setTipos(tiposRes.data || []);
         }
 
-        setFormData({
+        const loadedFormData = {
           correo: data.correo || '',
           nombre_usuario: data.nombre_usuario || '',
           contrasena: '',
@@ -59,13 +141,29 @@ const ModificarPerfilForm = ({ isOpen, onClose, userType, usuarioId, onSuccess }
           localidad_id: data.localidad_id ? String(data.localidad_id) : '',
           tipo_profesional_ids: (data.tipo_profesional_ids || []).map(String),
           presentacion: data.presentacion || ''
-        });
+        };
+        setFormData(loadedFormData);
 
         if (data.provincia_id) {
           const locRes = await api.get(`/location/localidades/${data.provincia_id}`);
-          setLocalidades(locRes.data || []);
+          const loadedLocalidades = locRes.data || [];
+          setLocalidades(loadedLocalidades);
+
+          const provinciaNombre = (provinciasRes.data || []).find(
+            p => String(p.id) === String(data.provincia_id)
+          )?.nombre || '';
+          const localidadNombre = loadedLocalidades.find(
+            l => String(l.id) === String(data.localidad_id)
+          )?.nombre || '';
+
+          setInitialData({
+            ...loadedFormData,
+            provincia_nombre: provinciaNombre,
+            localidad_nombre: localidadNombre
+          });
         } else {
           setLocalidades([]);
+          setInitialData(loadedFormData);
         }
       } catch (err) {
         console.error('Error al cargar perfil:', err);
@@ -169,8 +267,13 @@ const ModificarPerfilForm = ({ isOpen, onClose, userType, usuarioId, onSuccess }
         throw new Error(json.message || 'No se pudo actualizar el perfil');
       }
 
-      onSuccess(json.data);
-      onClose();
+      const changes = initialData
+        ? computeChanges(initialData, formData, { provincias, localidades, tipos, userType })
+        : [];
+
+      updatedDataRef.current = json.data;
+      setSavedChanges(changes);
+      setShowSuccess(true);
     } catch (err) {
       console.error('Error al actualizar perfil:', err);
       setError(err.message || 'Error al actualizar el perfil');
@@ -179,7 +282,27 @@ const ModificarPerfilForm = ({ isOpen, onClose, userType, usuarioId, onSuccess }
     }
   };
 
+  const handleSuccessClose = () => {
+    if (updatedDataRef.current) {
+      onSuccess(updatedDataRef.current);
+    }
+    setShowSuccess(false);
+    setSavedChanges([]);
+    updatedDataRef.current = null;
+    onClose();
+  };
+
   if (!isOpen) return null;
+
+  if (showSuccess) {
+    return (
+      <PerfilGuardadoModal
+        isOpen={showSuccess}
+        changes={savedChanges}
+        onClose={handleSuccessClose}
+      />
+    );
+  }
 
   const availableTipos = tipos.filter(t => !formData.tipo_profesional_ids.includes(String(t.id)));
 

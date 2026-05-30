@@ -5,6 +5,7 @@ const Persona      = require('../models/personaModel');
 const ClienteHogar = require('../models/clienteHogarModel');
 const Profesional  = require('../models/profesionalModel');
 const TipoProfesional = require('../models/tipoProfesionalModel');
+const { hashPassword } = require('../utils/password');
 
 exports.registerCompleto = async (req, res) => {
   const conn = await pool.getConnection();
@@ -43,9 +44,10 @@ exports.registerCompleto = async (req, res) => {
     const roleToSave = rol || 'cliente';
 
     // 1) Insert usuario (AHORA guarda rol)
+    const hash = await hashPassword(contrasena);
     const [userResult] = await conn.query(
       'INSERT INTO usuario (correo, nombre_usuario, contraseña, fecha_creacion, activo, rol) VALUES (?, ?, ?, NOW(), TRUE, ?)',
-      [correo, nombre_usuario, contrasena, roleToSave]
+      [correo, nombre_usuario, hash, roleToSave]
     );
     const usuarioId = userResult.insertId;
 
@@ -392,9 +394,10 @@ exports.updatePerfil = async (req, res) => {
     }
 
     if (contrasena && String(contrasena).trim() !== '') {
+      const hash = await hashPassword(contrasena);
       await conn.query(
         'UPDATE usuario SET correo = ?, nombre_usuario = ?, contraseña = ? WHERE id = ?',
-        [correo, nombre_usuario, contrasena, usuario_id]
+        [correo, nombre_usuario, hash, usuario_id]
       );
     } else {
       await conn.query(
