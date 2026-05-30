@@ -138,11 +138,13 @@ const getPresupuestosBySolicitud = async (req, res) => {
                 per.foto_perfil as profesional_foto,
                 prof.presentacion,
                 prof.instituto,
-                tp.nombre as tipo_profesional
+                (SELECT GROUP_CONCAT(tp.nombre ORDER BY tp.nombre SEPARATOR ', ')
+                 FROM profesional_tipo pt
+                 JOIN tipo_profesional tp ON pt.tipo_profesional_id = tp.id
+                 WHERE pt.profesional_id = prof.id) as tipo_profesional
             FROM presupuesto p
             JOIN persona per ON p.profesional_persona_id = per.id
             JOIN profesional prof ON p.profesional_persona_id = prof.id
-            JOIN tipo_profesional tp ON prof.tipo_profesional_id = tp.id
             WHERE p.solicitud_id = ?
             ORDER BY p.creado_en DESC
         `;

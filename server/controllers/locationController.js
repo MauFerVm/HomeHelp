@@ -14,6 +14,6 @@ exports.listarLocalidades = async (req, res) => {
 };
 
 exports.listarTiposProfesional = async (req, res) => {
-  const list = await TipoProfesional.getAll();
+  const list = await TipoProfesional.getActive();
   res.json(list.map(t => t.toJSON()));
 };

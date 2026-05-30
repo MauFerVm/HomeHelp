@@ -46,4 +46,14 @@ router.get('/persona/:usuario_id', authController.getPersonaByUsuarioId);
 // Obtener datos completos del profesional
 router.get('/profesional/:usuario_id', authController.getProfesionalData);
 
+// Actualizar perfil del usuario (cliente o profesional)
+router.put(
+  '/perfil/:usuario_id',
+  upload.fields([
+    { name: 'foto_perfil', maxCount: 1 },
+    { name: 'foto_titulo', maxCount: 1 }
+  ]),
+  authController.updatePerfil
+);
+
 module.exports = router;

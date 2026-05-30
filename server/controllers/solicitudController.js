@@ -171,11 +171,12 @@ const crearSolicitud = async (req, res) => {
 
     // Buscar usuarios profesionales que coinciden con rubro y localidad
     const [profesionalesUsuarios] = await connection.query(`
-      SELECT u.id AS usuario_id
+      SELECT DISTINCT u.id AS usuario_id
       FROM profesional pr
+      JOIN profesional_tipo pt ON pr.id = pt.profesional_id
       JOIN persona p ON pr.id = p.id
       JOIN usuario u ON p.usuario_id = u.id
-      WHERE pr.tipo_profesional_id = ?
+      WHERE pt.tipo_profesional_id = ?
         AND pr.localidad_id = ?
         AND u.rol = 'profesional'
     `, [tipo_profesional_id, localidad_id]);
@@ -304,14 +305,13 @@ const getSolicitudesDisponibles = async (req, res) => {
     const { usuario_id } = req.params;
     const { prioridad, dias, presupuestada, fechaDesde, fechaHasta } = req.query;
     
-    // Primero obtener los datos del profesional
+    // Obtener localidad y tipos de profesional del usuario
     const [profesionalRows] = await db.query(`
-      SELECT 
-        pr.tipo_profesional_id,
-        pr.localidad_id
+      SELECT pr.localidad_id, pt.tipo_profesional_id
       FROM profesional pr
       JOIN persona p ON pr.id = p.id
       JOIN usuario u ON p.usuario_id = u.id
+      JOIN profesional_tipo pt ON pr.id = pt.profesional_id
       WHERE u.id = ? AND u.rol = 'profesional'
     `, [usuario_id]);
 
@@ -322,7 +322,8 @@ const getSolicitudesDisponibles = async (req, res) => {
       });
     }
 
-    const profesional = profesionalRows[0];
+    const localidadId = profesionalRows[0].localidad_id;
+    const tipoProfesionalIds = profesionalRows.map(r => r.tipo_profesional_id);
 
     // Construir objeto de filtros
     const filtros = {};
@@ -332,10 +333,10 @@ const getSolicitudesDisponibles = async (req, res) => {
     if (fechaDesde) filtros.fechaDesde = fechaDesde;
     if (fechaHasta) filtros.fechaHasta = fechaHasta;
 
-    // Obtener solicitudes que coincidan con el tipo de profesional y localidad
+    // Obtener solicitudes que coincidan con alguno de sus tipos y la localidad
     const solicitudes = await SolicitudServicio.getDisponiblesParaProfesional(
-      profesional.tipo_profesional_id,
-      profesional.localidad_id,
+      tipoProfesionalIds,
+      localidadId,
       filtros
     );
     

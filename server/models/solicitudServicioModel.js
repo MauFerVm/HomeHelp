@@ -113,12 +113,17 @@ class SolicitudServicio {
   /**
    * Trae solicitudes disponibles para un profesional específico
    * Filtra por tipo de profesional y localidad, solo solicitudes abiertas
-   * @param {number} tipoProfesionalId 
+   * @param {number|number[]} tipoProfesionalIds - Uno o más tipos de profesional
    * @param {number} localidadId 
    * @param {Object} filtros - Filtros opcionales: prioridad, dias, presupuestada, fechaDesde, fechaHasta
    * @returns {Promise<Array>}
    */
-  static async getDisponiblesParaProfesional(tipoProfesionalId, localidadId, filtros = {}) {
+  static async getDisponiblesParaProfesional(tipoProfesionalIds, localidadId, filtros = {}) {
+    const ids = Array.isArray(tipoProfesionalIds) ? tipoProfesionalIds : [tipoProfesionalIds];
+    if (ids.length === 0) return [];
+
+    const placeholders = ids.map(() => '?').join(', ');
+
     let query = `SELECT 
         ss.id, ss.titulo, ss.descripcion, ss.direccion, ss.prioridad, 
         ss.foto, ss.creado_en, ss.tipo_profesional_id, ss.localidad_id,
@@ -135,11 +140,11 @@ class SolicitudServicio {
        JOIN tipo_profesional tp ON ss.tipo_profesional_id = tp.id
        JOIN localidad l ON ss.localidad_id = l.id
        JOIN estado_sol_servicio ess ON ss.estado_id = ess.id
-       WHERE ss.tipo_profesional_id = ? 
+       WHERE ss.tipo_profesional_id IN (${placeholders}) 
          AND ss.localidad_id = ? 
          AND ess.nombre = 'abierta'`;
 
-    const params = [tipoProfesionalId, localidadId];
+    const params = [...ids, localidadId];
 
     // Filtro por prioridad
     if (filtros.prioridad && ['alta', 'media', 'baja'].includes(filtros.prioridad.toLowerCase())) {
