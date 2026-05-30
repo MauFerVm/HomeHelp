@@ -5,7 +5,7 @@ import { FaUserShield } from 'react-icons/fa';
 import { BsFillShieldLockFill } from 'react-icons/bs';
 import { AiOutlineEye, AiOutlineEyeInvisible } from 'react-icons/ai';
 
-export default function UsuarioFields({ formData, onChange, disabled = false }) {
+export default function UsuarioFields({ formData, onChange, disabled = false, editMode = false }) {
   const [showPassword, setShowPassword] = useState(false);
   return (
     <>
@@ -54,11 +54,11 @@ export default function UsuarioFields({ formData, onChange, disabled = false }) 
             type={showPassword ? "text" : "password"}
             id="contrasena"
             name="contrasena"
-            placeholder="Ingrese su contraseña"
+            placeholder={editMode ? 'Dejar en blanco para no cambiar' : 'Ingrese su contraseña'}
             value={formData.contrasena}
             onChange={onChange}
-            required
-            minLength={6}
+            required={!editMode}
+            minLength={editMode ? undefined : 6}
             disabled={disabled}
             autoComplete="new-password"
           />

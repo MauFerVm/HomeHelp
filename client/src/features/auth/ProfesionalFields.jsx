@@ -2,21 +2,83 @@
 import React from 'react';
 
 export default function ProfesionalFields({ formData, onChange, disabled = false, tipos = [] }) {
+  const selectedIds = formData.tipo_profesional_ids || [];
+
+  const updateSelectedIds = (next) => {
+    onChange({
+      target: {
+        name: 'tipo_profesional_ids',
+        value: next
+      }
+    });
+  };
+
+  const handleAddTipo = (e) => {
+    const id = e.target.value;
+    if (!id || selectedIds.includes(id)) return;
+    updateSelectedIds([...selectedIds, id]);
+    e.target.value = '';
+  };
+
+  const handleRemoveTipo = (tipoId) => {
+    updateSelectedIds(selectedIds.filter(v => v !== String(tipoId)));
+  };
+
+  const availableCount = tipos.filter(t => !selectedIds.includes(String(t.id))).length;
+  const showAddCombo = availableCount > 0;
+
   return (
     <>
       <div className='inputDiv'>
-        <label htmlFor='tipo_profesional_id'>Tipo de profesional</label>
-        <select
-          name='tipo_profesional_id'
-          id='tipo_profesional_id'
-          value={formData.tipo_profesional_id}
-          onChange={onChange}
-          required
-          disabled={disabled}
-        >
-          <option value=''>Seleccionar tipo</option>
-          {tipos.map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
-        </select>
+        <label>Tipos de profesional</label>
+
+        {selectedIds.length > 0 && (
+          <ul className='tipos-profesional-seleccionados'>
+            {selectedIds.map(id => {
+              const tipo = tipos.find(t => String(t.id) === String(id));
+              return (
+                <li key={id} className='tipo-profesional-seleccionado'>
+                  <span>{tipo?.nombre ?? 'Profesión'}</span>
+                  <button
+                    type='button'
+                    className='tipo-profesional-quitar'
+                    onClick={() => handleRemoveTipo(id)}
+                    disabled={disabled}
+                    aria-label={`Quitar ${tipo?.nombre ?? 'profesión'}`}
+                  >
+                    Quitar
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+
+        {showAddCombo && (
+          <select
+            className='tipo-profesional-add'
+            value=''
+            onChange={handleAddTipo}
+            disabled={disabled}
+            aria-label='Agregar tipo de profesional'
+          >
+            <option value=''>
+              {selectedIds.length === 0 ? 'Seleccionar profesión' : 'Agregar otra profesión'}
+            </option>
+            {tipos.map(t => {
+              const isSelected = selectedIds.includes(String(t.id));
+              return (
+                <option key={t.id} value={t.id} disabled={isSelected}>
+                  {t.nombre}{isSelected ? ' (ya seleccionada)' : ''}
+                </option>
+              );
+            })}
+          </select>
+        )}
+
+        {selectedIds.length === 0 && (
+          <small>Seleccioná al menos un tipo de profesional</small>
+        )}
       </div>
 
       <div className='inputDiv'>

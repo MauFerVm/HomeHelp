@@ -260,6 +260,65 @@
     padding: 0.6rem;
 }
 
+/* tipos de profesional: lista + combo dinámico */
+.registerPage .container .formDiv .form .tipos-profesional-seleccionados {
+    list-style: none;
+    margin: 0 0 0.75rem;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.registerPage .container .formDiv .form .tipo-profesional-seleccionado {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.55rem 0.75rem;
+    border: 1px solid var(--inputColor, #d3d3d3);
+    border-radius: 8px;
+    background: var(--whiteColor, #fff);
+}
+
+.registerPage .container .formDiv .form .tipo-profesional-seleccionado span {
+    font-size: 0.95rem;
+    color: var(--textColor, #333);
+}
+
+.registerPage .container .formDiv .form .tipo-profesional-quitar {
+    background: transparent;
+    border: 1px solid var(--primaryColor);
+    color: var(--primaryColor);
+    border-radius: 6px;
+    padding: 0.25rem 0.6rem;
+    font-size: 0.85rem;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.registerPage .container .formDiv .form .tipo-profesional-quitar:hover:not(:disabled) {
+    background: var(--primaryColor);
+    color: var(--whiteColor);
+}
+
+.registerPage .container .formDiv .form .tipo-profesional-quitar:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.registerPage .container .formDiv .form .tipo-profesional-add {
+    width: 100%;
+    margin-top: 0.25rem;
+}
+
+.registerPage .container .formDiv .form .inputDiv small {
+    display: block;
+    margin-top: 0.4rem;
+    color: var(--greyText);
+    font-size: 0.85rem;
+}
+
 /* file input: evitar que el botón o texto se salga */
 .registerPage .container .formDiv .form input[type="file"] {
   cursor: pointer;

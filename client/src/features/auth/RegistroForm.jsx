@@ -35,7 +35,7 @@ export default function RegistroForm() {
     direccion: '',
     provincia_id: '',
     localidad_id: '',
-    tipo_profesional_id: '',
+    tipo_profesional_ids: [],
     presentacion: '',
     instituto: '',
     foto_titulo: null
@@ -128,7 +128,10 @@ export default function RegistroForm() {
     if (step === 2) {
       if (!formData.rol) { setErrors(['Rol no definido']); return false; }
       if (formData.rol === 'cliente' && !formData.direccion) { setErrors(['Dirección requerida']); return false; }
-      if (formData.rol === 'profesional' && !formData.tipo_profesional_id) { setErrors(['Tipo de profesional requerido']); return false; }
+      if (formData.rol === 'profesional' && (!formData.tipo_profesional_ids || formData.tipo_profesional_ids.length === 0)) {
+        setErrors(['Seleccioná al menos un tipo de profesional']);
+        return false;
+      }
       if (!captchaVerified) { setErrors(['El captcha es incorrecto o no fue completado']); return false; }
     }
 
@@ -163,7 +166,7 @@ export default function RegistroForm() {
     // Campos escalares / string
     const scalarFields = [
       'correo','nombre_usuario','contrasena','nombre_apellido','fecha_nacimiento',
-      'rol','direccion','provincia_id','localidad_id','tipo_profesional_id',
+      'rol','direccion','provincia_id','localidad_id',
       'presentacion','instituto'
     ];
     scalarFields.forEach(k => {
@@ -172,6 +175,12 @@ export default function RegistroForm() {
         payload.append(k, v);
       }
     });
+
+    if (formData.rol === 'profesional' && Array.isArray(formData.tipo_profesional_ids)) {
+      formData.tipo_profesional_ids.forEach(id => {
+        payload.append('tipo_profesional_ids', id);
+      });
+    }
 
     // Archivos
     if (formData.foto_perfil instanceof File) {

@@ -363,6 +363,145 @@ body.menu-open {
     border: 2px solid rgba(255, 255, 255, 0.2);
 }
 
+.profile-wrapper {
+    position: relative;
+    z-index: 10052;
+}
+
+.profile-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    margin: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    border-radius: 50%;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+.profile-trigger:focus-visible {
+    outline: 2px solid #ff9a00;
+    outline-offset: 2px;
+}
+
+.profile-image-clickable {
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.profile-trigger:hover .profile-image,
+.profile-trigger:focus-visible .profile-image {
+    border-color: #ff9a00;
+    box-shadow: 0 0 0 2px rgba(255, 154, 0, 0.25);
+}
+
+.profile-dropdown {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 8px);
+    min-width: 240px;
+    background: #1f1f1f;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+    overflow: hidden;
+    z-index: 10053;
+}
+
+.profile-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 12px 16px;
+    background: transparent;
+    border: none;
+    color: #f0f0f0;
+    font-size: 14px;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.profile-dropdown-item:hover {
+    background: rgba(255, 154, 0, 0.12);
+}
+
+.profile-dropdown-logout {
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    color: #ffb4a2;
+}
+
+.profile-dropdown-logout:hover {
+    background: rgba(255, 90, 31, 0.15);
+}
+
+.profile-dropdown-icon {
+    font-size: 15px;
+    flex-shrink: 0;
+    color: #ff9a00;
+}
+
+.profile-dropdown-logout .profile-dropdown-icon {
+    color: #ff5a1f;
+}
+
+/* Dropdown de perfil y modal por encima del contenido en mobile */
+@media (max-width: 768px) {
+    .dashboard-header {
+        position: sticky;
+        top: 0;
+        z-index: 10050 !important;
+    }
+
+    .header-right {
+        position: relative;
+        z-index: 10051;
+    }
+
+    .profile-wrapper {
+        z-index: 10052;
+    }
+
+    .profile-dropdown {
+        position: fixed;
+        right: 1rem;
+        top: 4.25rem;
+        left: auto;
+        min-width: min(280px, calc(100vw - 2rem));
+        z-index: 10060 !important;
+    }
+
+    .notifications-dropdown {
+        z-index: 10059 !important;
+    }
+}
+
+/* Bajar z-index del contenido cuando hay menú de perfil o modal abierto */
+body.profile-menu-open .search-input,
+body.profile-menu-open .search-button,
+body.profile-menu-open .nav-button,
+body.profile-menu-open .contact-button,
+body.profile-menu-open .post-problem-button,
+body.profile-menu-open .categories-carousel,
+body.perfil-modal-open .search-input,
+body.perfil-modal-open .search-button,
+body.perfil-modal-open .nav-button,
+body.perfil-modal-open .contact-button,
+body.perfil-modal-open .post-problem-button,
+body.perfil-modal-open .mobile-menu-toggle,
+body.perfil-modal-open .categories-carousel {
+    z-index: 1 !important;
+}
+
+body.perfil-modal-open .mobile-menu-toggle {
+    pointer-events: none;
+    opacity: 0.4;
+}
+
 /* Main Content Styles */
 .dashboard-main {
     padding: 2rem;

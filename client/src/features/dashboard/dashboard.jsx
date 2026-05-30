@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './dashboard.css';
 import PublicarProblemaForm from '../../components/PublicarProblemaForm';
+import ModificarPerfilForm from '../../components/ModificarPerfilForm';
 import BuscarTrabajo from '../buscarTrabajo/BuscarTrabajo';
 import MisPresupuestos from './MisPresupuestos';
 import TrabajosAsignados from '../trabajos asignados/trabajoasignado';
@@ -26,7 +27,8 @@ import {
     FaTools,
     FaTimesCircle,
     FaUserTie,
-    FaBriefcase
+    FaBriefcase,
+    FaUserEdit
 } from 'react-icons/fa';
 import logoHomeHelp from '../../assets/logo_homehelp.png';
 import perfil from '../../assets/user.png';
@@ -51,6 +53,8 @@ const Dashboard = () => {
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showProblemaForm, setShowProblemaForm] = useState(false);
+    const [showProfileMenu, setShowProfileMenu] = useState(false);
+    const [showModificarPerfil, setShowModificarPerfil] = useState(false);
 
     // Notificaciones
     const [notifications, setNotifications] = useState([]); // array de notificaciones
@@ -59,6 +63,8 @@ const Dashboard = () => {
     const [loadingNotifications, setLoadingNotifications] = useState(false);
     const notiDropdownRef = useRef(null);
     const bellRef = useRef(null);
+    const profileDropdownRef = useRef(null);
+    const profileWrapperRef = useRef(null);
 
     // Estado para la pestaña activa del dashboard
     const [activeTab, setActiveTab] = useState('dashboard');
@@ -162,20 +168,48 @@ const Dashboard = () => {
         fetchActiveCategories();
     }, []);
 
-    // Cerrar dropdown si clic fuera
+    // Cerrar dropdowns si clic fuera
     useEffect(() => {
         const onClickOutside = (e) => {
+            const target = e.target;
             if (showNotifications) {
-                const target = e.target;
                 if (notiDropdownRef.current && !notiDropdownRef.current.contains(target) &&
                     bellRef.current && !bellRef.current.contains(target)) {
                     setShowNotifications(false);
                 }
             }
+            if (showProfileMenu) {
+                if (profileWrapperRef.current && !profileWrapperRef.current.contains(target)) {
+                    setShowProfileMenu(false);
+                }
+            }
         };
-        document.addEventListener('click', onClickOutside);
-        return () => document.removeEventListener('click', onClickOutside);
-    }, [showNotifications]);
+        document.addEventListener('mousedown', onClickOutside);
+        document.addEventListener('touchstart', onClickOutside, { passive: true });
+        return () => {
+            document.removeEventListener('mousedown', onClickOutside);
+            document.removeEventListener('touchstart', onClickOutside);
+        };
+    }, [showNotifications, showProfileMenu]);
+
+    // Clases en body para z-index en mobile
+    useEffect(() => {
+        if (showProfileMenu) {
+            document.body.classList.add('profile-menu-open');
+        } else {
+            document.body.classList.remove('profile-menu-open');
+        }
+        return () => document.body.classList.remove('profile-menu-open');
+    }, [showProfileMenu]);
+
+    useEffect(() => {
+        if (showModificarPerfil) {
+            document.body.classList.add('perfil-modal-open');
+        } else {
+            document.body.classList.remove('perfil-modal-open');
+        }
+        return () => document.body.classList.remove('perfil-modal-open');
+    }, [showModificarPerfil]);
 
     // Opcional: cargar notificaciones una vez al montar (sin abrir dropdown)
     useEffect(() => {
@@ -289,6 +323,24 @@ const Dashboard = () => {
         // Aquí puedes agregar lógica adicional de logout si es necesario
         // Por ejemplo, limpiar cookies, etc.
         navigate('/');
+    };
+
+    const handlePerfilSuccess = (updatedData) => {
+        const merged = { ...userData, ...updatedData };
+        setUserData(merged);
+        localStorage.setItem('userData', JSON.stringify(merged));
+    };
+
+    const handleOpenModificarPerfil = () => {
+        setShowProfileMenu(false);
+        setShowModificarPerfil(true);
+    };
+
+    const handleToggleProfileMenu = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setShowNotifications(false);
+        setShowProfileMenu(prev => !prev);
     };
 
     // Cargar notificaciones del usuario
@@ -887,7 +939,7 @@ const Dashboard = () => {
                                 <div
                                     className="notification-icon"
                                     ref={bellRef}
-                                    onClick={() => { const next = !showNotifications; setShowNotifications(next); if (!showNotifications) fetchNotifications(); }}
+                                    onClick={() => { const next = !showNotifications; setShowProfileMenu(false); setShowNotifications(next); if (!showNotifications) fetchNotifications(); }}
                                     style={{ cursor: 'pointer', position: 'relative' }}
                                     aria-label="Notificaciones"
                                 >
@@ -971,13 +1023,49 @@ const Dashboard = () => {
                                 )}
                             </div>
 
-                            <img
-                                src={userData && userData.foto_perfil
-                                    ? `http://localhost:3002/uploads/profiles/${userData.foto_perfil}`
-                                    : perfil}
-                                alt="Perfil"
-                                className="profile-image"
-                            />
+                            <div className="profile-wrapper" ref={profileWrapperRef}>
+                                <button
+                                    type="button"
+                                    className="profile-trigger"
+                                    onClick={handleToggleProfileMenu}
+                                    onTouchEnd={(e) => e.stopPropagation()}
+                                    aria-expanded={showProfileMenu}
+                                    aria-haspopup="true"
+                                    aria-label="Menú de usuario"
+                                >
+                                    <img
+                                        src={userData && userData.foto_perfil
+                                            ? `http://localhost:3002/uploads/profiles/${userData.foto_perfil}`
+                                            : perfil}
+                                        alt="Perfil"
+                                        className="profile-image"
+                                    />
+                                </button>
+
+                                {showProfileMenu && (
+                                    <div className="profile-dropdown" ref={profileDropdownRef}>
+                                        <button
+                                            type="button"
+                                            className="profile-dropdown-item"
+                                            onClick={handleOpenModificarPerfil}
+                                        >
+                                            <FaUserEdit className="profile-dropdown-icon" />
+                                            <span>Modificar datos de usuario</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="profile-dropdown-item profile-dropdown-logout"
+                                            onClick={() => {
+                                                setShowProfileMenu(false);
+                                                handleLogout();
+                                            }}
+                                        >
+                                            <FaSignOutAlt className="profile-dropdown-icon" />
+                                            <span>Cerrar sesión</span>
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </header>
 
@@ -992,6 +1080,14 @@ const Dashboard = () => {
                     isOpen={showProblemaForm}
                     onClose={handleCloseProblemaForm}
                     onSubmit={handleProblemaSubmit}
+                />
+
+                <ModificarPerfilForm
+                    isOpen={showModificarPerfil}
+                    onClose={() => setShowModificarPerfil(false)}
+                    userType={userType}
+                    usuarioId={userData?.id}
+                    onSuccess={handlePerfilSuccess}
                 />
 
             </div>
