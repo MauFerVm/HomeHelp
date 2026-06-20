@@ -40,8 +40,13 @@ const getOrdenTrabajoById = async (req, res) => {
 const getOrdenesByProfesional = async (req, res) => {
     try {
         const { profesionalId } = req.params;
+        const { fechaInicio, fechaFin } = req.query;
 
-        const ordenes = await ordenTrabajoModel.getOrdenesByProfesional(profesionalId);
+        const ordenes = await ordenTrabajoModel.getOrdenesByProfesional(
+            profesionalId,
+            fechaInicio || null,
+            fechaFin || null
+        );
 
         res.json({
             success: true,

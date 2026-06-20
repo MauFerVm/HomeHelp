@@ -80,8 +80,8 @@ const getOrdenTrabajoById = async (ordenId) => {
 /**
  * Obtener órdenes de trabajo por profesional
  */
-const getOrdenesByProfesional = async (profesionalId) => {
-    const query = `
+const getOrdenesByProfesional = async (profesionalId, fechaInicio = null, fechaFin = null) => {
+    let query = `
         SELECT 
             ot.*,
             p.nombre_apellido as cliente_nombre,
@@ -91,10 +91,23 @@ const getOrdenesByProfesional = async (profesionalId) => {
         JOIN persona p ON ot.cliente_persona_id = p.id
         JOIN solicitud_servicio ss ON ot.solicitud_id = ss.id
         WHERE ot.profesional_id = ? AND ot.is_active = 1
-        ORDER BY ot.fecha_programada DESC, ot.horarioInicio DESC
     `;
 
-    const [rows] = await db.execute(query, [profesionalId]);
+    const params = [profesionalId];
+
+    if (fechaInicio) {
+        query += ' AND ot.fecha_programada >= ?';
+        params.push(fechaInicio);
+    }
+
+    if (fechaFin) {
+        query += ' AND ot.fecha_programada <= ?';
+        params.push(fechaFin);
+    }
+
+    query += ' ORDER BY ot.fecha_programada ASC, ot.horarioInicio ASC';
+
+    const [rows] = await db.execute(query, params);
     return rows;
 };
 

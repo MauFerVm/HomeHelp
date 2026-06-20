@@ -20,6 +20,13 @@ router.get('/profesional/:profesionalId/disponibles', horarioController.getHorar
  */
 router.post('/presupuesto/:presupuestoId/confirmar', horarioController.confirmarHorario);
 
+/**
+ * @route GET /api/horarios/profesional/:profesionalId/configuracion
+ * @desc Obtener configuración de horarios de un profesional
+ * @access Private
+ */
+router.get('/profesional/:profesionalId/configuracion', horarioController.getConfiguracionHorarios);
+
 module.exports = router;
 
 

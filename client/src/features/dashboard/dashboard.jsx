@@ -7,6 +7,7 @@ import BuscarTrabajo from '../buscarTrabajo/BuscarTrabajo';
 import MisPresupuestos from './MisPresupuestos';
 import TrabajosAsignados from '../trabajos asignados/trabajoasignado';
 import MisServicios from './MisServicios';
+import MiCalendario from './MiCalendario';
 import {
     FaBell,
     FaSearch,
@@ -487,12 +488,7 @@ const Dashboard = () => {
             case 'mis-servicios':
                 return <MisServicios isTab={true} />;
             case 'calendario':
-                return (
-                    <div className="tab-content">
-                        <h2>Mi Calendario</h2>
-                        <p>Esta funcionalidad estará disponible próximamente.</p>
-                    </div>
-                );
+                return <MiCalendario />;
             case 'cancelaciones':
                 return (
                     <div className="tab-content">

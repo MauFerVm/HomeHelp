@@ -543,7 +543,67 @@ function formatTime(decimalHours) {
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
 }
 
+/**
+ * Obtener configuración de horarios de un profesional
+ * Retorna los horarios definidos en horario_dia para generar slots en el calendario
+ */
+const getConfiguracionHorarios = async (req, res) => {
+    try {
+        const { profesionalId } = req.params;
+        
+        const query = `
+            SELECT 
+                hd.dia_semana,
+                hd.horaInicio,
+                hd.horaFin
+            FROM horario_profesional hp
+            INNER JOIN horario_dia hd ON hp.id = hd.horario_id
+            WHERE hp.profesional_id = ?
+            AND (hp.fechaFin IS NULL OR hp.fechaFin >= CURDATE())
+            ORDER BY 
+                CASE hd.dia_semana
+                    WHEN 'Lunes' THEN 1
+                    WHEN 'Martes' THEN 2
+                    WHEN 'Miercoles' THEN 3
+                    WHEN 'Jueves' THEN 4
+                    WHEN 'Viernes' THEN 5
+                    WHEN 'Sabado' THEN 6
+                    WHEN 'Domingo' THEN 7
+                END,
+                hd.horaInicio
+        `;
+        
+        const [rows] = await db.execute(query, [profesionalId]);
+        
+        // Agrupar horarios por día de la semana
+        const horariosPorDia = {};
+        rows.forEach(row => {
+            if (!horariosPorDia[row.dia_semana]) {
+                horariosPorDia[row.dia_semana] = [];
+            }
+            horariosPorDia[row.dia_semana].push({
+                horaInicio: row.horaInicio.substring(0, 5),
+                horaFin: row.horaFin.substring(0, 5)
+            });
+        });
+        
+        res.json({
+            success: true,
+            data: horariosPorDia
+        });
+        
+    } catch (error) {
+        console.error('Error al obtener configuración de horarios:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+};
+
 module.exports = {
     getHorariosDisponibles,
-    confirmarHorario
+    confirmarHorario,
+    getConfiguracionHorarios
 };

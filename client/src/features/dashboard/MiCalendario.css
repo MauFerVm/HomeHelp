@@ -1,0 +1,498 @@
+/* Mi Calendario — colores de la aplicación */
+.mi-calendario {
+    --cal-primary: #ff5a1f;
+    --cal-primary-dark: #a74924;
+    --cal-primary-hover: #bc5532;
+    --cal-accent: #667eea;
+    --cal-bg-card: rgba(255, 255, 255, 0.05);
+    --cal-border: rgba(255, 255, 255, 0.1);
+    --cal-text: #ffffff;
+    --cal-text-muted: #b0b0b0;
+    --cal-text-dim: #888888;
+    --cal-marca-orden: #e53935;
+    --cal-hoy: var(--cal-primary);
+
+    text-align: left;
+    max-width: 720px;
+    margin: 0 auto;
+}
+
+.mi-calendario-subtitle {
+    text-align: center;
+    margin-bottom: 20px;
+    color: var(--cal-text-muted);
+}
+
+.mi-calendario-container {
+    background: var(--cal-bg-card);
+    border-radius: 16px;
+    padding: 20px 16px;
+    border: 1px solid var(--cal-border);
+    backdrop-filter: blur(10px);
+}
+
+/* Header del mes */
+.mi-calendario-mes-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    padding: 0 4px;
+}
+
+.mes-nav {
+    width: 44px;
+    display: flex;
+    align-items: center;
+}
+
+.mes-nav-right {
+    justify-content: flex-end;
+}
+
+.mi-calendario .nav-button {
+    background: var(--cal-primary-dark);
+    color: var(--cal-text);
+    border: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(167, 73, 36, 0.35);
+}
+
+.mi-calendario .nav-button:hover {
+    background: var(--cal-primary-hover);
+    transform: scale(1.05);
+}
+
+.mes-titulo {
+    text-align: center;
+    flex: 1;
+}
+
+.mes-nombre {
+    display: block;
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--cal-text);
+    line-height: 1.2;
+}
+
+.mes-anio {
+    font-size: 0.85rem;
+    color: var(--cal-text-muted);
+}
+
+/* Cabecera días L M M J V S D */
+.mi-calendario-dias-header {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    margin-bottom: 4px;
+    padding: 0 2px;
+}
+
+.dia-header-label {
+    text-align: center;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--cal-text-muted);
+    padding: 8px 0;
+}
+
+.dia-header-label.fin-de-semana {
+    color: var(--cal-text-dim);
+}
+
+/* Grilla mensual */
+.mi-calendario-mes-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    border-top: 1px solid var(--cal-border);
+}
+
+.mi-calendario-celda {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 72px;
+    padding: 8px 4px 6px;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--cal-border);
+    border-right: 1px solid var(--cal-border);
+    cursor: pointer;
+    transition: background 0.15s ease;
+    font-family: inherit;
+}
+
+.mi-calendario-celda:nth-child(7n) {
+    border-right: none;
+}
+
+.mi-calendario-celda:hover:not(:disabled) {
+    background: rgba(255, 90, 31, 0.08);
+}
+
+.mi-calendario-celda.otro-mes .celda-numero {
+    color: var(--cal-text-dim);
+    opacity: 0.5;
+}
+
+.mi-calendario-celda.fuera-rango {
+    cursor: default;
+    opacity: 0.35;
+}
+
+.mi-calendario-celda.fuera-rango:hover {
+    background: transparent;
+}
+
+.mi-calendario-celda.fin-de-semana .celda-numero {
+    color: var(--cal-text-dim);
+}
+
+.mi-calendario-celda.hoy .celda-numero {
+    background: var(--cal-hoy);
+    color: var(--cal-text);
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+}
+
+.celda-numero {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--cal-text);
+    line-height: 32px;
+    min-width: 32px;
+    text-align: center;
+}
+
+/* Marca roja para días con órdenes */
+.marca-orden {
+    display: block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--cal-marca-orden);
+    margin-top: 2px;
+    flex-shrink: 0;
+    box-shadow: 0 0 4px rgba(229, 57, 53, 0.6);
+}
+
+.mi-calendario-celda.hoy .marca-orden {
+    margin-top: 0;
+}
+
+.mi-calendario-leyenda {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--cal-border);
+    display: flex;
+    justify-content: center;
+}
+
+.leyenda-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    color: var(--cal-text-muted);
+}
+
+.leyenda-dot {
+    margin: 0;
+}
+
+/* Loading y error */
+.mi-calendario-loading {
+    text-align: center;
+    padding: 40px;
+    color: var(--cal-text-muted);
+}
+
+.mi-calendario-loading .spin-icon {
+    font-size: 2rem;
+    color: var(--cal-primary);
+    animation: mi-calendario-spin 1s linear infinite;
+    margin-bottom: 12px;
+}
+
+@keyframes mi-calendario-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.mi-calendario-error {
+    text-align: center;
+    padding: 20px;
+    color: #ff6b6b;
+    background: rgba(255, 107, 107, 0.1);
+    border-radius: 8px;
+    margin: 12px 0;
+}
+
+/* Vista diaria — agenda por horarios */
+.mi-calendario-dia-vista {
+    animation: fadeInDia 0.25s ease;
+}
+
+@keyframes fadeInDia {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.dia-vista-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.volver-button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--cal-primary-dark);
+    color: var(--cal-text);
+    border: none;
+    padding: 8px 14px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(167, 73, 36, 0.3);
+}
+
+.volver-button:hover {
+    background: var(--cal-primary-hover);
+}
+
+.dia-vista-titulo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    color: var(--cal-primary);
+}
+
+.dia-vista-titulo h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: var(--cal-text);
+    font-weight: 600;
+}
+
+.dia-vista-count {
+    font-size: 0.8rem;
+    color: var(--cal-text-muted);
+    background: rgba(102, 126, 234, 0.15);
+    padding: 4px 10px;
+    border-radius: 12px;
+    border: 1px solid rgba(102, 126, 234, 0.3);
+}
+
+.agenda-horarios {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    grid-template-rows: repeat(12, 52px);
+    border: 1px solid var(--cal-border);
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+}
+
+.agenda-hora {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.2);
+    border-right: 1px solid var(--cal-border);
+    border-bottom: 1px solid var(--cal-border);
+}
+
+.agenda-slot-bg {
+    border-bottom: 1px solid var(--cal-border);
+    background: transparent;
+}
+
+.agenda-hora-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--cal-text-muted);
+    text-align: center;
+    line-height: 1.2;
+}
+
+.agenda-orden-card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 12px;
+    margin: 3px 10px;
+    background: linear-gradient(135deg, rgba(255, 90, 31, 0.15) 0%, rgba(167, 73, 36, 0.2) 100%);
+    border: 1px solid rgba(255, 90, 31, 0.35);
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    width: calc(100% - 20px);
+    box-sizing: border-box;
+    z-index: 2;
+    align-self: stretch;
+    min-height: 0;
+}
+
+.agenda-orden-card:hover {
+    background: linear-gradient(135deg, rgba(255, 90, 31, 0.25) 0%, rgba(167, 73, 36, 0.35) 100%);
+    border-color: var(--cal-primary);
+    transform: translateX(2px);
+}
+
+.agenda-orden-titulo {
+    color: var(--cal-text);
+    font-weight: 600;
+    font-size: 0.9rem;
+    line-height: 1.3;
+}
+
+.agenda-orden-hora {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--cal-primary);
+    font-size: 0.8rem;
+}
+
+/* Modal detalle orden */
+.mi-calendario-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+}
+
+.mi-calendario-modal {
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+    border-radius: 14px;
+    max-width: 480px;
+    width: 100%;
+    border: 1px solid var(--cal-border);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.mi-calendario-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--cal-border);
+    background: rgba(255, 90, 31, 0.08);
+}
+
+.mi-calendario-modal-header h3 {
+    color: var(--cal-text);
+    margin: 0;
+    font-size: 1.15rem;
+}
+
+.cerrar-modal {
+    background: none;
+    border: none;
+    color: var(--cal-text-muted);
+    font-size: 1.5rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 4px 8px;
+    transition: color 0.2s;
+}
+
+.cerrar-modal:hover {
+    color: var(--cal-primary);
+}
+
+.mi-calendario-modal-body {
+    padding: 22px;
+}
+
+.detalle-item {
+    margin-bottom: 18px;
+}
+
+.detalle-item:last-child {
+    margin-bottom: 0;
+}
+
+.detalle-item h4 {
+    color: var(--cal-primary);
+    font-size: 0.85rem;
+    margin: 0 0 6px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.detalle-item p {
+    color: #e0e0e0;
+    margin: 0;
+    line-height: 1.5;
+    font-size: 0.95rem;
+}
+
+.detalle-icon {
+    font-size: 0.85rem;
+}
+
+@media (max-width: 600px) {
+    .mi-calendario-container {
+        padding: 12px 8px;
+    }
+
+    .mes-nombre {
+        font-size: 1.4rem;
+    }
+
+    .mi-calendario-celda {
+        min-height: 58px;
+        padding: 6px 2px 4px;
+    }
+
+    .agenda-horarios {
+        grid-template-columns: 64px 1fr;
+        grid-template-rows: repeat(12, 48px);
+    }
+
+    .agenda-hora-label {
+        font-size: 0.7rem;
+    }
+
+    .dia-vista-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
