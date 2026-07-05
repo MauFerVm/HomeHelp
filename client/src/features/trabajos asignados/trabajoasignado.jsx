@@ -34,6 +34,7 @@ const TrabajosAsignados = ({
     const [userData, setUserData] = useState(null);
     const [personaId, setPersonaId] = useState(null);
     const [cerrandoOrden, setCerrandoOrden] = useState(false);
+    const [cancelandoOrden, setCancelandoOrden] = useState(false);
     const [showCalificacionModal, setShowCalificacionModal] = useState(false);
     const [yaCalificado, setYaCalificado] = useState(false);
     const [ordenesCalificadas, setOrdenesCalificadas] = useState({}); // Mapa de ordenId -> boolean
@@ -119,7 +120,7 @@ const TrabajosAsignados = ({
             console.log('Respuesta de órdenes de trabajo:', data);
             if (data.success) {
                 console.log('Órdenes de trabajo obtenidas:', data.data.length);
-                const ordenes = data.data;
+                const ordenes = data.data.filter(orden => orden.estado !== 'cancelado');
                 setOrdenesTrabajos(ordenes);
                 
                 // Verificar calificaciones para órdenes completadas
@@ -275,10 +276,70 @@ const TrabajosAsignados = ({
         }
     };
 
+    const handleCancelarOrden = (orden = selectedOrden) => {
+        if (!orden) return;
+        setSelectedOrden(orden);
+        setConfirmTitle('Cancelar Orden de Trabajo');
+        setConfirmMessage('¿Estás seguro de que deseas cancelar esta orden de trabajo? Se liberará el horario en tu agenda y el cliente será notificado.');
+        setConfirmAction(() => () => ejecutarCancelarOrden(orden));
+        setShowConfirmModal(true);
+    };
+
+    const ejecutarCancelarOrden = async (orden = selectedOrden) => {
+        if (!orden || !personaId) return;
+
+        try {
+            setCancelandoOrden(true);
+            const response = await fetch(`http://localhost:3002/api/ordenes/${orden.id}/cancelar`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ profesionalPersonaId: personaId })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                await fetchOrdenesTrabajos();
+                setShowModal(false);
+            } else {
+                throw new Error(data.message || 'Error al cancelar la orden de trabajo');
+            }
+        } catch (error) {
+            console.error('Error al cancelar orden de trabajo:', error);
+            alert('Error al cancelar la orden de trabajo: ' + error.message);
+        } finally {
+            setCancelandoOrden(false);
+        }
+    };
+
     const handleConfirmAction = () => {
         if (confirmAction) {
             confirmAction();
         }
+    };
+
+    const ESTADOS_CERRABLES = ['pendiente', 'reprogramado', 'represupuestada', 'en_curso'];
+    const ESTADOS_CANCELABLES = ['pendiente', 'reprogramado', 'represupuestada'];
+
+    const puedeCerrarOrden = (orden) => ESTADOS_CERRABLES.includes(orden.estado);
+
+    const puedeCancelarOrden = (orden) => {
+        if (!ESTADOS_CANCELABLES.includes(orden.estado)) {
+            return false;
+        }
+
+        if (!orden.fecha_programada || !orden.horarioInicio) {
+            return false;
+        }
+
+        const fechaStr = String(orden.fecha_programada).split('T')[0];
+        const horaStr = formatHora(orden.horarioInicio);
+        const inicioOrden = new Date(`${fechaStr}T${horaStr}:00`);
+        const horasRestantes = (inicioOrden.getTime() - Date.now()) / (1000 * 60 * 60);
+
+        return horasRestantes >= 48;
     };
 
     // Aplicar filtros a las órdenes
@@ -372,6 +433,8 @@ const TrabajosAsignados = ({
                 return '#28a745';
             case 'cerradocliente':
                 return '#28a745';
+            case 'calificada':
+                return '#673ab7';
             default:
                 return '#666';
         }
@@ -395,6 +458,8 @@ const TrabajosAsignados = ({
                 return <FaCheckCircle />;
             case 'cerradocliente':
                 return <FaCheckCircle />;
+            case 'calificada':
+                return <FaStar />;
             default:
                 return <FaClock />;
         }
@@ -418,6 +483,8 @@ const TrabajosAsignados = ({
                 return 'Cerrado por Profesional';
             case 'cerradocliente':
                 return 'Cerrado por Cliente';
+            case 'calificada':
+                return 'Calificada';
             default:
                 return estado;
         }
@@ -563,6 +630,7 @@ const TrabajosAsignados = ({
                                 <option value="reprogramado">Reprogramado</option>
                                 <option value="cerradoprofesional">Cerrado por Profesional</option>
                                 <option value="cerradocliente">Cerrado por Cliente</option>
+                                <option value="calificada">Calificada</option>
                             </select>
                         </div>
 
@@ -629,6 +697,16 @@ const TrabajosAsignados = ({
                             </div>
 
                             <div className="orden-actions">
+                                {puedeCancelarOrden(orden) && (
+                                    <button 
+                                        className="cancelar-orden-button-card"
+                                        onClick={() => handleCancelarOrden(orden)}
+                                        disabled={cancelandoOrden}
+                                    >
+                                        <FaTimesCircle />
+                                        Cancelar Orden
+                                    </button>
+                                )}
                                 {orden.estado === 'completado' && 
                                  orden.cliente_persona_id && 
                                  !ordenesCalificadas[orden.id] && (
@@ -731,7 +809,7 @@ const TrabajosAsignados = ({
                         </div>
 
                         <div className="modal-footer">
-                            {selectedOrden.estado === 'pendiente' && (
+                            {puedeCerrarOrden(selectedOrden) && (
                                 <button 
                                     className="cerrar-orden-button"
                                     onClick={handleCerrarOrden}
@@ -772,7 +850,7 @@ const TrabajosAsignados = ({
                             <button 
                                 className="cancel-button"
                                 onClick={() => setShowModal(false)}
-                                disabled={cerrandoOrden}
+                                disabled={cerrandoOrden || cancelandoOrden}
                             >
                                 Cerrar
                             </button>

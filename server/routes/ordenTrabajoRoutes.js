@@ -31,6 +31,27 @@ router.get('/cliente/:clienteId', ordenTrabajoController.getOrdenesByCliente);
  */
 router.put('/:ordenId/estado', ordenTrabajoController.actualizarEstadoOrden);
 
+/**
+ * @route PUT /api/ordenes/:ordenId/reprogramar
+ * @desc Reprogramar horario de una orden de trabajo (cliente)
+ * @access Private
+ */
+router.put('/:ordenId/reprogramar', ordenTrabajoController.reprogramarHorarioOrden);
+
+/**
+ * @route PUT /api/ordenes/:ordenId/cancelar
+ * @desc Cancelar orden de trabajo (profesional, con 48hs de anticipación)
+ * @access Private
+ */
+router.put('/:ordenId/cancelar', ordenTrabajoController.cancelarOrdenProfesional);
+
+/**
+ * @route GET /api/ordenes/:ordenId/historial
+ * @desc Obtener historial de cambios de estado de una orden
+ * @access Private
+ */
+router.get('/:ordenId/historial', ordenTrabajoController.getHistorialOrden);
+
 module.exports = router;
 
 

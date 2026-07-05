@@ -1,5 +1,6 @@
 // controllers/calificacionesController.js
 const calificacionesModel = require('../models/calificacionesModel');
+const ordenTrabajoModel = require('../models/ordenTrabajoModel');
 
 /**
  * Crear una nueva calificación
@@ -59,6 +60,31 @@ const crearCalificacion = async (req, res) => {
             comentario: comentario || null,
             activo: 1
         });
+
+        const orden = await ordenTrabajoModel.getOrdenActivaBySolicitud(solicitud_id);
+
+        if (orden && orden.estado === 'completado') {
+            const clienteCalifico = await calificacionesModel.existeCalificacion(
+                solicitud_id,
+                orden.cliente_persona_id,
+                orden.profesional_id
+            );
+            const profesionalCalifico = await calificacionesModel.existeCalificacion(
+                solicitud_id,
+                orden.profesional_id,
+                orden.cliente_persona_id
+            );
+
+            if (clienteCalifico && profesionalCalifico) {
+                await ordenTrabajoModel.actualizarEstadoOrden(orden.id, 'calificada');
+                await ordenTrabajoModel.crearHistorialOrden(
+                    orden.id,
+                    'completado',
+                    'calificada',
+                    'Ambas partes calificaron el servicio'
+                );
+            }
+        }
 
         res.status(201).json({
             success: true,

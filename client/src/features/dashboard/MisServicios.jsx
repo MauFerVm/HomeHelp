@@ -4,6 +4,8 @@ import '../trabajos asignados/trabajoasginado.css';
 import CalificacionModal from '../../components/CalificacionModal';
 import ConfirmModal from '../../components/ConfirmModal';
 import CalificacionSuccessModal from '../../components/CalificacionSuccessModal';
+import SuccessModal from '../../components/SuccessModal';
+import CalendarioHorarios from '../../components/CalendarioHorarios';
 import {
     FaArrowLeft,
     FaMapMarkerAlt,
@@ -18,7 +20,8 @@ import {
     FaHourglassHalf,
     FaTimesCircle,
     FaStar,
-    FaFilter
+    FaFilter,
+    FaEdit
 } from 'react-icons/fa';
 
 const MisServicios = ({ 
@@ -42,6 +45,7 @@ const MisServicios = ({
     const [confirmMessage, setConfirmMessage] = useState('');
     const [confirmTitle, setConfirmTitle] = useState('');
     const [showCalificacionSuccessModal, setShowCalificacionSuccessModal] = useState(false);
+    const [showReprogramacionSuccessModal, setShowReprogramacionSuccessModal] = useState(false);
     const [filtros, setFiltros] = useState({
         profesional: '',
         dias: '',
@@ -49,6 +53,9 @@ const MisServicios = ({
     });
     const [showFiltros, setShowFiltros] = useState(false);
     const [ordenesFiltradas, setOrdenesFiltradas] = useState([]);
+    const [calendarioAbierto, setCalendarioAbierto] = useState(false);
+    const [ordenParaReprogramar, setOrdenParaReprogramar] = useState(null);
+    const [reprogramandoHorario, setReprogramandoHorario] = useState(false);
 
     // Obtener datos del usuario del localStorage
     useEffect(() => {
@@ -296,6 +303,96 @@ const MisServicios = ({
         return hora.substring(0, 5);
     };
 
+    const calcularDuracionOrden = (orden) => {
+        if (orden.presupuesto_duracion && orden.presupuesto_duracion > 0) {
+            return orden.presupuesto_duracion;
+        }
+
+        if (orden.horarioInicio && orden.horaFin) {
+            const [h1, m1] = orden.horarioInicio.split(':').map(Number);
+            const [h2, m2] = orden.horaFin.split(':').map(Number);
+            const minutos = (h2 * 60 + m2) - (h1 * 60 + m1);
+            if (minutos > 0) return minutos;
+        }
+
+        return 120;
+    };
+
+    const puedeModificarHorario = (orden) => {
+        if (!['pendiente', 'reprogramado'].includes(orden.estado)) {
+            return false;
+        }
+
+        if (!orden.fecha_programada || !orden.horarioInicio) {
+            return false;
+        }
+
+        const fechaStr = String(orden.fecha_programada).split('T')[0];
+        const horaStr = formatHora(orden.horarioInicio);
+        const inicioOrden = new Date(`${fechaStr}T${horaStr}:00`);
+        const horasRestantes = (inicioOrden.getTime() - Date.now()) / (1000 * 60 * 60);
+
+        return horasRestantes >= 48;
+    };
+
+    const ESTADOS_CERRABLES = ['pendiente', 'reprogramado', 'represupuestada', 'en_curso'];
+
+    const puedeCerrarOrden = (orden) => ESTADOS_CERRABLES.includes(orden.estado);
+
+    const abrirCalendarioReprogramacion = (orden) => {
+        setOrdenParaReprogramar(orden);
+        setCalendarioAbierto(true);
+    };
+
+    const cerrarCalendarioReprogramacion = () => {
+        setCalendarioAbierto(false);
+        setOrdenParaReprogramar(null);
+    };
+
+    const manejarReprogramacionHorario = async (horarioSeleccionado) => {
+        if (!ordenParaReprogramar || !personaId) return;
+
+        try {
+            setReprogramandoHorario(true);
+
+            const response = await fetch(
+                `http://localhost:3002/api/ordenes/${ordenParaReprogramar.id}/reprogramar`,
+                {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        fecha: horarioSeleccionado.fecha,
+                        horaInicio: horarioSeleccionado.horaInicio,
+                        horaFin: horarioSeleccionado.horaFin,
+                        clientePersonaId: personaId
+                    })
+                }
+            );
+
+            const data = await response.json();
+
+            if (data.success) {
+                const ordenIdReprogramada = ordenParaReprogramar.id;
+                cerrarCalendarioReprogramacion();
+                if (showModal && selectedOrden?.id === ordenIdReprogramada) {
+                    setShowModal(false);
+                    setSelectedOrden(null);
+                }
+                await fetchOrdenesTrabajos();
+                setShowReprogramacionSuccessModal(true);
+            } else {
+                throw new Error(data.message || 'Error al reprogramar el horario');
+            }
+        } catch (error) {
+            console.error('Error al reprogramar horario:', error);
+            alert('Error al reprogramar el horario: ' + error.message);
+        } finally {
+            setReprogramandoHorario(false);
+        }
+    };
+
     const getEstadoColor = (estado) => {
         switch (estado) {
             case 'pendiente':
@@ -314,6 +411,8 @@ const MisServicios = ({
                 return '#28a745';
             case 'cerradocliente':
                 return '#28a745';
+            case 'calificada':
+                return '#673ab7';
             default:
                 return '#666';
         }
@@ -337,6 +436,8 @@ const MisServicios = ({
                 return <FaCheckCircle />;
             case 'cerradocliente':
                 return <FaCheckCircle />;
+            case 'calificada':
+                return <FaStar />;
             default:
                 return <FaClock />;
         }
@@ -360,6 +461,8 @@ const MisServicios = ({
                 return 'Cerrado por Profesional';
             case 'cerradocliente':
                 return 'Cerrado por Cliente';
+            case 'calificada':
+                return 'Calificada';
             default:
                 return estado;
         }
@@ -562,6 +665,7 @@ const MisServicios = ({
                                 <option value="reprogramado">Reprogramado</option>
                                 <option value="cerradoprofesional">Cerrado por Profesional</option>
                                 <option value="cerradocliente">Cerrado por Cliente</option>
+                                <option value="calificada">Calificada</option>
                             </select>
                         </div>
 
@@ -644,6 +748,16 @@ const MisServicios = ({
                             </div>
 
                             <div className="orden-actions">
+                                {puedeModificarHorario(orden) && (
+                                    <button
+                                        className="reprogramar-button-card"
+                                        onClick={() => abrirCalendarioReprogramacion(orden)}
+                                        disabled={reprogramandoHorario}
+                                    >
+                                        <FaEdit />
+                                        Modificar Horario
+                                    </button>
+                                )}
                                 {orden.estado === 'completado' && 
                                  orden.profesional_id && 
                                  !ordenesCalificadas[orden.id] && (
@@ -746,7 +860,7 @@ const MisServicios = ({
                         </div>
 
                         <div className="modal-footer">
-                            {selectedOrden.estado === 'pendiente' && (
+                            {puedeCerrarOrden(selectedOrden) && (
                                 <button 
                                     className="cerrar-orden-button"
                                     onClick={handleCerrarOrden}
@@ -828,6 +942,25 @@ const MisServicios = ({
                 isOpen={showCalificacionSuccessModal}
                 onClose={() => setShowCalificacionSuccessModal(false)}
             />
+
+            <SuccessModal
+                isOpen={showReprogramacionSuccessModal}
+                onClose={() => setShowReprogramacionSuccessModal(false)}
+                title="¡Horario reprogramado exitosamente!"
+                message="El profesional fue notificado."
+            />
+
+            {calendarioAbierto && ordenParaReprogramar && (
+                <CalendarioHorarios
+                    profesionalId={ordenParaReprogramar.profesional_id}
+                    duracion={calcularDuracionOrden(ordenParaReprogramar)}
+                    ordenId={ordenParaReprogramar.id}
+                    titulo="Modificar Horario"
+                    textoConfirmar={reprogramandoHorario ? 'Procesando...' : 'Confirmar Cambio'}
+                    onHorarioSeleccionado={manejarReprogramacionHorario}
+                    onCerrar={cerrarCalendarioReprogramacion}
+                />
+            )}
         </div>
     );
 };

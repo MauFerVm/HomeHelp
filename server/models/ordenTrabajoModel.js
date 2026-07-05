@@ -16,8 +16,7 @@ const crearOrdenTrabajo = async (ordenData) => {
         horarioInicio,
         horaFin,
         estado = 'pendiente',
-        is_active = 1,
-        previous_orden_id = null
+        is_active = 1
     } = ordenData;
 
     const query = `
@@ -33,9 +32,8 @@ const crearOrdenTrabajo = async (ordenData) => {
             horaFin,
             estado,
             is_active,
-            previous_orden_id,
             creado_en
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
     `;
 
     const [result] = await db.execute(query, [
@@ -49,8 +47,7 @@ const crearOrdenTrabajo = async (ordenData) => {
         horarioInicio,
         horaFin,
         estado,
-        is_active,
-        previous_orden_id
+        is_active
     ]);
 
     return result.insertId;
@@ -120,10 +117,12 @@ const getOrdenesByCliente = async (clientePersonaId) => {
             ot.*,
             prof_per.nombre_apellido as profesional_nombre,
             ss.titulo as solicitud_titulo,
-            ss.direccion
+            ss.direccion,
+            p.duracion as presupuesto_duracion
         FROM orden_de_trabajo ot
         JOIN persona prof_per ON ot.profesional_id = prof_per.id
         JOIN solicitud_servicio ss ON ot.solicitud_id = ss.id
+        LEFT JOIN presupuesto p ON ot.presupuesto_id = p.id
         WHERE ot.cliente_persona_id = ? AND ot.is_active = 1
         ORDER BY ot.fecha_programada DESC, ot.horarioInicio DESC
     `;
@@ -141,11 +140,71 @@ const actualizarEstadoOrden = async (ordenId, nuevoEstado) => {
     return result.affectedRows > 0;
 };
 
+/**
+ * Actualizar horario de una orden de trabajo
+ */
+const actualizarHorarioOrden = async (ordenId, fecha, horaInicio, horaFin, nuevoEstado) => {
+    const query = `
+        UPDATE orden_de_trabajo
+        SET fecha_programada = ?, horarioInicio = ?, horaFin = ?, estado = ?
+        WHERE id = ?
+    `;
+    const [result] = await db.execute(query, [fecha, horaInicio, horaFin, nuevoEstado, ordenId]);
+    return result.affectedRows > 0;
+};
+
+/**
+ * Obtener orden activa por solicitud
+ */
+const getOrdenActivaBySolicitud = async (solicitudId) => {
+    const query = `
+        SELECT *
+        FROM orden_de_trabajo
+        WHERE solicitud_id = ? AND is_active = 1
+        ORDER BY id DESC
+        LIMIT 1
+    `;
+
+    const [rows] = await db.execute(query, [solicitudId]);
+    return rows[0] || null;
+};
+
+/**
+ * Obtener historial de una orden de trabajo
+ */
+const getHistorialByOrdenId = async (ordenId) => {
+    const query = `
+        SELECT id, orden_id, estado_anterior, estado_nuevo, notas, creado_en
+        FROM historial_orden_trabajo
+        WHERE orden_id = ?
+        ORDER BY creado_en ASC, id ASC
+    `;
+
+    const [rows] = await db.execute(query, [ordenId]);
+    return rows;
+};
+
+/**
+ * Crear registro en historial de orden de trabajo
+ */
+const crearHistorialOrden = async (ordenId, estadoAnterior, estadoNuevo, notas) => {
+    const query = `
+        INSERT INTO historial_orden_trabajo (orden_id, estado_anterior, estado_nuevo, notas)
+        VALUES (?, ?, ?, ?)
+    `;
+    const [result] = await db.execute(query, [ordenId, estadoAnterior, estadoNuevo, notas]);
+    return result.insertId;
+};
+
 module.exports = {
     crearOrdenTrabajo,
     getOrdenTrabajoById,
+    getOrdenActivaBySolicitud,
     getOrdenesByProfesional,
     getOrdenesByCliente,
-    actualizarEstadoOrden
+    actualizarEstadoOrden,
+    actualizarHorarioOrden,
+    crearHistorialOrden,
+    getHistorialByOrdenId
 };
 

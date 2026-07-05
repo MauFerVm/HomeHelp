@@ -6,6 +6,7 @@ import ModificarPerfilForm from '../../components/ModificarPerfilForm';
 import BuscarTrabajo from '../buscarTrabajo/BuscarTrabajo';
 import MisPresupuestos from './MisPresupuestos';
 import TrabajosAsignados from '../trabajos asignados/trabajoasignado';
+import TrabajosCancelados from '../trabajos cancelados/TrabajosCancelados';
 import MisServicios from './MisServicios';
 import MiCalendario from './MiCalendario';
 import {
@@ -490,12 +491,7 @@ const Dashboard = () => {
             case 'calendario':
                 return <MiCalendario />;
             case 'cancelaciones':
-                return (
-                    <div className="tab-content">
-                        <h2>Trabajos Cancelados</h2>
-                        <p>Esta funcionalidad estará disponible próximamente.</p>
-                    </div>
-                );
+                return <TrabajosCancelados isTab={true} />;
             case 'estadisticas':
                 return (
                     <div className="tab-content">

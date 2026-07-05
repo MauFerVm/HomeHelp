@@ -45,9 +45,9 @@ const getHorariosActivos = async (profesionalId, fechaInicio, fechaFin) => {
  * Obtener agenda ocupada de un profesional para un rango de fechas
  * Incluye todos los estados excepto 'cancelado' para asegurar que los horarios ocupados no se muestren
  */
-const getAgendaOcupada = async (profesionalId, fechaInicio, fechaFin) => {
+const getAgendaOcupada = async (profesionalId, fechaInicio, fechaFin, excluirAgendaId = null) => {
     try {
-        const query = `
+        let query = `
             SELECT 
                 id,
                 DATE_FORMAT(fecha, '%Y-%m-%d') as fecha,
@@ -58,10 +58,18 @@ const getAgendaOcupada = async (profesionalId, fechaInicio, fechaFin) => {
             WHERE profesional_id = ?
             AND fecha BETWEEN ? AND ?
             AND estado != 'cancelado'
-            ORDER BY fecha, horaInicio
         `;
+
+        const params = [profesionalId, fechaInicio, fechaFin];
+
+        if (excluirAgendaId) {
+            query += ' AND id != ?';
+            params.push(excluirAgendaId);
+        }
+
+        query += ' ORDER BY fecha, horaInicio';
         
-        const [rows] = await db.execute(query, [profesionalId, fechaInicio, fechaFin]);
+        const [rows] = await db.execute(query, params);
         return rows;
     } catch (error) {
         console.error('Error al obtener agenda ocupada:', error);
@@ -100,9 +108,9 @@ const crearEntradaAgenda = async (profesionalId, solicitudId, presupuestoId, fec
 /**
  * Verificar disponibilidad de horario
  */
-const verificarDisponibilidad = async (profesionalId, fecha, horaInicio, horaFin) => {
+const verificarDisponibilidad = async (profesionalId, fecha, horaInicio, horaFin, excluirAgendaId = null) => {
     try {
-        const query = `
+        let query = `
             SELECT COUNT(*) as count
             FROM profesional_agenda
             WHERE profesional_id = ?
@@ -114,17 +122,24 @@ const verificarDisponibilidad = async (profesionalId, fecha, horaInicio, horaFin
                 (horaInicio >= ? AND horaFin <= ?)
             )
         `;
-        
-        const [rows] = await db.execute(query, [
-            profesionalId, 
-            fecha, 
-            horaFin, 
-            horaInicio, 
-            horaFin, 
-            horaInicio, 
-            horaInicio, 
+
+        const params = [
+            profesionalId,
+            fecha,
+            horaFin,
+            horaInicio,
+            horaFin,
+            horaInicio,
+            horaInicio,
             horaFin
-        ]);
+        ];
+
+        if (excluirAgendaId) {
+            query += ' AND id != ?';
+            params.push(excluirAgendaId);
+        }
+        
+        const [rows] = await db.execute(query, params);
         
         return rows[0].count === 0;
     } catch (error) {
@@ -133,11 +148,70 @@ const verificarDisponibilidad = async (profesionalId, fecha, horaInicio, horaFin
     }
 };
 
+/**
+ * Obtener entrada de agenda por solicitud y profesional
+ */
+const getAgendaBySolicitud = async (solicitudId, profesionalId) => {
+    try {
+        const query = `
+            SELECT id, fecha, horaInicio, horaFin, estado
+            FROM profesional_agenda
+            WHERE solicitud_id = ?
+            AND profesional_id = ?
+            AND estado != 'cancelado'
+            ORDER BY id DESC
+            LIMIT 1
+        `;
+
+        const [rows] = await db.execute(query, [solicitudId, profesionalId]);
+        return rows[0] || null;
+    } catch (error) {
+        console.error('Error al obtener agenda por solicitud:', error);
+        throw error;
+    }
+};
+
+/**
+ * Actualizar fecha y horario de una entrada en agenda
+ */
+const actualizarEntradaAgenda = async (agendaId, fecha, horaInicio, horaFin) => {
+    try {
+        const query = `
+            UPDATE profesional_agenda
+            SET fecha = ?, horaInicio = ?, horaFin = ?
+            WHERE id = ?
+        `;
+
+        const [result] = await db.execute(query, [fecha, horaInicio, horaFin, agendaId]);
+        return result.affectedRows > 0;
+    } catch (error) {
+        console.error('Error al actualizar entrada en agenda:', error);
+        throw error;
+    }
+};
+
+/**
+ * Eliminar entrada de la agenda del profesional
+ */
+const eliminarEntradaAgenda = async (agendaId) => {
+    try {
+        const query = 'DELETE FROM profesional_agenda WHERE id = ?';
+        const [result] = await db.execute(query, [agendaId]);
+        return result.affectedRows > 0;
+    } catch (error) {
+        console.error('Error al eliminar entrada en agenda:', error);
+        throw error;
+    }
+};
+
 module.exports = {
     getHorariosActivos,
     getAgendaOcupada,
     crearEntradaAgenda,
-    verificarDisponibilidad
+    verificarDisponibilidad,
+    getAgendaBySolicitud,
+    actualizarEntradaAgenda,
+    eliminarEntradaAgenda
 };
 
 

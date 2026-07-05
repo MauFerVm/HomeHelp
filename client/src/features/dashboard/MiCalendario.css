@@ -41,9 +41,10 @@
 }
 
 .mes-nav {
-    width: 44px;
+    width: 52px;
     display: flex;
     align-items: center;
+    flex-shrink: 0;
 }
 
 .mes-nav-right {
@@ -51,23 +52,49 @@
 }
 
 .mi-calendario .nav-button {
-    background: var(--cal-primary-dark);
-    color: var(--cal-text);
-    border: none;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
+    position: static;
+    left: auto;
+    right: auto;
+    top: auto;
+    width: 40px;
+    height: 40px;
+    background: rgba(167, 73, 36, 0.9) !important;
+    color: #fff;
+    border: 3px solid #fff !important;
+    border-radius: 8px !important;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s ease;
-    box-shadow: 0 2px 8px rgba(167, 73, 36, 0.35);
+    transition: all 0.3s ease;
+    box-shadow: 0 6px 20px rgba(167, 73, 36, 0.6) !important;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.mi-calendario .nav-button svg {
+    color: #fff;
+    font-size: 1.5rem;
 }
 
 .mi-calendario .nav-button:hover {
-    background: var(--cal-primary-hover);
-    transform: scale(1.05);
+    background: rgba(167, 73, 36, 1) !important;
+    transform: scale(1.1);
+    box-shadow: 0 8px 25px rgba(167, 73, 36, 0.8) !important;
+}
+
+.mi-calendario .nav-button.prev,
+.mi-calendario .nav-button.next {
+    position: static;
+    left: auto;
+    right: auto;
+    top: auto;
+    transform: none;
+}
+
+.mi-calendario .nav-button.prev:hover,
+.mi-calendario .nav-button.next:hover {
+    transform: scale(1.1);
 }
 
 .mes-titulo {

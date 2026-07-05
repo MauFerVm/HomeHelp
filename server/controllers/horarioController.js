@@ -10,7 +10,7 @@ const db = require('../config/db');
 const getHorariosDisponibles = async (req, res) => {
     try {
         const { profesionalId } = req.params;
-        const { fechaInicio, duracion } = req.query;
+        const { fechaInicio, duracion, ordenId } = req.query;
         
         console.log('\n========================================');
         console.log('[DEBUG] getHorariosDisponibles llamado');
@@ -50,6 +50,20 @@ const getHorariosDisponibles = async (req, res) => {
         const fechaFin = new Date(fechaConsulta);
         fechaFin.setDate(fechaFin.getDate() + 6);
 
+        let excluirAgendaId = null;
+        if (ordenId) {
+            const orden = await ordenTrabajoModel.getOrdenTrabajoById(ordenId);
+            if (orden) {
+                const agendaActual = await horarioModel.getAgendaBySolicitud(
+                    orden.solicitud_id,
+                    orden.profesional_id
+                );
+                if (agendaActual) {
+                    excluirAgendaId = agendaActual.id;
+                }
+            }
+        }
+
         // Obtener horarios activos del profesional
         const horariosActivos = await horarioModel.getHorariosActivos(
             profesionalId, 
@@ -61,7 +75,8 @@ const getHorariosDisponibles = async (req, res) => {
         const agendaOcupada = await horarioModel.getAgendaOcupada(
             profesionalId,
             fechaInicio,
-            fechaFin.toISOString().split('T')[0]
+            fechaFin.toISOString().split('T')[0],
+            excluirAgendaId
         );
 
         // Procesar horarios disponibles
@@ -208,9 +223,15 @@ const confirmarHorario = async (req, res) => {
                 horarioInicio: horaInicio,
                 horaFin: horaFin,
                 estado: 'pendiente',
-                is_active: 1,
-                previous_orden_id: null
+                is_active: 1
             });
+
+            await ordenTrabajoModel.crearHistorialOrden(
+                ordenTrabajoId,
+                null,
+                'pendiente',
+                'Orden de trabajo creada al confirmar horario'
+            );
 
             // Crear registro en historial_servicio con estado "presupuesto aceptado"
             // Primero obtener el ID del estado y sus vencimiento_dias

@@ -373,7 +373,7 @@ const MiCalendario = () => {
                         <div className="mi-calendario-mes-header">
                             <div className="mes-nav">
                                 {mesOffset > mesMinOffset && (
-                                    <button type="button" className="nav-button" onClick={mesAnterior} aria-label="Mes anterior">
+                                    <button type="button" className="nav-button prev" onClick={mesAnterior} aria-label="Mes anterior">
                                         <FaChevronLeft />
                                     </button>
                                 )}
@@ -384,7 +384,7 @@ const MiCalendario = () => {
                             </div>
                             <div className="mes-nav mes-nav-right">
                                 {mesOffset < mesMaxOffset && (
-                                    <button type="button" className="nav-button" onClick={mesSiguiente} aria-label="Mes siguiente">
+                                    <button type="button" className="nav-button next" onClick={mesSiguiente} aria-label="Mes siguiente">
                                         <FaChevronRight />
                                     </button>
                                 )}

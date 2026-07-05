@@ -6,7 +6,10 @@ const CalendarioHorarios = ({
     profesionalId, 
     duracion, 
     onHorarioSeleccionado, 
-    onCerrar 
+    onCerrar,
+    ordenId = null,
+    titulo = 'Seleccionar Horario',
+    textoConfirmar = 'Confirmar Horario'
 }) => {
     const [semanaActual, setSemanaActual] = useState(0); // 0 = semana actual, 1-3 = siguientes
     const [horariosDisponibles, setHorariosDisponibles] = useState({});
@@ -57,9 +60,12 @@ const CalendarioHorarios = ({
             
             const fechaInicio = getFechaInicioSemana(offsetSemanas);
             
-            const response = await fetch(
-                `http://localhost:3002/api/horarios/profesional/${profesionalId}/disponibles?fechaInicio=${fechaInicio}&duracion=${duracion}`
-            );
+            let url = `http://localhost:3002/api/horarios/profesional/${profesionalId}/disponibles?fechaInicio=${fechaInicio}&duracion=${duracion}`;
+            if (ordenId) {
+                url += `&ordenId=${ordenId}`;
+            }
+
+            const response = await fetch(url);
             
             const data = await response.json();
             
@@ -79,7 +85,7 @@ const CalendarioHorarios = ({
     // Cargar horarios cuando cambia la semana
     useEffect(() => {
         cargarHorarios(semanaActual);
-    }, [semanaActual, profesionalId, duracion]);
+    }, [semanaActual, profesionalId, duracion, ordenId]);
 
     // Navegar a la semana anterior
     const semanaAnterior = () => {
@@ -158,7 +164,7 @@ const CalendarioHorarios = ({
         <div className="calendario-horarios-overlay">
             <div className="calendario-horarios-modal">
                 <div className="calendario-header">
-                    <h2>Seleccionar Horario</h2>
+                    <h2>{titulo}</h2>
                     <button className="cerrar-calendario" onClick={onCerrar}>
                         ×
                     </button>
@@ -277,7 +283,7 @@ const CalendarioHorarios = ({
                                 Cancelar
                             </button>
                             <button className="confirmar-button" onClick={confirmarSeleccion}>
-                                Confirmar Horario
+                                {textoConfirmar}
                             </button>
                         </div>
                     </div>
