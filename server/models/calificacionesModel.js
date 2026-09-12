@@ -101,7 +101,7 @@ const getCalificacionesByPersona = async (persona_id) => {
 };
 
 /**
- * Obtener profesionales destacados según promedio de calificaciones recibidas
+ * Obtener los 5 profesionales destacados con mejor promedio de calificaciones
  */
 const getProfesionalesDestacados = async () => {
     const query = `
@@ -130,6 +130,7 @@ const getProfesionalesDestacados = async () => {
         WHERE c.activo = 1
         GROUP BY p.id, p.nombre_apellido, p.foto_perfil, pr.id
         ORDER BY promedio_calificacion DESC, total_calificaciones DESC, p.nombre_apellido ASC
+        LIMIT 5
     `;
 
     const [rows] = await db.execute(query);

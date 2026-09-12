@@ -186,7 +186,7 @@ const getCalificacionesByPersona = async (req, res) => {
 };
 
 /**
- * Obtener profesionales destacados ordenados por calificación
+ * Obtener los 5 profesionales destacados ordenados por calificación
  */
 const getProfesionalesDestacados = async (req, res) => {
     try {

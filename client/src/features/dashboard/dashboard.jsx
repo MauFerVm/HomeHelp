@@ -9,6 +9,7 @@ import TrabajosAsignados from '../trabajos asignados/trabajoasignado';
 import TrabajosCancelados from '../trabajos cancelados/TrabajosCancelados';
 import MisServicios from './MisServicios';
 import MiCalendario from './MiCalendario';
+import EstadisticasProfesional from './EstadisticasProfesional';
 import {
     FaBell,
     FaSearch,
@@ -50,13 +51,13 @@ const Dashboard = () => {
     const [categoriesExpanded, setCategoriesExpanded] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [itemsPerView, setItemsPerView] = useState(4);
+    const [carouselGap, setCarouselGap] = useState(24);
     const carouselRef = useRef(null);
     const [carouselWidth, setCarouselWidth] = useState(0);
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
     const [featuredProfessionals, setFeaturedProfessionals] = useState([]);
     const [loadingProfessionals, setLoadingProfessionals] = useState(true);
-    const [professionalsExpanded, setProfessionalsExpanded] = useState(false);
     const [showProblemaForm, setShowProblemaForm] = useState(false);
     const [showProfileMenu, setShowProfileMenu] = useState(false);
     const [showModificarPerfil, setShowModificarPerfil] = useState(false);
@@ -189,7 +190,7 @@ const Dashboard = () => {
             const data = await response.json();
 
             if (data.success) {
-                setFeaturedProfessionals(data.data);
+                setFeaturedProfessionals((data.data || []).slice(0, 5));
             } else {
                 console.error('Error al obtener profesionales destacados:', data.message);
                 setFeaturedProfessionals([]);
@@ -258,90 +259,63 @@ const Dashboard = () => {
     }, []);
 
 
-    // Función para determinar el número de elementos por vista
-    const updateItemsPerView = () => {
-        const isMobile = window.innerWidth <= 768;
-        const isSmallPC = window.innerWidth >= 1000 && window.innerWidth <= 1300;
-        const isMediumPC = window.innerWidth >= 1400 && window.innerWidth <= 1500;
-        setItemsPerView(isMobile ? 2 : (isSmallPC || isMediumPC ? 3 : 4));
+    const getCarouselMetrics = (availableWidth) => {
+        const viewport = window.innerWidth;
+        if (viewport <= 480) {
+            return { items: 1, gap: 12 };
+        }
+        if (viewport <= 768) {
+            return { items: 2, gap: 12 };
+        }
+        if (availableWidth > 0 && availableWidth < 560) {
+            return { items: 2, gap: 16 };
+        }
+        if (availableWidth > 0 && availableWidth < 860) {
+            return { items: 3, gap: 16 };
+        }
+        return { items: 4, gap: 24 };
     };
 
-    // Actualizar itemsPerView al montar el componente y al cambiar el tamaño de la ventana
     useEffect(() => {
-        updateItemsPerView();
-        window.addEventListener('resize', updateItemsPerView);
-        return () => window.removeEventListener('resize', updateItemsPerView);
-    }, []);
+        const el = carouselRef.current;
+        if (!el) return undefined;
 
+        const updateCarousel = () => {
+            const styles = window.getComputedStyle(el);
+            const padding = parseFloat(styles.paddingLeft) + parseFloat(styles.paddingRight);
+            const availableWidth = Math.max(0, el.clientWidth - padding);
+            const { items, gap } = getCarouselMetrics(availableWidth);
+            setCarouselWidth(availableWidth);
+            setItemsPerView(items);
+            setCarouselGap(gap);
+        };
 
-    // Las categorías ahora se obtienen dinámicamente desde la API
+        updateCarousel();
+        const observer = new ResizeObserver(updateCarousel);
+        observer.observe(el);
+        window.addEventListener('resize', updateCarousel);
+        return () => {
+            observer.disconnect();
+            window.removeEventListener('resize', updateCarousel);
+        };
+    }, [loading]);
 
-    // Crear categorías duplicadas solo para pantallas de 1400-1500px
-    const isMediumScreen = window.innerWidth >= 1400 && window.innerWidth <= 1500;
-    const isLargeScreen = window.innerWidth >= 1600 && window.innerWidth <= 1700;
-    const displayCategories = isMediumScreen ? [...categories, ...categories] : categories;
+    const cardWidth = carouselWidth > 0
+        ? (carouselWidth - carouselGap * Math.max(0, itemsPerView - 1)) / itemsPerView
+        : 0;
+    const maxSlideIndex = Math.max(0, categories.length - itemsPerView);
+
+    useEffect(() => {
+        setCurrentSlide((prev) => Math.min(prev, maxSlideIndex));
+    }, [maxSlideIndex]);
 
     const nextSlide = () => {
-        if (isMediumScreen) {
-            // Para pantallas 1400-1500px: navegación circular
-            setCurrentSlide(prev => {
-                const nextSlide = prev + 3;
-                if (nextSlide >= categories.length) {
-                    return 0;
-                }
-                return nextSlide;
-            });
-        } else {
-            // Para otras pantallas: navegación normal
-            if (currentSlide < effectiveMaxSlides) {
-                setCurrentSlide(currentSlide + 1);
-            } else {
-                setCurrentSlide(0);
-            }
-        }
+        setCurrentSlide((prev) => (prev >= maxSlideIndex ? 0 : prev + 1));
     };
 
     const prevSlide = () => {
-        if (isMediumScreen) {
-            // Para pantallas 1400-1500px: navegación circular
-            setCurrentSlide(prev => {
-                const prevSlide = prev - 1;
-                if (prevSlide < 0) {
-                    return categories.length - 1;
-                }
-                return prevSlide;
-            });
-        } else {
-            // Para otras pantallas: navegación normal
-            if (currentSlide > 0) {
-                setCurrentSlide(currentSlide - 1);
-            } else {
-                setCurrentSlide(effectiveMaxSlides);
-            }
-        }
+        setCurrentSlide((prev) => (prev <= 0 ? maxSlideIndex : prev - 1));
     };
-
-    // Calcular el número máximo de slides basado en el número de categorías y elementos por vista
-    const maxSlides = Math.max(0, categories.length - itemsPerView);
-    // Para móviles: permitir navegar por todas las categorías (2 por vista)
-    // Para PC pequeñas: permitir navegar por todas las categorías (3 por vista)
-    // Para PC medianas: permitir navegar por todas las categorías (3 por vista)
-    // Para desktop: mantener la lógica actual (4 por vista)
-    const effectiveMaxSlides = window.innerWidth <= 768 ?
-        Math.ceil(categories.length / 2) - 1 : // Móvil: 8 categorías / 2 = 4 slides (0,1,2,3)
-        (window.innerWidth >= 1000 && window.innerWidth <= 1300) || (window.innerWidth >= 1400 && window.innerWidth <= 1500) ?
-            Math.ceil(categories.length / 3) - 1 : // PC pequeña/mediana: 8 categorías / 3 = 3 slides (0,1,2)
-            1; // Desktop: mantener como está
-
-    // Debug: mostrar información del carrusel
-    useEffect(() => {
-        console.log('Categorías totales:', categories.length);
-        console.log('Elementos por vista:', itemsPerView);
-        console.log('Máximo de slides:', maxSlides);
-        console.log('Slides efectivos:', effectiveMaxSlides);
-        console.log('Slide actual:', currentSlide);
-        console.log('Es móvil:', window.innerWidth <= 768);
-    }, [categories, itemsPerView, maxSlides, effectiveMaxSlides, currentSlide]);
 
     // Las flechas nunca se bloquean - siempre permiten navegación circular
     const canGoNext = true;
@@ -493,12 +467,7 @@ const Dashboard = () => {
             case 'cancelaciones':
                 return <TrabajosCancelados isTab={true} />;
             case 'estadisticas':
-                return (
-                    <div className="tab-content">
-                        <h2>Estadísticas de Mis Servicios</h2>
-                        <p>Esta funcionalidad estará disponible próximamente.</p>
-                    </div>
-                );
+                return <EstadisticasProfesional />;
             case 'contacto':
                 return (
                     <div className="tab-content">
@@ -570,19 +539,22 @@ const Dashboard = () => {
                             <FaChevronLeft />
                         </button>
 
-                        <div className="categories-carousel">
+                        <div className="categories-carousel" ref={carouselRef}>
                             <div
                                 className="categories-track"
                                 style={{
-                                    transform: isMediumScreen
-                                        ? `translateX(-${currentSlide * (100 / 2.8)}%)`
-                                        : isLargeScreen
-                                            ? `translateX(-${currentSlide * (110 / 1)}%)`
-                                            : `translateX(-${currentSlide * (110 / itemsPerView) * itemsPerView}%)`
+                                    gap: `${carouselGap}px`,
+                                    transform: cardWidth
+                                        ? `translateX(-${currentSlide * (cardWidth + carouselGap)}px)`
+                                        : 'translateX(0)'
                                 }}
                             >
-                                {displayCategories.map((category, index) => (
-                                    <div key={index} className="category-card">
+                                {categories.map((category, index) => (
+                                    <div
+                                        key={category.id ?? index}
+                                        className="category-card"
+                                        style={cardWidth ? { width: cardWidth, flex: `0 0 ${cardWidth}px` } : undefined}
+                                    >
                                         <div className="category-image-container">
                                             <img
                                                 src={category.image}
@@ -616,7 +588,7 @@ const Dashboard = () => {
                     ) : featuredProfessionals.length === 0 ? (
                         <p className="professionals-status">No hay profesionales calificados aún.</p>
                     ) : (
-                        (professionalsExpanded ? featuredProfessionals : featuredProfessionals.slice(0, 3)).map((professional) => (
+                        featuredProfessionals.map((professional) => (
                             <div key={professional.persona_id} className="professional-card">
                                 <img
                                     src={getProfessionalImage(professional.foto_perfil)}
@@ -636,21 +608,6 @@ const Dashboard = () => {
                         ))
                     )}
                 </div>
-                {!loadingProfessionals && featuredProfessionals.length > 3 && (
-                    <div
-                        className="load-more"
-                        onClick={() => setProfessionalsExpanded((prev) => !prev)}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                                setProfessionalsExpanded((prev) => !prev);
-                            }
-                        }}
-                    >
-                        {professionalsExpanded ? <FaChevronUp /> : <FaChevronDown />}
-                    </div>
-                )}
             </div>
         </>
     );

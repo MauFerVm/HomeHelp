@@ -19,7 +19,7 @@ router.get('/verificar', calificacionesController.verificarCalificacion);
 
 /**
  * @route GET /api/calificaciones/destacados
- * @desc Obtener profesionales destacados por calificación
+ * @desc Obtener los 5 profesionales destacados por calificación
  * @access Public
  */
 router.get('/destacados', calificacionesController.getProfesionalesDestacados);
