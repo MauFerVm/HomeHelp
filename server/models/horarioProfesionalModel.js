@@ -80,7 +80,7 @@ const getAgendaOcupada = async (profesionalId, fechaInicio, fechaFin, excluirAge
 /**
  * Crear nueva entrada en la agenda del profesional
  */
-const crearEntradaAgenda = async (profesionalId, solicitudId, presupuestoId, fecha, horaInicio, horaFin, estado = 'pendiente') => {
+const crearEntradaAgenda = async (profesionalId, solicitudId, presupuestoId, fecha, horaInicio, horaFin, estado = 'pendiente', executor = db) => {
     try {
         const query = `
             INSERT INTO profesional_agenda 
@@ -88,7 +88,7 @@ const crearEntradaAgenda = async (profesionalId, solicitudId, presupuestoId, fec
             VALUES (?, ?, ?, ?, ?, ?, ?)
         `;
         
-        const [result] = await db.execute(query, [
+        const [result] = await executor.execute(query, [
             profesionalId, 
             solicitudId, 
             presupuestoId, 
@@ -174,7 +174,7 @@ const getAgendaBySolicitud = async (solicitudId, profesionalId) => {
 /**
  * Actualizar fecha y horario de una entrada en agenda
  */
-const actualizarEntradaAgenda = async (agendaId, fecha, horaInicio, horaFin) => {
+const actualizarEntradaAgenda = async (agendaId, fecha, horaInicio, horaFin, executor = db) => {
     try {
         const query = `
             UPDATE profesional_agenda
@@ -182,7 +182,7 @@ const actualizarEntradaAgenda = async (agendaId, fecha, horaInicio, horaFin) => 
             WHERE id = ?
         `;
 
-        const [result] = await db.execute(query, [fecha, horaInicio, horaFin, agendaId]);
+        const [result] = await executor.execute(query, [fecha, horaInicio, horaFin, agendaId]);
         return result.affectedRows > 0;
     } catch (error) {
         console.error('Error al actualizar entrada en agenda:', error);
@@ -193,10 +193,10 @@ const actualizarEntradaAgenda = async (agendaId, fecha, horaInicio, horaFin) => 
 /**
  * Eliminar entrada de la agenda del profesional
  */
-const eliminarEntradaAgenda = async (agendaId) => {
+const eliminarEntradaAgenda = async (agendaId, executor = db) => {
     try {
         const query = 'DELETE FROM profesional_agenda WHERE id = ?';
-        const [result] = await db.execute(query, [agendaId]);
+        const [result] = await executor.execute(query, [agendaId]);
         return result.affectedRows > 0;
     } catch (error) {
         console.error('Error al eliminar entrada en agenda:', error);

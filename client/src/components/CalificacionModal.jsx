@@ -9,11 +9,14 @@ const CalificacionModal = ({
     calificadorPersonaId,
     calificadoPersonaId,
     calificadoNombre,
-    onCalificacionEnviada
+    onCalificacionEnviada,
+    mostrarOpcionFavorito = false,
+    yaEsFavorito = false
 }) => {
     const [puntuacion, setPuntuacion] = useState(0);
     const [hoverPuntuacion, setHoverPuntuacion] = useState(0);
     const [comentario, setComentario] = useState('');
+    const [agregarAFavoritos, setAgregarAFavoritos] = useState(false);
     const [enviando, setEnviando] = useState(false);
     const [error, setError] = useState(null);
     const [yaCalificado, setYaCalificado] = useState(false);
@@ -73,18 +76,21 @@ const CalificacionModal = ({
             const data = await response.json();
 
             if (data.success) {
-                // Limpiar formulario
+                const quiereFavorito = mostrarOpcionFavorito && agregarAFavoritos && !yaEsFavorito;
+
                 setPuntuacion(0);
                 setComentario('');
+                setAgregarAFavoritos(false);
                 setError(null);
                 
-                // Cerrar modal de calificación
                 onClose();
                 
-                // Notificar al componente padre que la calificación se envió exitosamente
-                // El padre se encargará de mostrar el modal de éxito
                 if (onCalificacionEnviada) {
-                    onCalificacionEnviada();
+                    onCalificacionEnviada({
+                        agregarFavorito: quiereFavorito,
+                        profesionalId: calificadoPersonaId,
+                        profesionalNombre: calificadoNombre
+                    });
                 }
             } else {
                 setError(data.message || 'Error al enviar la calificación');
@@ -101,6 +107,7 @@ const CalificacionModal = ({
         if (!enviando) {
             setPuntuacion(0);
             setComentario('');
+            setAgregarAFavoritos(false);
             setError(null);
             setYaCalificado(false);
             onClose();
@@ -155,6 +162,18 @@ const CalificacionModal = ({
                                     </p>
                                 )}
                             </div>
+
+                            {mostrarOpcionFavorito && !yaEsFavorito && (
+                                <label className="calificacion-favorito-option">
+                                    <input
+                                        type="checkbox"
+                                        checked={agregarAFavoritos}
+                                        onChange={(e) => setAgregarAFavoritos(e.target.checked)}
+                                        disabled={enviando}
+                                    />
+                                    <span>Agregar profesional a favoritos</span>
+                                </label>
+                            )}
 
                             <div className="calificacion-comentario-container">
                                 <label htmlFor="comentario" className="calificacion-label">

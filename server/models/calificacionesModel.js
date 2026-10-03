@@ -101,16 +101,29 @@ const getCalificacionesByPersona = async (persona_id) => {
 };
 
 /**
- * Obtener los 5 profesionales destacados con mejor promedio de calificaciones
+ * Obtener los 5 profesionales destacados con mejor promedio de calificaciones.
+ * Si se indica un tipo de profesional, limita el ranking a esa categoría.
  */
-const getProfesionalesDestacados = async () => {
+const getProfesionalesDestacados = async (tipoProfesionalId = null) => {
+    const params = [];
+    let categoryJoin = '';
+
+    if (tipoProfesionalId) {
+        categoryJoin = `
+            JOIN profesional_tipo pt_filtro
+                ON pt_filtro.profesional_id = pr.id
+                AND pt_filtro.tipo_profesional_id = ?
+        `;
+        params.push(tipoProfesionalId);
+    }
+
     const query = `
         SELECT 
             p.id AS persona_id,
             p.nombre_apellido,
             p.foto_perfil,
             ROUND(AVG(c.puntuacion), 1) AS promedio_calificacion,
-            COUNT(c.id) AS total_calificaciones,
+            COUNT(DISTINCT c.id) AS total_calificaciones,
             (
                 SELECT COUNT(*)
                 FROM orden_de_trabajo ot
@@ -127,13 +140,14 @@ const getProfesionalesDestacados = async () => {
         FROM calificaciones c
         JOIN persona p ON c.calificado_persona_id = p.id
         JOIN profesional pr ON p.id = pr.id
+        ${categoryJoin}
         WHERE c.activo = 1
         GROUP BY p.id, p.nombre_apellido, p.foto_perfil, pr.id
         ORDER BY promedio_calificacion DESC, total_calificaciones DESC, p.nombre_apellido ASC
         LIMIT 5
     `;
 
-    const [rows] = await db.execute(query);
+    const [rows] = await db.execute(query, params);
     return rows;
 };
 

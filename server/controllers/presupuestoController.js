@@ -1,5 +1,6 @@
 // controllers/presupuestoController.js
 const db = require('../config/db');
+const Notificacion = require('../models/notificacionModel');
 
 /**
  * Crear un nuevo presupuesto
@@ -91,6 +92,32 @@ const crearPresupuesto = async (req, res) => {
             duracion,
             estado
         ]);
+
+        try {
+            const [datosNotificacion] = await db.execute(
+                `SELECT
+                    prof.nombre_apellido AS profesional_nombre,
+                    ss.titulo AS titulo_solicitud,
+                    cliente.usuario_id AS cliente_usuario_id
+                 FROM solicitud_servicio ss
+                 JOIN persona cliente ON ss.cliente_persona_id = cliente.id
+                 JOIN persona prof ON prof.id = ?
+                 WHERE ss.id = ?`,
+                [personaId, solicitud_id]
+            );
+
+            if (datosNotificacion.length > 0 && datosNotificacion[0].cliente_usuario_id) {
+                const { profesional_nombre, titulo_solicitud, cliente_usuario_id } = datosNotificacion[0];
+                await Notificacion.crear({
+                    usuario_id: cliente_usuario_id,
+                    tipo_notificacion: 'oferta',
+                    referencia_id: solicitud_id,
+                    mensaje: `${profesional_nombre} envió un presupuesto para "${titulo_solicitud}"`
+                });
+            }
+        } catch (notiError) {
+            console.error('Error al notificar el presupuesto al cliente:', notiError);
+        }
 
         res.status(201).json({
             success: true,

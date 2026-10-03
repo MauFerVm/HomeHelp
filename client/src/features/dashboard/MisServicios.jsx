@@ -56,6 +56,12 @@ const MisServicios = ({
     const [calendarioAbierto, setCalendarioAbierto] = useState(false);
     const [ordenParaReprogramar, setOrdenParaReprogramar] = useState(null);
     const [reprogramandoHorario, setReprogramandoHorario] = useState(false);
+    const [cancelandoOrden, setCancelandoOrden] = useState(false);
+    const [favoritosIds, setFavoritosIds] = useState(() => new Set());
+    const [agregandoFavoritoId, setAgregandoFavoritoId] = useState(null);
+    const [showFavoritoSuccess, setShowFavoritoSuccess] = useState(false);
+    const [favoritoSuccessMessage, setFavoritoSuccessMessage] = useState('');
+    const [mensajeCalificacion, setMensajeCalificacion] = useState('');
 
     // Obtener datos del usuario del localStorage
     useEffect(() => {
@@ -96,6 +102,7 @@ const MisServicios = ({
     useEffect(() => {
         if (personaId) {
             fetchOrdenesTrabajos();
+            fetchFavoritos();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [personaId]);
@@ -189,7 +196,68 @@ const MisServicios = ({
         }
     };
 
-    const handleCalificacionEnviada = () => {
+    const esFavorito = (profesionalId) => favoritosIds.has(Number(profesionalId));
+
+    const fetchFavoritos = async () => {
+        if (!personaId) return;
+        try {
+            const response = await fetch(`http://localhost:3002/api/favoritos/cliente/${personaId}`);
+            const data = await response.json();
+            if (data.success && Array.isArray(data.data)) {
+                setFavoritosIds(new Set(data.data.map((item) => Number(item.profesional_id))));
+            }
+        } catch (error) {
+            console.error('Error al cargar favoritos:', error);
+        }
+    };
+
+    const agregarFavorito = async (profesionalId) => {
+        const response = await fetch('http://localhost:3002/api/favoritos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                cliente_persona_id: personaId,
+                profesional_id: profesionalId
+            })
+        });
+        const data = await response.json();
+
+        if (data.success || data.alreadyExists) {
+            setFavoritosIds((prev) => {
+                const next = new Set(prev);
+                next.add(Number(profesionalId));
+                return next;
+            });
+        }
+
+        return data;
+    };
+
+    const handleAgregarFavorito = async (orden) => {
+        if (!orden?.profesional_id || !personaId || esFavorito(orden.profesional_id)) return;
+
+        try {
+            setAgregandoFavoritoId(Number(orden.profesional_id));
+            const data = await agregarFavorito(orden.profesional_id);
+
+            if (data.success) {
+                setFavoritoSuccessMessage(`${orden.profesional_nombre} ya forma parte de tus profesionales favoritos.`);
+                setShowFavoritoSuccess(true);
+            } else if (data.alreadyExists) {
+                setFavoritoSuccessMessage(`${orden.profesional_nombre} ya estaba en tus favoritos.`);
+                setShowFavoritoSuccess(true);
+            } else {
+                alert(data.message || 'No se pudo agregar el profesional a favoritos.');
+            }
+        } catch (error) {
+            console.error('Error al agregar favorito:', error);
+            alert('No se pudo agregar el profesional a favoritos.');
+        } finally {
+            setAgregandoFavoritoId(null);
+        }
+    };
+
+    const handleCalificacionEnviada = async ({ agregarFavorito: quiereFavorito, profesionalId, profesionalNombre } = {}) => {
         if (selectedOrden) {
             setOrdenesCalificadas(prev => ({
                 ...prev,
@@ -197,8 +265,24 @@ const MisServicios = ({
             }));
         }
         setYaCalificado(true);
+
+        let mensaje = 'Gracias por tu calificación. Tu opinión es muy importante para nosotros.';
+        if (quiereFavorito && profesionalId && !esFavorito(profesionalId)) {
+            try {
+                const data = await agregarFavorito(profesionalId);
+                if (data.success) {
+                    mensaje = `Gracias por tu calificación. También agregamos a ${profesionalNombre || 'el profesional'} a tus favoritos.`;
+                } else if (!data.alreadyExists) {
+                    mensaje = 'Gracias por tu calificación. No se pudo agregar el profesional a favoritos.';
+                }
+            } catch (error) {
+                console.error('Error al agregar favorito desde la calificación:', error);
+                mensaje = 'Gracias por tu calificación. No se pudo agregar el profesional a favoritos.';
+            }
+        }
+
+        setMensajeCalificacion(mensaje);
         fetchOrdenesTrabajos();
-        // Mostrar modal de éxito
         setShowCalificacionSuccessModal(true);
     };
 
@@ -336,8 +420,64 @@ const MisServicios = ({
     };
 
     const ESTADOS_CERRABLES = ['pendiente', 'reprogramado', 'represupuestada', 'en_curso'];
+    const ESTADOS_CANCELABLES = ['pendiente', 'reprogramado', 'represupuestada'];
 
     const puedeCerrarOrden = (orden) => ESTADOS_CERRABLES.includes(orden.estado);
+
+    const puedeCancelarOrden = (orden) => {
+        if (!ESTADOS_CANCELABLES.includes(orden.estado)) {
+            return false;
+        }
+
+        if (!orden.fecha_programada || !orden.horarioInicio) {
+            return false;
+        }
+
+        const fechaStr = String(orden.fecha_programada).split('T')[0];
+        const horaStr = formatHora(orden.horarioInicio);
+        const inicioOrden = new Date(`${fechaStr}T${horaStr}:00`);
+        const horasRestantes = (inicioOrden.getTime() - Date.now()) / (1000 * 60 * 60);
+
+        return horasRestantes >= 48;
+    };
+
+    const handleCancelarOrden = (orden = selectedOrden) => {
+        if (!orden) return;
+        setSelectedOrden(orden);
+        setConfirmTitle('Cancelar Orden de Trabajo');
+        setConfirmMessage('¿Estás seguro de que deseas cancelar esta orden de trabajo? Se liberará el horario del profesional y será notificado.');
+        setConfirmAction(() => () => ejecutarCancelarOrden(orden));
+        setShowConfirmModal(true);
+    };
+
+    const ejecutarCancelarOrden = async (orden = selectedOrden) => {
+        if (!orden || !personaId) return;
+
+        try {
+            setCancelandoOrden(true);
+            const response = await fetch(`http://localhost:3002/api/ordenes/${orden.id}/cancelar-cliente`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ clientePersonaId: personaId })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                await fetchOrdenesTrabajos();
+                setShowModal(false);
+            } else {
+                throw new Error(data.message || 'Error al cancelar la orden de trabajo');
+            }
+        } catch (error) {
+            console.error('Error al cancelar orden de trabajo:', error);
+            alert('Error al cancelar la orden de trabajo: ' + error.message);
+        } finally {
+            setCancelandoOrden(false);
+        }
+    };
 
     const abrirCalendarioReprogramacion = (orden) => {
         setOrdenParaReprogramar(orden);
@@ -748,6 +888,16 @@ const MisServicios = ({
                             </div>
 
                             <div className="orden-actions">
+                                {puedeCancelarOrden(orden) && (
+                                    <button
+                                        className="cancelar-orden-button-card"
+                                        onClick={() => handleCancelarOrden(orden)}
+                                        disabled={cancelandoOrden}
+                                    >
+                                        <FaTimesCircle />
+                                        Cancelar Orden
+                                    </button>
+                                )}
                                 {puedeModificarHorario(orden) && (
                                     <button
                                         className="reprogramar-button-card"
@@ -767,6 +917,20 @@ const MisServicios = ({
                                     >
                                         <FaStar />
                                         Calificar Profesional
+                                    </button>
+                                )}
+                                {orden.estado === 'calificada' &&
+                                 orden.profesional_id &&
+                                 !esFavorito(orden.profesional_id) && (
+                                    <button
+                                        className="favorito-button-card"
+                                        onClick={() => handleAgregarFavorito(orden)}
+                                        disabled={agregandoFavoritoId === Number(orden.profesional_id)}
+                                    >
+                                        <FaStar />
+                                        {agregandoFavoritoId === Number(orden.profesional_id)
+                                            ? 'Agregando...'
+                                            : 'Agregar profesional a favoritos'}
                                     </button>
                                 )}
                                 <button 
@@ -860,6 +1024,25 @@ const MisServicios = ({
                         </div>
 
                         <div className="modal-footer">
+                            {puedeCancelarOrden(selectedOrden) && (
+                                <button
+                                    className="cancelar-orden-button"
+                                    onClick={() => handleCancelarOrden(selectedOrden)}
+                                    disabled={cancelandoOrden}
+                                >
+                                    {cancelandoOrden ? (
+                                        <>
+                                            <FaSpinner className="spinner-small" />
+                                            Cancelando...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <FaTimesCircle />
+                                            Cancelar Orden
+                                        </>
+                                    )}
+                                </button>
+                            )}
                             {puedeCerrarOrden(selectedOrden) && (
                                 <button 
                                     className="cerrar-orden-button"
@@ -923,6 +1106,8 @@ const MisServicios = ({
                     calificadoPersonaId={selectedOrden.profesional_id}
                     calificadoNombre={selectedOrden.profesional_nombre}
                     onCalificacionEnviada={handleCalificacionEnviada}
+                    mostrarOpcionFavorito
+                    yaEsFavorito={esFavorito(selectedOrden.profesional_id)}
                 />
             )}
 
@@ -941,6 +1126,14 @@ const MisServicios = ({
             <CalificacionSuccessModal
                 isOpen={showCalificacionSuccessModal}
                 onClose={() => setShowCalificacionSuccessModal(false)}
+                message={mensajeCalificacion || undefined}
+            />
+
+            <SuccessModal
+                isOpen={showFavoritoSuccess}
+                onClose={() => setShowFavoritoSuccess(false)}
+                title="Profesional agregado a favoritos"
+                message={favoritoSuccessMessage}
             />
 
             <SuccessModal

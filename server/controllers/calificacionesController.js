@@ -1,6 +1,8 @@
 // controllers/calificacionesController.js
 const calificacionesModel = require('../models/calificacionesModel');
 const ordenTrabajoModel = require('../models/ordenTrabajoModel');
+const Notificacion = require('../models/notificacionModel');
+const db = require('../config/db');
 
 /**
  * Crear una nueva calificación
@@ -84,6 +86,41 @@ const crearCalificacion = async (req, res) => {
                     'Ambas partes calificaron el servicio'
                 );
             }
+        }
+
+        try {
+            const [datosNotificacion] = await db.execute(
+                `SELECT
+                    ss.titulo AS titulo_solicitud,
+                    calificador.nombre_apellido AS calificador_nombre,
+                    calificado.usuario_id AS calificado_usuario_id
+                 FROM solicitud_servicio ss
+                 JOIN persona calificador ON calificador.id = ?
+                 JOIN persona calificado ON calificado.id = ?
+                 WHERE ss.id = ?`,
+                [calificador_persona_id, calificado_persona_id, solicitud_id]
+            );
+
+            if (datosNotificacion.length > 0 && datosNotificacion[0].calificado_usuario_id) {
+                const { titulo_solicitud, calificador_nombre, calificado_usuario_id } = datosNotificacion[0];
+                const faltaCalificar = !(await calificacionesModel.existeCalificacion(
+                    solicitud_id,
+                    calificado_persona_id,
+                    calificador_persona_id
+                ));
+                const mensaje = faltaCalificar
+                    ? `${calificador_nombre} te calificó el servicio "${titulo_solicitud}". Todavía te falta dejar tu calificación.`
+                    : `${calificador_nombre} te calificó el servicio "${titulo_solicitud}".`;
+
+                await Notificacion.crear({
+                    usuario_id: calificado_usuario_id,
+                    tipo_notificacion: 'sistema',
+                    referencia_id: solicitud_id,
+                    mensaje
+                });
+            }
+        } catch (notiError) {
+            console.error('Error al notificar la calificación:', notiError);
         }
 
         res.status(201).json({
@@ -186,11 +223,25 @@ const getCalificacionesByPersona = async (req, res) => {
 };
 
 /**
- * Obtener los 5 profesionales destacados ordenados por calificación
+ * Obtener los 5 profesionales destacados ordenados por calificación.
+ * Acepta ?tipo_profesional_id para filtrar por categoría.
  */
 const getProfesionalesDestacados = async (req, res) => {
     try {
-        const profesionales = await calificacionesModel.getProfesionalesDestacados();
+        const rawId = req.query.tipo_profesional_id;
+        let tipoProfesionalId = null;
+
+        if (rawId !== undefined && rawId !== '') {
+            tipoProfesionalId = Number(rawId);
+            if (!Number.isInteger(tipoProfesionalId) || tipoProfesionalId <= 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'tipo_profesional_id inválido'
+                });
+            }
+        }
+
+        const profesionales = await calificacionesModel.getProfesionalesDestacados(tipoProfesionalId);
 
         res.json({
             success: true,

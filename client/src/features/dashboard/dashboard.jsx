@@ -5,6 +5,7 @@ import PublicarProblemaForm from '../../components/PublicarProblemaForm';
 import ModificarPerfilForm from '../../components/ModificarPerfilForm';
 import BuscarTrabajo from '../buscarTrabajo/BuscarTrabajo';
 import MisPresupuestos from './MisPresupuestos';
+import ProfesionalesFavoritos from './ProfesionalesFavoritos';
 import TrabajosAsignados from '../trabajos asignados/trabajoasignado';
 import TrabajosCancelados from '../trabajos cancelados/TrabajosCancelados';
 import MisServicios from './MisServicios';
@@ -31,7 +32,8 @@ import {
     FaTimesCircle,
     FaUserTie,
     FaBriefcase,
-    FaUserEdit
+    FaUserEdit,
+    FaStar
 } from 'react-icons/fa';
 import logoHomeHelp from '../../assets/logo_homehelp.png';
 import perfil from '../../assets/user.png';
@@ -58,6 +60,7 @@ const Dashboard = () => {
     const [loading, setLoading] = useState(true);
     const [featuredProfessionals, setFeaturedProfessionals] = useState([]);
     const [loadingProfessionals, setLoadingProfessionals] = useState(true);
+    const [selectedCategoryId, setSelectedCategoryId] = useState(null);
     const [showProblemaForm, setShowProblemaForm] = useState(false);
     const [showProfileMenu, setShowProfileMenu] = useState(false);
     const [showModificarPerfil, setShowModificarPerfil] = useState(false);
@@ -183,10 +186,17 @@ const Dashboard = () => {
         return perfil;
     };
 
-    const fetchFeaturedProfessionals = async () => {
+    const fetchFeaturedProfessionals = async (tipoProfesionalId = null) => {
         try {
             setLoadingProfessionals(true);
-            const response = await fetch('http://localhost:3002/api/calificaciones/destacados');
+            const params = new URLSearchParams();
+            if (tipoProfesionalId) {
+                params.set('tipo_profesional_id', String(tipoProfesionalId));
+            }
+            const query = params.toString();
+            const response = await fetch(
+                `http://localhost:3002/api/calificaciones/destacados${query ? `?${query}` : ''}`
+            );
             const data = await response.json();
 
             if (data.success) {
@@ -206,8 +216,12 @@ const Dashboard = () => {
     // Cargar categorías al montar el componente
     useEffect(() => {
         fetchActiveCategories();
-        fetchFeaturedProfessionals();
     }, []);
+
+    useEffect(() => {
+        fetchFeaturedProfessionals(selectedCategoryId);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedCategoryId]);
 
     // Cerrar dropdowns si clic fuera
     useEffect(() => {
@@ -392,10 +406,13 @@ const Dashboard = () => {
                 setNotifications(prev => prev.map(n => n.id === notiId ? { ...n, leido: 1 } : n));
                 setUnreadCount(prev => Math.max(0, prev - 1));
                 
-                // Si es un profesional y la notificación es de tipo 'solicitud', cambiar a pestaña Buscar Trabajo
-                if (userType === 'profesional') {
-                    const notificacion = notifications.find(n => n.id === notiId);
-                    if (notificacion && notificacion.tipo_notificacion === 'solicitud') {
+                const notificacion = notifications.find(n => n.id === notiId);
+                if (notificacion) {
+                    if (userType === 'cliente' && notificacion.tipo_notificacion === 'oferta') {
+                        setActiveTab('mis-presupuestos');
+                    } else if (notificacion.tipo_notificacion === 'sistema') {
+                        setActiveTab(userType === 'profesional' ? 'trabajos-asignados' : 'mis-servicios');
+                    } else if (userType === 'profesional' && notificacion.tipo_notificacion === 'solicitud') {
                         setActiveTab('buscar-trabajo');
                     }
                 }
@@ -460,6 +477,8 @@ const Dashboard = () => {
                 return <TrabajosAsignados isTab={true} />;
             case 'mis-presupuestos':
                 return <MisPresupuestos />;
+            case 'profesionales-favoritos':
+                return <ProfesionalesFavoritos />;
             case 'mis-servicios':
                 return <MisServicios isTab={true} />;
             case 'calendario':
@@ -582,11 +601,36 @@ const Dashboard = () => {
             {/* Featured Professionals Section */}
             <div className="professionals-section">
                 <h2 className="section-title">Profesionales destacados</h2>
+                <div className="category-filters" role="group" aria-label="Filtrar profesionales por categoría">
+                    <button
+                        type="button"
+                        className={`category-filter-chip ${selectedCategoryId == null ? 'active' : ''}`}
+                        onClick={() => setSelectedCategoryId(null)}
+                    >
+                        Todas
+                    </button>
+                    {categories
+                        .filter((category) => category.id != null)
+                        .map((category) => (
+                            <button
+                                key={category.id}
+                                type="button"
+                                className={`category-filter-chip ${selectedCategoryId === category.id ? 'active' : ''}`}
+                                onClick={() => setSelectedCategoryId(category.id)}
+                            >
+                                {category.name}
+                            </button>
+                        ))}
+                </div>
                 <div className="professionals-list">
                     {loadingProfessionals ? (
                         <p className="professionals-status">Cargando profesionales...</p>
                     ) : featuredProfessionals.length === 0 ? (
-                        <p className="professionals-status">No hay profesionales calificados aún.</p>
+                        <p className="professionals-status">
+                            {selectedCategoryId
+                                ? 'No hay profesionales calificados en esta categoría.'
+                                : 'No hay profesionales calificados aún.'}
+                        </p>
                     ) : (
                         featuredProfessionals.map((professional) => (
                             <div key={professional.persona_id} className="professional-card">
@@ -721,6 +765,10 @@ const Dashboard = () => {
                                         <li className={`nav-item ${activeTab === 'mis-presupuestos' ? 'active' : ''}`} onClick={() => { closeMobileMenu(); setActiveTab('mis-presupuestos'); }} data-user-type="cliente">
                                             <FaClipboardList className="nav-icon" />
                                             <span>Mis presupuestos</span>
+                                        </li>
+                                        <li className={`nav-item ${activeTab === 'profesionales-favoritos' ? 'active' : ''}`} onClick={() => { closeMobileMenu(); setActiveTab('profesionales-favoritos'); }} data-user-type="cliente">
+                                            <FaStar className="nav-icon" />
+                                            <span>Profesionales favoritos</span>
                                         </li>
                                     </ul>
                                 </div>

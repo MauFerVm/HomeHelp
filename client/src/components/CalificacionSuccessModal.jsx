@@ -4,7 +4,8 @@ import './CalificacionSuccessModal.css';
 
 const CalificacionSuccessModal = ({ 
     isOpen, 
-    onClose
+    onClose,
+    message = 'Gracias por tu calificación. Tu opinión es muy importante para nosotros.'
 }) => {
     if (!isOpen) return null;
 
@@ -30,7 +31,7 @@ const CalificacionSuccessModal = ({
                     
                     <h2 className="calificacion-success-title">¡Calificación enviada exitosamente!</h2>
                     <p className="calificacion-success-message">
-                        Gracias por tu calificación. Tu opinión es muy importante para nosotros.
+                        {message}
                     </p>
                     
                     <button

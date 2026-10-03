@@ -170,6 +170,29 @@ const actualizarEstadoOrden = async (req, res) => {
             );
         }
 
+        if (estado === 'cerradocliente' || estado === 'cerradoprofesional') {
+            try {
+                const cierreDelCliente = estado === 'cerradocliente';
+                const destinatarioPersonaId = cierreDelCliente ? orden.profesional_id : orden.cliente_persona_id;
+                const nombreQuienCierra = cierreDelCliente ? orden.cliente_nombre : orden.profesional_nombre;
+                const [destinatarioRows] = await db.execute(
+                    'SELECT usuario_id FROM persona WHERE id = ? LIMIT 1',
+                    [destinatarioPersonaId]
+                );
+
+                if (destinatarioRows.length > 0 && destinatarioRows[0].usuario_id) {
+                    await Notificacion.crear({
+                        usuario_id: destinatarioRows[0].usuario_id,
+                        tipo_notificacion: 'sistema',
+                        referencia_id: orden.solicitud_id,
+                        mensaje: `${nombreQuienCierra} cerró el servicio "${orden.solicitud_titulo}". Confirmá el cierre para finalizarlo.`
+                    });
+                }
+            } catch (notiError) {
+                console.error('Error al notificar el cierre de la orden:', notiError);
+            }
+        }
+
         // Si el estado es "completado", crear registro en historial_servicio
         if (estado === 'completado') {
             try {
@@ -328,32 +351,37 @@ const reprogramarHorarioOrden = async (req, res) => {
         const estadoAnterior = orden.estado;
         const estadoNuevo = 'reprogramado';
 
-        await db.query('START TRANSACTION');
+        const connection = await db.getConnection();
 
         try {
+            await connection.beginTransaction();
+
             await ordenTrabajoModel.actualizarHorarioOrden(
                 ordenId,
                 fecha,
                 horaInicio,
                 horaFin,
-                estadoNuevo
+                estadoNuevo,
+                connection
             );
 
             await horarioModel.actualizarEntradaAgenda(
                 agenda.id,
                 fecha,
                 horaInicio,
-                horaFin
+                horaFin,
+                connection
             );
 
             await ordenTrabajoModel.crearHistorialOrden(
                 ordenId,
                 estadoAnterior,
                 estadoNuevo,
-                notasHistorial
+                notasHistorial,
+                connection
             );
 
-            const [datosNotificacion] = await db.execute(
+            const [datosNotificacion] = await connection.execute(
                 `SELECT 
                     p.nombre_apellido as nombre_cliente,
                     ss.titulo as titulo_solicitud,
@@ -374,10 +402,10 @@ const reprogramarHorarioOrden = async (req, res) => {
                     tipo_notificacion: 'solicitud',
                     referencia_id: orden.solicitud_id,
                     mensaje: mensajeNotificacion
-                }, db);
+                }, connection);
             }
 
-            await db.query('COMMIT');
+            await connection.commit();
 
             res.json({
                 success: true,
@@ -391,8 +419,14 @@ const reprogramarHorarioOrden = async (req, res) => {
                 }
             });
         } catch (error) {
-            await db.query('ROLLBACK');
+            try {
+                await connection.rollback();
+            } catch (rollbackError) {
+                console.error('Error al revertir la reprogramación:', rollbackError);
+            }
             throw error;
+        } finally {
+            connection.release();
         }
     } catch (error) {
         console.error('Error al reprogramar horario de orden:', error);
@@ -476,21 +510,24 @@ const cancelarOrdenProfesional = async (req, res) => {
         const horaFin = formatearHoraNota(orden.horaFin);
         const notasHistorial = `Profesional canceló la orden programada para el ${fechaServicio} de ${horaInicio} a ${horaFin}`;
 
-        await db.query('START TRANSACTION');
+        const connection = await db.getConnection();
 
         try {
-            await ordenTrabajoModel.actualizarEstadoOrden(ordenId, estadoNuevo);
+            await connection.beginTransaction();
 
-            await horarioModel.eliminarEntradaAgenda(agenda.id);
+            await ordenTrabajoModel.actualizarEstadoOrden(ordenId, estadoNuevo, connection);
+
+            await horarioModel.eliminarEntradaAgenda(agenda.id, connection);
 
             await ordenTrabajoModel.crearHistorialOrden(
                 ordenId,
                 estadoAnterior,
                 estadoNuevo,
-                notasHistorial
+                notasHistorial,
+                connection
             );
 
-            const [datosNotificacion] = await db.execute(
+            const [datosNotificacion] = await connection.execute(
                 `SELECT 
                     prof.nombre_apellido as nombre_profesional,
                     ss.titulo as titulo_solicitud,
@@ -511,10 +548,10 @@ const cancelarOrdenProfesional = async (req, res) => {
                     tipo_notificacion: 'solicitud',
                     referencia_id: orden.solicitud_id,
                     mensaje: mensajeNotificacion
-                }, db);
+                }, connection);
             }
 
-            await db.query('COMMIT');
+            await connection.commit();
 
             res.json({
                 success: true,
@@ -525,11 +562,160 @@ const cancelarOrdenProfesional = async (req, res) => {
                 }
             });
         } catch (error) {
-            await db.query('ROLLBACK');
+            try {
+                await connection.rollback();
+            } catch (rollbackError) {
+                console.error('Error al revertir la cancelación:', rollbackError);
+            }
             throw error;
+        } finally {
+            connection.release();
         }
     } catch (error) {
         console.error('Error al cancelar orden de trabajo:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+};
+
+/**
+ * Cancelar orden de trabajo (cliente, con las mismas restricciones que el profesional)
+ */
+const cancelarOrdenCliente = async (req, res) => {
+    try {
+        const { ordenId } = req.params;
+        const { clientePersonaId } = req.body;
+
+        if (!clientePersonaId) {
+            return res.status(400).json({
+                success: false,
+                message: 'clientePersonaId es requerido'
+            });
+        }
+
+        const orden = await ordenTrabajoModel.getOrdenTrabajoById(ordenId);
+
+        if (!orden) {
+            return res.status(404).json({
+                success: false,
+                message: 'Orden de trabajo no encontrada'
+            });
+        }
+
+        if (Number(orden.cliente_persona_id) !== Number(clientePersonaId)) {
+            return res.status(403).json({
+                success: false,
+                message: 'No tienes permiso para cancelar esta orden'
+            });
+        }
+
+        const estadosPermitidos = ['pendiente', 'reprogramado', 'represupuestada'];
+        if (!estadosPermitidos.includes(orden.estado)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Solo se pueden cancelar órdenes en estado pendiente, reprogramado o represupuestada'
+            });
+        }
+
+        if (!orden.fecha_programada || !orden.horarioInicio) {
+            return res.status(400).json({
+                success: false,
+                message: 'La orden no tiene un horario programado'
+            });
+        }
+
+        const inicioOrden = obtenerInicioOrden(orden.fecha_programada, orden.horarioInicio);
+        const horasRestantes = (inicioOrden.getTime() - Date.now()) / (1000 * 60 * 60);
+
+        if (horasRestantes < HORAS_MINIMAS_REPROGRAMACION) {
+            return res.status(400).json({
+                success: false,
+                message: 'Solo se puede cancelar con al menos 48 horas de anticipación al inicio del servicio'
+            });
+        }
+
+        const agenda = await horarioModel.getAgendaBySolicitud(orden.solicitud_id, orden.profesional_id);
+
+        if (!agenda) {
+            return res.status(404).json({
+                success: false,
+                message: 'No se encontró la entrada de agenda asociada a esta orden'
+            });
+        }
+
+        const estadoAnterior = orden.estado;
+        const estadoNuevo = 'cancelado';
+        const fechaServicio = formatearFechaNota(orden.fecha_programada);
+        const horaInicio = formatearHoraNota(orden.horarioInicio);
+        const horaFin = formatearHoraNota(orden.horaFin);
+        const notasHistorial = `Cliente canceló la orden programada para el ${fechaServicio} de ${horaInicio} a ${horaFin}`;
+
+        const connection = await db.getConnection();
+
+        try {
+            await connection.beginTransaction();
+
+            await ordenTrabajoModel.actualizarEstadoOrden(ordenId, estadoNuevo, connection);
+
+            await horarioModel.eliminarEntradaAgenda(agenda.id, connection);
+
+            await ordenTrabajoModel.crearHistorialOrden(
+                ordenId,
+                estadoAnterior,
+                estadoNuevo,
+                notasHistorial,
+                connection
+            );
+
+            const [datosNotificacion] = await connection.execute(
+                `SELECT
+                    cliente.nombre_apellido as nombre_cliente,
+                    ss.titulo as titulo_solicitud,
+                    prof.usuario_id as profesional_usuario_id
+                FROM solicitud_servicio ss
+                INNER JOIN persona cliente ON ss.cliente_persona_id = cliente.id
+                INNER JOIN persona prof ON prof.id = ?
+                WHERE ss.id = ?`,
+                [orden.profesional_id, orden.solicitud_id]
+            );
+
+            if (datosNotificacion.length > 0 && datosNotificacion[0].profesional_usuario_id) {
+                const { nombre_cliente, titulo_solicitud, profesional_usuario_id } = datosNotificacion[0];
+                const mensajeNotificacion = `${nombre_cliente} canceló el servicio "${titulo_solicitud}" programado para el ${fechaServicio} de ${horaInicio} a ${horaFin}`;
+
+                await Notificacion.crear({
+                    usuario_id: profesional_usuario_id,
+                    tipo_notificacion: 'sistema',
+                    referencia_id: orden.solicitud_id,
+                    mensaje: mensajeNotificacion
+                }, connection);
+            }
+
+            await connection.commit();
+
+            res.json({
+                success: true,
+                message: 'Orden de trabajo cancelada exitosamente',
+                data: {
+                    ordenId,
+                    estado: estadoNuevo
+                }
+            });
+        } catch (error) {
+            try {
+                await connection.rollback();
+            } catch (rollbackError) {
+                console.error('Error al revertir la cancelación del cliente:', rollbackError);
+            }
+            throw error;
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al cancelar orden de trabajo del cliente:', error);
         res.status(500).json({
             success: false,
             message: 'Error interno del servidor',
@@ -577,6 +763,7 @@ module.exports = {
     actualizarEstadoOrden,
     reprogramarHorarioOrden,
     cancelarOrdenProfesional,
+    cancelarOrdenCliente,
     getHistorialOrden
 };
 

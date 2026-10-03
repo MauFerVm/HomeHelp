@@ -73,3 +73,6 @@ server/public/uploads/profiles/*
 
 # Ignorar archivo de configuracion de la BD
 server/config/db.js
+
+# Ignorar credenciales de correo
+server/config/mail.js

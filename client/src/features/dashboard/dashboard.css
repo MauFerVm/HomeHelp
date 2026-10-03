@@ -770,6 +770,41 @@ body.perfil-modal-open .mobile-menu-toggle {
     position: relative;
 }
 
+.category-filters {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.6rem;
+    margin: -0.25rem 0 1.5rem;
+    padding: 0 1rem;
+}
+
+.category-filter-chip {
+    background: transparent;
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    padding: 0.45rem 0.95rem;
+    border-radius: 999px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.category-filter-chip:hover {
+    border-color: #a74924;
+}
+
+.category-filter-chip.active {
+    background: #a74924;
+    border-color: #a74924;
+}
+
+.professionals-status {
+    text-align: center;
+    color: #b0b0b0;
+    margin: 0;
+}
+
 .professionals-list {
     display: flex;
     flex-direction: column;

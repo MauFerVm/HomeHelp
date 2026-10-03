@@ -46,6 +46,13 @@ router.put('/:ordenId/reprogramar', ordenTrabajoController.reprogramarHorarioOrd
 router.put('/:ordenId/cancelar', ordenTrabajoController.cancelarOrdenProfesional);
 
 /**
+ * @route PUT /api/ordenes/:ordenId/cancelar-cliente
+ * @desc Cancelar orden de trabajo (cliente, con 48hs de anticipación)
+ * @access Private
+ */
+router.put('/:ordenId/cancelar-cliente', ordenTrabajoController.cancelarOrdenCliente);
+
+/**
  * @route GET /api/ordenes/:ordenId/historial
  * @desc Obtener historial de cambios de estado de una orden
  * @access Private

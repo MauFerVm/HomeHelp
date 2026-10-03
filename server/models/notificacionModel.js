@@ -1,5 +1,6 @@
 // models/notificacionModel.js
 const db = require('../config/db');
+const { enviarCorreo } = require('../utils/mailer');
 
 class Notificacion {
   constructor({ id = null, usuario_id, tipo_notificacion, referencia_id = null, mensaje, leido = 0, creado_en = new Date() }) {
@@ -22,7 +23,33 @@ class Notificacion {
        VALUES (?, ?, ?, ?, 0, NOW())`,
       [usuario_id, tipo_notificacion, referencia_id, mensaje]
     );
+
+    Notificacion.enviarPorCorreo(usuario_id, mensaje).catch((error) => {
+      console.error('No se pudo enviar la notificación por correo:', error.message);
+    });
+
     return new Notificacion({ id: result.insertId, usuario_id, tipo_notificacion, referencia_id, mensaje, leido: 0, creado_en: new Date() });
+  }
+
+  /**
+   * Envía el mismo mensaje de la notificación al correo del usuario.
+   */
+  static async enviarPorCorreo(usuarioId, mensaje) {
+    const [rows] = await db.query(
+      'SELECT correo FROM usuario WHERE id = ? LIMIT 1',
+      [usuarioId]
+    );
+    const correo = rows[0] && rows[0].correo;
+    if (!correo) {
+      console.warn(`El usuario ${usuarioId} no tiene correo. No se envió la notificación por mail.`);
+      return;
+    }
+
+    await enviarCorreo({
+      to: correo,
+      subject: 'HomeHelp - Nueva notificación',
+      text: mensaje
+    });
   }
 
   static async getByUsuario(usuarioId) {

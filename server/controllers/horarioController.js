@@ -135,7 +135,14 @@ const confirmarHorario = async (req, res) => {
             WHERE p.id = ?
         `;
         
-        const [presupuestoRows] = await db.execute(presupuestoQuery, [presupuestoId]);
+        const lookup = await db.getConnection();
+        let presupuestoRows;
+        try {
+            await lookup.query('ROLLBACK');
+            [presupuestoRows] = await lookup.execute(presupuestoQuery, [presupuestoId]);
+        } finally {
+            lookup.release();
+        }
         
         if (presupuestoRows.length === 0) {
             return res.status(404).json({
@@ -190,10 +197,11 @@ const confirmarHorario = async (req, res) => {
             });
         }
 
-        // Iniciar transacción (usar query() porque execute() no soporta comandos de transacción)
-        await db.query('START TRANSACTION');
+        const connection = await db.getConnection();
 
         try {
+            await connection.beginTransaction();
+
             // Crear entrada en agenda
             const agendaId = await horarioModel.crearEntradaAgenda(
                 profesionalId,
@@ -202,11 +210,12 @@ const confirmarHorario = async (req, res) => {
                 fecha,
                 horaInicio,
                 horaFin,
-                'pendiente'
+                'pendiente',
+                connection
             );
 
             // Actualizar estado del presupuesto
-            await db.execute(
+            await connection.execute(
                 'UPDATE presupuesto SET estado = ? WHERE id = ?',
                 ['aceptado', presupuestoId]
             );
@@ -224,18 +233,19 @@ const confirmarHorario = async (req, res) => {
                 horaFin: horaFin,
                 estado: 'pendiente',
                 is_active: 1
-            });
+            }, connection);
 
             await ordenTrabajoModel.crearHistorialOrden(
                 ordenTrabajoId,
                 null,
                 'pendiente',
-                'Orden de trabajo creada al confirmar horario'
+                'Orden de trabajo creada al confirmar horario',
+                connection
             );
 
             // Crear registro en historial_servicio con estado "presupuesto aceptado"
             // Primero obtener el ID del estado y sus vencimiento_dias
-            const [estadoRows] = await db.execute(
+            const [estadoRows] = await connection.execute(
                 'SELECT id, vencimiento_dias FROM estado_sol_servicio WHERE nombre = ?',
                 ['presupuesto aceptado']
             );
@@ -252,7 +262,7 @@ const confirmarHorario = async (req, res) => {
                 }
 
                 // Insertar en historial_servicio
-                await db.execute(
+                await connection.execute(
                     `INSERT INTO historial_servicio 
                     (solicitud_id, fecha_creacion, fecha_vencimiento, estado_id, notas) 
                     VALUES (?, ?, ?, ?, ?)`,
@@ -266,7 +276,7 @@ const confirmarHorario = async (req, res) => {
                 );
 
                 // Actualizar el estado de la solicitud de servicio
-                await db.execute(
+                await connection.execute(
                     'UPDATE solicitud_servicio SET estado_id = ? WHERE id = ?',
                     [estadoPresupuestoAceptado.id, presupuesto.solicitud_id]
                 );
@@ -274,7 +284,7 @@ const confirmarHorario = async (req, res) => {
 
             // Crear notificación para el profesional
             // Obtener nombre del cliente y título de la solicitud
-            const [datosNotificacion] = await db.execute(
+            const [datosNotificacion] = await connection.execute(
                 `SELECT 
                     p.nombre_apellido as nombre_cliente,
                     ss.titulo as titulo_solicitud,
@@ -295,11 +305,10 @@ const confirmarHorario = async (req, res) => {
                     tipo_notificacion: 'solicitud',
                     referencia_id: presupuesto.solicitud_id,
                     mensaje: mensajeNotificacion
-                }, db);
+                }, connection);
             }
 
-            // Confirmar transacción
-            await db.query('COMMIT');
+            await connection.commit();
 
             res.json({
                 success: true,
@@ -315,8 +324,14 @@ const confirmarHorario = async (req, res) => {
             });
 
         } catch (error) {
-            await db.query('ROLLBACK');
+            try {
+                await connection.rollback();
+            } catch (rollbackError) {
+                console.error('Error al revertir la confirmación de horario:', rollbackError);
+            }
             throw error;
+        } finally {
+            connection.release();
         }
 
     } catch (error) {

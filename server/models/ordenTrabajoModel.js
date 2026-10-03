@@ -4,7 +4,7 @@ const db = require('../config/db');
 /**
  * Crear una nueva orden de trabajo
  */
-const crearOrdenTrabajo = async (ordenData) => {
+const crearOrdenTrabajo = async (ordenData, executor = db) => {
     const {
         presupuesto_id,
         solicitud_id,
@@ -36,7 +36,7 @@ const crearOrdenTrabajo = async (ordenData) => {
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
     `;
 
-    const [result] = await db.execute(query, [
+    const [result] = await executor.execute(query, [
         presupuesto_id,
         solicitud_id,
         profesional_id,
@@ -134,22 +134,22 @@ const getOrdenesByCliente = async (clientePersonaId) => {
 /**
  * Actualizar estado de orden de trabajo
  */
-const actualizarEstadoOrden = async (ordenId, nuevoEstado) => {
+const actualizarEstadoOrden = async (ordenId, nuevoEstado, executor = db) => {
     const query = 'UPDATE orden_de_trabajo SET estado = ? WHERE id = ?';
-    const [result] = await db.execute(query, [nuevoEstado, ordenId]);
+    const [result] = await executor.execute(query, [nuevoEstado, ordenId]);
     return result.affectedRows > 0;
 };
 
 /**
  * Actualizar horario de una orden de trabajo
  */
-const actualizarHorarioOrden = async (ordenId, fecha, horaInicio, horaFin, nuevoEstado) => {
+const actualizarHorarioOrden = async (ordenId, fecha, horaInicio, horaFin, nuevoEstado, executor = db) => {
     const query = `
         UPDATE orden_de_trabajo
         SET fecha_programada = ?, horarioInicio = ?, horaFin = ?, estado = ?
         WHERE id = ?
     `;
-    const [result] = await db.execute(query, [fecha, horaInicio, horaFin, nuevoEstado, ordenId]);
+    const [result] = await executor.execute(query, [fecha, horaInicio, horaFin, nuevoEstado, ordenId]);
     return result.affectedRows > 0;
 };
 
@@ -187,12 +187,12 @@ const getHistorialByOrdenId = async (ordenId) => {
 /**
  * Crear registro en historial de orden de trabajo
  */
-const crearHistorialOrden = async (ordenId, estadoAnterior, estadoNuevo, notas) => {
+const crearHistorialOrden = async (ordenId, estadoAnterior, estadoNuevo, notas, executor = db) => {
     const query = `
         INSERT INTO historial_orden_trabajo (orden_id, estado_anterior, estado_nuevo, notas)
         VALUES (?, ?, ?, ?)
     `;
-    const [result] = await db.execute(query, [ordenId, estadoAnterior, estadoNuevo, notas]);
+    const [result] = await executor.execute(query, [ordenId, estadoAnterior, estadoNuevo, notas]);
     return result.insertId;
 };
 
