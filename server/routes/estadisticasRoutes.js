@@ -36,4 +36,26 @@ router.get(
     estadisticasController.getIngresosAcumulados
 );
 
+/**
+ * @route GET /api/estadisticas/gastos/:clientePersonaId
+ * @desc Gastos del cliente agrupados por semana o mes, con totales por rubro
+ * @query periodo=1m|3m|6m|custom & desde & hasta (YYYY-MM-DD, solo custom) & tipo_profesional_id
+ * @access Private
+ */
+router.get(
+    '/gastos/:clientePersonaId',
+    estadisticasController.getGastosCliente
+);
+
+/**
+ * @route GET /api/estadisticas/solicitudes/:clientePersonaId
+ * @desc Solicitudes publicadas, ofertas recibidas, sin oferta y tasa de contratación
+ * @query periodo=1m|3m|6m|custom & desde & hasta (YYYY-MM-DD, solo custom)
+ * @access Private
+ */
+router.get(
+    '/solicitudes/:clientePersonaId',
+    estadisticasController.getSolicitudesCliente
+);
+
 module.exports = router;

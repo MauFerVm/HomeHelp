@@ -38,6 +38,8 @@ const Login = () => {
     } catch (err) {
       if (err.response?.status === 401) {
         setErrorMsg('Usuario o contraseña incorrectos');
+      } else if (err.response?.status === 403) {
+        setErrorMsg(err.response?.data?.message || 'La cuenta está inactiva');
       } else {
         setErrorMsg('Error del servidor, intente más tarde');
       }

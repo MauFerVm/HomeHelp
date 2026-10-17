@@ -141,6 +141,9 @@ exports.login = async (req, res) => {
     const { LoginUserName, LoginPassword } = req.body;
     const user = await Usuario.buscarPorCredenciales(LoginUserName, LoginPassword);
     if (!user) return res.status(401).json({ message: 'Credenciales inválidas' });
+    if (Number(user.activo) !== 1) {
+      return res.status(403).json({ message: 'La cuenta está inactiva' });
+    }
     res.json(user.toJSON());
   } catch (err) {
     console.error('Error en login:', err);

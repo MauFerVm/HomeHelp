@@ -2626,6 +2626,81 @@ body.menu-open .post-problem-button {
     margin: 0;
 }
 
+.est-cliente-card {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+    padding: 1.15rem 1.25rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+}
+
+.est-cliente-foto {
+    width: 84px;
+    height: 84px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+    border: 2px solid #ff5a1f;
+}
+
+.est-cliente-datos {
+    flex: 1;
+    min-width: 200px;
+}
+
+.est-cliente-datos h2 {
+    margin: 0 0 0.3rem;
+    color: #fff;
+    font-size: 1.45rem;
+}
+
+.est-cliente-datos p {
+    margin: 0.15rem 0 0;
+    color: #c5c5c5;
+    font-size: 0.92rem;
+}
+
+.est-cliente-rating {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.85rem;
+    margin-left: auto;
+    padding-left: 1.25rem;
+}
+
+.est-cliente-rating strong {
+    color: #fff;
+    font-size: 2rem;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.est-cliente-rating strong span {
+    margin-left: 0.1rem;
+    font-size: 2rem;
+    color: #fff;
+    font-weight: 700;
+}
+
+.est-cliente-rating-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.est-cliente-rating p {
+    margin: 0;
+    color: #e8e8e8;
+    font-size: 1.05rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
 .est-panel {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -2693,6 +2768,139 @@ body.menu-open .post-problem-button {
     background: #a74924;
     border-color: #a74924;
     color: #fff;
+}
+
+.est-rubro-block {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+    margin-bottom: 1.5rem;
+}
+
+.est-rubro-block .est-empty {
+    padding: 0.4rem 0 0;
+    text-align: left;
+}
+
+.est-rubro-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+}
+
+.est-rubro-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.15rem;
+    background: rgba(255, 255, 255, 0.08);
+    color: #e8e8e8;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    padding: 0.55rem 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+}
+
+.est-rubro-btn small {
+    color: #b7b7b7;
+    font-weight: 500;
+    font-size: 0.75rem;
+}
+
+.est-rubro-btn:hover {
+    background: rgba(255, 255, 255, 0.14);
+}
+
+.est-rubro-btn.active {
+    background: rgba(167, 73, 36, 0.28);
+    border-color: #a74924;
+    color: #fff;
+}
+
+.est-rubro-btn.active small {
+    color: #ffd0be;
+}
+
+.est-solicitudes-pie-hint {
+    margin: 0;
+    padding: 0.85rem 1.1rem 0;
+    color: #9f9f9f;
+    font-size: 0.85rem;
+    text-align: left;
+}
+
+.est-solicitudes-pie {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    padding: 1rem 1.1rem 1.15rem;
+}
+
+.est-solicitudes-pie svg {
+    width: 250px;
+    height: 196px;
+    flex-shrink: 0;
+}
+
+.est-solicitudes-pie path,
+.est-solicitudes-pie ellipse {
+    cursor: pointer;
+}
+
+.est-solicitudes-legend {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.35rem 1rem;
+    flex: 1;
+    min-width: 280px;
+    align-content: center;
+}
+
+.est-solicitudes-legend li {
+    min-width: 0;
+}
+
+.est-solicitudes-legend button {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.55rem;
+    width: 100%;
+    background: transparent;
+    border: 1px solid transparent;
+    color: #e8e8e8;
+    text-align: left;
+    border-radius: 10px;
+    padding: 0.45rem 0.55rem;
+    cursor: pointer;
+    font-weight: 700;
+}
+
+.est-solicitudes-legend button.active {
+    background: rgba(167, 73, 36, 0.22);
+    border-color: #a74924;
+}
+
+.est-solicitudes-legend i {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-top: 0.25rem;
+    flex-shrink: 0;
+}
+
+.est-solicitudes-legend small {
+    display: block;
+    margin-top: 0.15rem;
+    color: #b7b7b7;
+    font-weight: 500;
+    font-size: 0.78rem;
 }
 
 .est-custom-range {
@@ -2910,7 +3118,7 @@ body.menu-open .post-problem-button {
 
 .est-ing-hist-row {
     display: grid;
-    grid-template-columns: minmax(110px, 170px) 7.8rem minmax(160px, 1fr) minmax(130px, auto);
+    grid-template-columns: 16.5rem 7.8rem minmax(120px, 1fr) minmax(8.5rem, auto);
     align-items: center;
     gap: 0.85rem;
 }
@@ -2919,6 +3127,7 @@ body.menu-open .post-problem-button {
     color: #f0f0f0;
     font-weight: 700;
     font-size: 0.95rem;
+    white-space: nowrap;
 }
 
 .est-ing-hist-count {

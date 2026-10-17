@@ -114,8 +114,118 @@ const getIngresosAgrupados = async (profesionalPersonaId, fechaDesde, fechaHasta
     return rows;
 };
 
+const ESTADOS_GASTO_CLIENTE = `('completado', 'cerradoprofesional', 'calificada')`;
+
+/**
+ * Gastos del cliente agrupados por semana o mes.
+ * Si se indica un rubro, solo entran las órdenes de ese tipo de profesional.
+ */
+const getGastosAgrupados = async (clientePersonaId, fechaDesde, fechaHasta, granularidad, tipoProfesionalId = null) => {
+    const grupo = granularidad === 'semana'
+        ? `DATE_FORMAT(
+            DATE_SUB(ot.fecha_programada, INTERVAL WEEKDAY(ot.fecha_programada) DAY),
+            '%Y-%m-%d'
+          )`
+        : `DATE_FORMAT(ot.fecha_programada, '%Y-%m-01')`;
+
+    const params = [clientePersonaId, fechaDesde, fechaHasta];
+    let filtroRubro = '';
+
+    if (tipoProfesionalId) {
+        filtroRubro = 'AND ss.tipo_profesional_id = ?';
+        params.push(tipoProfesionalId);
+    }
+
+    const query = `
+        SELECT
+            ${grupo} AS periodo_inicio,
+            SUM(ot.monto) AS gastos,
+            COUNT(ot.id) AS cantidad
+        FROM orden_de_trabajo ot
+        JOIN solicitud_servicio ss ON ot.solicitud_id = ss.id
+        WHERE ot.cliente_persona_id = ?
+          AND ot.is_active = 1
+          AND ot.estado IN ${ESTADOS_GASTO_CLIENTE}
+          AND ot.fecha_programada >= ?
+          AND ot.fecha_programada <= ?
+          ${filtroRubro}
+        GROUP BY periodo_inicio
+        ORDER BY periodo_inicio ASC
+    `;
+
+    const [rows] = await db.execute(query, params);
+    return rows;
+};
+
+/**
+ * Totales por rubro del cliente en el rango, sin filtrar por uno solo.
+ * Alimenta las opciones del filtro dentro del panel de gastos.
+ */
+const getGastosPorRubro = async (clientePersonaId, fechaDesde, fechaHasta) => {
+    const query = `
+        SELECT
+            tp.id,
+            tp.nombre,
+            SUM(ot.monto) AS total,
+            COUNT(ot.id) AS cantidad
+        FROM orden_de_trabajo ot
+        JOIN solicitud_servicio ss ON ot.solicitud_id = ss.id
+        JOIN tipo_profesional tp ON ss.tipo_profesional_id = tp.id
+        WHERE ot.cliente_persona_id = ?
+          AND ot.is_active = 1
+          AND ot.estado IN ${ESTADOS_GASTO_CLIENTE}
+          AND ot.fecha_programada >= ?
+          AND ot.fecha_programada <= ?
+        GROUP BY tp.id, tp.nombre
+        ORDER BY total DESC, tp.nombre ASC
+    `;
+
+    const [rows] = await db.execute(query, [
+        clientePersonaId,
+        fechaDesde,
+        fechaHasta
+    ]);
+
+    return rows;
+};
+
+/**
+ * Solicitudes publicadas por el cliente en el rango, con las ofertas que recibieron.
+ * La cohorte es la fecha de la solicitud, no la del presupuesto.
+ */
+const getSolicitudesYPresupuestos = async (clientePersonaId, fechaDesde, fechaHasta) => {
+    const query = `
+        SELECT
+            tp.id,
+            tp.nombre,
+            COUNT(DISTINCT ss.id) AS solicitudes_publicadas,
+            COUNT(p.id) AS presupuestos_recibidos,
+            SUM(CASE WHEN p.id IS NULL THEN 1 ELSE 0 END) AS sin_oferta,
+            COUNT(DISTINCT CASE WHEN p.estado = 'aceptado' THEN ss.id END) AS con_aceptado
+        FROM solicitud_servicio ss
+        JOIN tipo_profesional tp ON ss.tipo_profesional_id = tp.id
+        LEFT JOIN presupuesto p ON p.solicitud_id = ss.id
+        WHERE ss.cliente_persona_id = ?
+          AND ss.creado_en >= ?
+          AND ss.creado_en <= ?
+        GROUP BY tp.id, tp.nombre
+        ORDER BY solicitudes_publicadas DESC, tp.nombre ASC
+    `;
+
+    const [rows] = await db.execute(query, [
+        clientePersonaId,
+        fechaDesde,
+        fechaHasta
+    ]);
+
+    return rows;
+};
+
 module.exports = {
     getComparacionPresupuestos,
     getCalificacionesReputacion,
-    getIngresosAgrupados
+    getIngresosAgrupados,
+    getGastosAgrupados,
+    getGastosPorRubro,
+    getSolicitudesYPresupuestos
 };

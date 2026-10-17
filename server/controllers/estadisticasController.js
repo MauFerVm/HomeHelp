@@ -492,8 +492,188 @@ const getIngresosAcumulados = async (req, res) => {
     }
 };
 
+const getGastosCliente = async (req, res) => {
+    try {
+        const clientePersonaId = Number(req.params.clientePersonaId);
+        const { periodo, desde, hasta, tipo_profesional_id: tipoQuery } = req.query;
+
+        if (!clientePersonaId || Number.isNaN(clientePersonaId)) {
+            return res.status(400).json({
+                success: false,
+                message: 'El identificador del cliente es inválido'
+            });
+        }
+
+        let tipoProfesionalId = null;
+        if (tipoQuery !== undefined && tipoQuery !== null && String(tipoQuery).trim() !== '') {
+            tipoProfesionalId = Number(tipoQuery);
+            if (!Number.isInteger(tipoProfesionalId) || tipoProfesionalId <= 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'El rubro indicado es inválido'
+                });
+            }
+        }
+
+        const rango = resolverRangoCalendario(periodo, desde, hasta);
+        const fechaDesde = toLocalDate(rango.desde);
+        const fechaHasta = toLocalDate(rango.hasta);
+        const granularidad = resolverGranularidad(rango.periodo, fechaDesde, fechaHasta);
+        const desdeSql = formatMysqlDate(fechaDesde);
+        const hastaSql = formatMysqlDate(fechaHasta);
+
+        const [rows, rubroRows] = await Promise.all([
+            estadisticasModel.getGastosAgrupados(
+                clientePersonaId,
+                desdeSql,
+                hastaSql,
+                granularidad,
+                tipoProfesionalId
+            ),
+            estadisticasModel.getGastosPorRubro(clientePersonaId, desdeSql, hastaSql)
+        ]);
+
+        const montosPorClave = new Map(
+            rows.map((row) => [
+                String(row.periodo_inicio).slice(0, 10),
+                {
+                    gastos: Number(row.gastos) || 0,
+                    cantidad: Number(row.cantidad) || 0
+                }
+            ])
+        );
+
+        const intervalos = generarIntervalos(fechaDesde, fechaHasta, granularidad).map((intervalo) => {
+            const datos = montosPorClave.get(intervalo.clave) || { gastos: 0, cantidad: 0 };
+            return {
+                clave: intervalo.clave,
+                etiqueta: intervalo.etiqueta,
+                gastos: redondear(datos.gastos, 2),
+                cantidad: datos.cantidad
+            };
+        });
+
+        const totalGastado = redondear(
+            intervalos.reduce((acc, item) => acc + item.gastos, 0),
+            2
+        );
+        const totalServicios = intervalos.reduce((acc, item) => acc + item.cantidad, 0);
+
+        const rubros = rubroRows.map((row) => ({
+            id: Number(row.id),
+            nombre: row.nombre,
+            total: redondear(Number(row.total) || 0, 2),
+            cantidad: Number(row.cantidad) || 0
+        }));
+
+        const rubroSeleccionado = tipoProfesionalId
+            ? rubros.find((rubro) => rubro.id === tipoProfesionalId) || null
+            : null;
+
+        res.json({
+            success: true,
+            data: {
+                periodo: rango.periodo,
+                desde: desdeSql,
+                hasta: hastaSql,
+                granularidad,
+                tipo_profesional_id: tipoProfesionalId,
+                rubro_seleccionado: rubroSeleccionado,
+                kpis: {
+                    total_gastado: totalGastado,
+                    total_servicios: totalServicios,
+                    ticket_promedio: totalServicios > 0
+                        ? redondear(totalGastado / totalServicios, 2)
+                        : null
+                },
+                intervalos,
+                rubros
+            }
+        });
+    } catch (error) {
+        console.error('Error al obtener gastos del cliente:', error);
+        const statusCode = error.statusCode || 500;
+        res.status(statusCode).json({
+            success: false,
+            message: statusCode === 400 ? error.message : 'Error interno del servidor',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+};
+
+const getSolicitudesCliente = async (req, res) => {
+    try {
+        const clientePersonaId = Number(req.params.clientePersonaId);
+        const { periodo, desde, hasta } = req.query;
+
+        if (!clientePersonaId || Number.isNaN(clientePersonaId)) {
+            return res.status(400).json({
+                success: false,
+                message: 'El identificador del cliente es inválido'
+            });
+        }
+
+        const rango = resolverRangoCalendario(periodo, desde, hasta);
+        const filas = await estadisticasModel.getSolicitudesYPresupuestos(
+            clientePersonaId,
+            rango.desde,
+            rango.hasta
+        );
+
+        const armarKpis = (solicitudesPublicadas, presupuestosRecibidos, sinOferta, conAceptado) => ({
+            solicitudes_publicadas: solicitudesPublicadas,
+            presupuestos_recibidos: presupuestosRecibidos,
+            sin_oferta: sinOferta,
+            con_aceptado: conAceptado,
+            sin_aceptar: Math.max(solicitudesPublicadas - conAceptado, 0),
+            tasa_contratacion: solicitudesPublicadas > 0
+                ? redondear((conAceptado / solicitudesPublicadas) * 100)
+                : 0
+        });
+
+        const rubros = filas.map((fila) => {
+            const solicitudesPublicadas = Number(fila.solicitudes_publicadas) || 0;
+            const presupuestosRecibidos = Number(fila.presupuestos_recibidos) || 0;
+            const sinOferta = Number(fila.sin_oferta) || 0;
+            const conAceptado = Number(fila.con_aceptado) || 0;
+
+            return {
+                id: Number(fila.id),
+                nombre: fila.nombre,
+                ...armarKpis(solicitudesPublicadas, presupuestosRecibidos, sinOferta, conAceptado)
+            };
+        });
+
+        const solicitudesPublicadas = rubros.reduce((acc, rubro) => acc + rubro.solicitudes_publicadas, 0);
+        const presupuestosRecibidos = rubros.reduce((acc, rubro) => acc + rubro.presupuestos_recibidos, 0);
+        const sinOferta = rubros.reduce((acc, rubro) => acc + rubro.sin_oferta, 0);
+        const conAceptado = rubros.reduce((acc, rubro) => acc + rubro.con_aceptado, 0);
+
+        res.json({
+            success: true,
+            data: {
+                periodo: rango.periodo,
+                desde: rango.desde,
+                hasta: rango.hasta,
+                kpis: armarKpis(solicitudesPublicadas, presupuestosRecibidos, sinOferta, conAceptado),
+                rubros
+            }
+        });
+    } catch (error) {
+        console.error('Error al obtener solicitudes y presupuestos del cliente:', error);
+        const statusCode = error.statusCode || 500;
+        res.status(statusCode).json({
+            success: false,
+            message: statusCode === 400 ? error.message : 'Error interno del servidor',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+};
+
 module.exports = {
     getComparacionPresupuestos,
     getCalificacionesReputacion,
-    getIngresosAcumulados
+    getIngresosAcumulados,
+    getGastosCliente,
+    getSolicitudesCliente
 };

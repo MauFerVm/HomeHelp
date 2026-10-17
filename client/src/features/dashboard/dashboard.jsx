@@ -11,6 +11,12 @@ import TrabajosCancelados from '../trabajos cancelados/TrabajosCancelados';
 import MisServicios from './MisServicios';
 import MiCalendario from './MiCalendario';
 import EstadisticasProfesional from './EstadisticasProfesional';
+import EstadisticasCliente from './EstadisticasCliente';
+import AdminGestion from './admin/AdminGestion';
+import AdminCategorias from './admin/AdminCategorias';
+import AdminEstadisticasGenerales from './admin/AdminEstadisticasGenerales';
+import AdminReportesIngresos from './admin/AdminReportesIngresos';
+import AdminAnalisisUsuarios from './admin/AdminAnalisisUsuarios';
 import {
     FaBell,
     FaSearch,
@@ -33,18 +39,12 @@ import {
     FaUserTie,
     FaBriefcase,
     FaUserEdit,
-    FaStar
+    FaStar,
+    FaUsers,
+    FaUser
 } from 'react-icons/fa';
 import logoHomeHelp from '../../assets/logo_homehelp.png';
 import perfil from '../../assets/user.png';
-import albañil from '../../assets/albañil.jpg';
-import carpintero from '../../assets/carpintero.jpeg';
-import cerrajero from '../../assets/cerrajero.jpg';
-import electricidad from '../../assets/electricidad.jpg';
-import gasista from '../../assets/gasista.jpeg';
-import herrero from '../../assets/herrero.jpg';
-import pintor from '../../assets/pintor.jpg';
-import plomeria from '../../assets/plomeria.png';
 
 const Dashboard = () => {
     const navigate = useNavigate();
@@ -75,8 +75,11 @@ const Dashboard = () => {
     const profileDropdownRef = useRef(null);
     const profileWrapperRef = useRef(null);
 
-    // Estado para la pestaña activa del dashboard
-    const [activeTab, setActiveTab] = useState('dashboard');
+    // El administrador entra directo a la gestión de usuarios.
+    const [activeTab, setActiveTab] = useState(() => {
+        const storedUserType = localStorage.getItem('userType') || 'cliente';
+        return storedUserType === 'admin' ? 'usuarios' : 'dashboard';
+    });
 
     // Estado para el tipo de usuario (cliente, profesional o admin)
     // Se obtiene automáticamente del localStorage después del login
@@ -108,23 +111,12 @@ const Dashboard = () => {
         if (storedUserType && storedUserType !== userType) {
             console.log('Actualizando userType desde localStorage:', storedUserType);
             setUserType(storedUserType);
+            if (storedUserType === 'admin') {
+                setActiveTab('usuarios');
+            }
         }
     }, [userType]);
 
-    // Mapeo de imágenes para las categorías
-    const categoryImageMap = {
-        'Albañileria': albañil,
-        'Carpinteria': carpintero,
-        'Cerrajeria': cerrajero,
-        'Electricidad': electricidad,
-        'Gas': gasista,
-        'Herreria': herrero,
-        'Pintura': pintor,
-        'Plomeria': plomeria,
-        'Plomería': plomeria // Por si hay variaciones en el nombre
-    };
-
-    // Función para obtener categorías activas desde la API
     const fetchActiveCategories = async () => {
         try {
             setLoading(true);
@@ -132,41 +124,22 @@ const Dashboard = () => {
             const data = await response.json();
 
             if (data.success) {
-                // Mapear las categorías con sus imágenes correspondientes
                 const categoriesWithImages = data.data.map(category => ({
                     id: category.id,
                     name: category.nombre,
-                    image: categoryImageMap[category.nombre] || perfil, // Usar imagen por defecto si no se encuentra
+                    image: category.imagen
+                        ? `http://localhost:3002/uploads/categorias/${category.imagen}`
+                        : perfil,
                     estado: category.estado
                 }));
                 setCategories(categoriesWithImages);
             } else {
                 console.error('Error al obtener categorías:', data.message);
-                // En caso de error, usar categorías por defecto
-                setCategories([
-                    { name: 'Albañileria', image: albañil },
-                    { name: 'Carpinteria', image: carpintero },
-                    { name: 'Cerrajeria', image: cerrajero },
-                    { name: 'Electricidad', image: electricidad },
-                    { name: 'Gas', image: gasista },
-                    { name: 'Herreria', image: herrero },
-                    { name: 'Pintura', image: pintor },
-                    { name: 'Plomería', image: plomeria }
-                ]);
+                setCategories([]);
             }
         } catch (error) {
             console.error('Error al conectar con la API:', error);
-            // En caso de error de conexión, usar categorías por defecto
-            setCategories([
-                { name: 'Albañileria', image: albañil },
-                { name: 'Carpinteria', image: carpintero },
-                { name: 'Cerrajeria', image: cerrajero },
-                { name: 'Electricidad', image: electricidad },
-                { name: 'Gas', image: gasista },
-                { name: 'Herreria', image: herrero },
-                { name: 'Pintura', image: pintor },
-                { name: 'Plomería', image: plomeria }
-            ]);
+            setCategories([]);
         } finally {
             setLoading(false);
         }
@@ -213,15 +186,18 @@ const Dashboard = () => {
         }
     };
 
-    // Cargar categorías al montar el componente
+    // El home general no se carga para el administrador.
     useEffect(() => {
+        if (userType === 'admin') return;
         fetchActiveCategories();
-    }, []);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [userType]);
 
     useEffect(() => {
+        if (userType === 'admin') return;
         fetchFeaturedProfessionals(selectedCategoryId);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedCategoryId]);
+    }, [selectedCategoryId, userType]);
 
     // Cerrar dropdowns si clic fuera
     useEffect(() => {
@@ -486,7 +462,23 @@ const Dashboard = () => {
             case 'cancelaciones':
                 return <TrabajosCancelados isTab={true} />;
             case 'estadisticas':
-                return <EstadisticasProfesional />;
+                return userType === 'cliente'
+                    ? <EstadisticasCliente />
+                    : <EstadisticasProfesional />;
+            case 'usuarios':
+                return <AdminGestion vista="usuarios" />;
+            case 'clientes':
+                return <AdminGestion vista="clientes" />;
+            case 'profesionales':
+                return <AdminGestion vista="profesionales" />;
+            case 'categorias':
+                return <AdminCategorias />;
+            case 'estadisticas-generales':
+                return <AdminEstadisticasGenerales />;
+            case 'reportes-ingresos':
+                return <AdminReportesIngresos />;
+            case 'analisis-usuarios':
+                return <AdminAnalisisUsuarios />;
             case 'contacto':
                 return (
                     <div className="tab-content">
@@ -495,6 +487,9 @@ const Dashboard = () => {
                     </div>
                 );
             default:
+                if (userType === 'admin') {
+                    return <AdminGestion vista="usuarios" />;
+                }
                 return renderDashboardContent();
         }
     };
@@ -709,18 +704,20 @@ const Dashboard = () => {
                     </div>
 
                     <nav className="sidebar-nav">
-                        <div className="nav-section">
-                            <h3 className="nav-section-title">MENU</h3>
-                            <ul className="nav-menu">
-                                <li className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => {
-                                    closeMobileMenu();
-                                    setActiveTab('dashboard');
-                                }}>
-                                    <FaHome className="nav-icon" />
-                                    <span>Dashboard</span>
-                                </li>
-                            </ul>
-                        </div>
+                        {userType !== 'admin' && (
+                            <div className="nav-section">
+                                <h3 className="nav-section-title">MENU</h3>
+                                <ul className="nav-menu">
+                                    <li className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => {
+                                        closeMobileMenu();
+                                        setActiveTab('dashboard');
+                                    }}>
+                                        <FaHome className="nav-icon" />
+                                        <span>Dashboard</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        )}
 
                         {/* 
                         LÓGICA DEL SIDEBAR BASADA EN EL ROL DEL USUARIO
@@ -786,7 +783,10 @@ const Dashboard = () => {
                                 <div className="nav-section">
                                     <h3 className="nav-section-title">GRAFICOS</h3>
                                     <ul className="nav-menu">
-                                        <li className="nav-item" onClick={closeMobileMenu} data-user-type="cliente">
+                                        <li className={`nav-item ${activeTab === 'estadisticas' ? 'active' : ''}`} onClick={() => {
+                                            closeMobileMenu();
+                                            setActiveTab('estadisticas');
+                                        }} data-user-type="cliente">
                                             <FaChartBar className="nav-icon" />
                                             <span>Estadísticas</span>
                                         </li>
@@ -878,15 +878,15 @@ const Dashboard = () => {
                                 <div className="nav-section">
                                     <h3 className="nav-section-title">GESTION DE USUARIOS</h3>
                                     <ul className="nav-menu">
-                                        <li className="nav-item" onClick={closeMobileMenu} data-user-type="admin">
-                                            <FaUserTie className="nav-icon" />
+                                        <li className={`nav-item ${activeTab === 'usuarios' ? 'active' : ''}`} onClick={() => { closeMobileMenu(); setActiveTab('usuarios'); }} data-user-type="admin">
+                                            <FaUsers className="nav-icon" />
                                             <span>Usuarios</span>
                                         </li>
-                                        <li className="nav-item" onClick={closeMobileMenu} data-user-type="admin">
-                                            <FaUserTie className="nav-icon" />
+                                        <li className={`nav-item ${activeTab === 'clientes' ? 'active' : ''}`} onClick={() => { closeMobileMenu(); setActiveTab('clientes'); }} data-user-type="admin">
+                                            <FaUser className="nav-icon" />
                                             <span>Clientes</span>
                                         </li>
-                                        <li className="nav-item" onClick={closeMobileMenu} data-user-type="admin">
+                                        <li className={`nav-item ${activeTab === 'profesionales' ? 'active' : ''}`} onClick={() => { closeMobileMenu(); setActiveTab('profesionales'); }} data-user-type="admin">
                                             <FaUserTie className="nav-icon" />
                                             <span>Profesionales</span>
                                         </li>
@@ -900,7 +900,7 @@ const Dashboard = () => {
                                             <FaTools className="nav-icon" />
                                             <span>Servicios</span>
                                         </li>
-                                        <li className="nav-item" onClick={closeMobileMenu} data-user-type="admin">
+                                        <li className={`nav-item ${activeTab === 'categorias' ? 'active' : ''}`} onClick={() => { closeMobileMenu(); setActiveTab('categorias'); }} data-user-type="admin">
                                             <FaTags className="nav-icon" />
                                             <span>Categorías</span>
                                         </li>
@@ -914,15 +914,15 @@ const Dashboard = () => {
                                 <div className="nav-section">
                                     <h3 className="nav-section-title">REPORTES</h3>
                                     <ul className="nav-menu">
-                                        <li className="nav-item" onClick={closeMobileMenu} data-user-type="admin">
+                                        <li className={`nav-item ${activeTab === 'estadisticas-generales' ? 'active' : ''}`} onClick={() => { closeMobileMenu(); setActiveTab('estadisticas-generales'); }} data-user-type="admin">
                                             <FaChartBar className="nav-icon" />
                                             <span>Estadísticas Generales</span>
                                         </li>
-                                        <li className="nav-item" onClick={closeMobileMenu} data-user-type="admin">
+                                        <li className={`nav-item ${activeTab === 'reportes-ingresos' ? 'active' : ''}`} onClick={() => { closeMobileMenu(); setActiveTab('reportes-ingresos'); }} data-user-type="admin">
                                             <FaChartBar className="nav-icon" />
                                             <span>Reportes de Ingresos</span>
                                         </li>
-                                        <li className="nav-item" onClick={closeMobileMenu} data-user-type="admin">
+                                        <li className={`nav-item ${activeTab === 'analisis-usuarios' ? 'active' : ''}`} onClick={() => { closeMobileMenu(); setActiveTab('analisis-usuarios'); }} data-user-type="admin">
                                             <FaChartBar className="nav-icon" />
                                             <span>Análisis de Usuarios</span>
                                         </li>

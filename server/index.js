@@ -14,6 +14,7 @@ const ordenTrabajoRoutes = require('./routes/ordenTrabajoRoutes');
 const calificacionesRoutes = require('./routes/calificacionesRoutes');
 const estadisticasRoutes = require('./routes/estadisticasRoutes');
 const favoritoRoutes = require('./routes/favoritoRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
 const app = express();
 app.use(cors());
@@ -70,6 +71,7 @@ app.use('/api/ordenes', ordenTrabajoRoutes);
 app.use('/api/calificaciones', calificacionesRoutes);
 app.use('/api/estadisticas', estadisticasRoutes);
 app.use('/api/favoritos', favoritoRoutes);
+app.use('/api/admin', adminRoutes);
 
 
 
