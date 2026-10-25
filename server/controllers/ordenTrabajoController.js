@@ -101,6 +101,38 @@ const NOTAS_HISTORIAL_ESTADO = {
     completado: 'Orden confirmada y completada por la otra parte'
 };
 
+const registrarEstadoSolicitud = async (solicitudId, nombreEstado, notas, executor = db) => {
+    const [estadoRows] = await executor.execute(
+        'SELECT id, vencimiento_dias FROM estado_sol_servicio WHERE nombre = ?',
+        [nombreEstado]
+    );
+
+    if (estadoRows.length === 0) {
+        throw new Error(`No se encontró el estado "${nombreEstado}" de la solicitud`);
+    }
+
+    const estado = estadoRows[0];
+    const fechaCreacion = new Date();
+    let fechaVencimiento = null;
+
+    if (Number(estado.vencimiento_dias) > 0) {
+        fechaVencimiento = new Date(fechaCreacion);
+        fechaVencimiento.setDate(fechaVencimiento.getDate() + Number(estado.vencimiento_dias));
+    }
+
+    await executor.execute(
+        `INSERT INTO historial_servicio
+         (solicitud_id, fecha_creacion, fecha_vencimiento, estado_id, notas)
+         VALUES (?, ?, ?, ?, ?)`,
+        [solicitudId, fechaCreacion, fechaVencimiento, estado.id, notas]
+    );
+
+    await executor.execute(
+        'UPDATE solicitud_servicio SET estado_id = ? WHERE id = ?',
+        [estado.id, solicitudId]
+    );
+};
+
 const actualizarEstadoOrden = async (req, res) => {
     try {
         const { ordenId } = req.params;
@@ -172,6 +204,15 @@ const actualizarEstadoOrden = async (req, res) => {
 
         if (estado === 'cerradocliente' || estado === 'cerradoprofesional') {
             try {
+                const notaSolicitud = estado === 'cerradocliente'
+                    ? 'El cliente cerró la orden. La solicitud sigue en progreso'
+                    : 'El profesional cerró la orden. La solicitud sigue en progreso';
+                await registrarEstadoSolicitud(orden.solicitud_id, 'en_progreso', notaSolicitud);
+            } catch (solicitudError) {
+                console.error('Error al dejar la solicitud en progreso:', solicitudError);
+            }
+
+            try {
                 const cierreDelCliente = estado === 'cerradocliente';
                 const destinatarioPersonaId = cierreDelCliente ? orden.profesional_id : orden.cliente_persona_id;
                 const nombreQuienCierra = cierreDelCliente ? orden.cliente_nombre : orden.profesional_nombre;
@@ -185,7 +226,18 @@ const actualizarEstadoOrden = async (req, res) => {
                         usuario_id: destinatarioRows[0].usuario_id,
                         tipo_notificacion: 'sistema',
                         referencia_id: orden.solicitud_id,
-                        mensaje: `${nombreQuienCierra} cerró el servicio "${orden.solicitud_titulo}". Confirmá el cierre para finalizarlo.`
+                        mensaje: `${nombreQuienCierra} cerró el servicio "${orden.solicitud_titulo}". Confirmá el cierre para finalizarlo.`,
+                        presentacion: {
+                            asunto: `Falta confirmar el cierre de "${orden.solicitud_titulo}"`,
+                            titulo: 'Falta tu confirmación para finalizar',
+                            introduccion: `${nombreQuienCierra} cerró el servicio "${orden.solicitud_titulo}". Entrá a HomeHelp para confirmar el cierre.`,
+                            detalles: [
+                                { etiqueta: 'Quién cerró', valor: nombreQuienCierra },
+                                { etiqueta: 'Servicio', valor: orden.solicitud_titulo }
+                            ],
+                            botonTexto: 'Ver el servicio',
+                            seccion: cierreDelCliente ? 'trabajos-asignados' : 'mis-servicios'
+                        }
                     });
                 }
             } catch (notiError) {
@@ -401,7 +453,20 @@ const reprogramarHorarioOrden = async (req, res) => {
                     usuario_id: profesional_usuario_id,
                     tipo_notificacion: 'solicitud',
                     referencia_id: orden.solicitud_id,
-                    mensaje: mensajeNotificacion
+                    mensaje: mensajeNotificacion,
+                    presentacion: {
+                        asunto: `Cambió el horario de "${titulo_solicitud}"`,
+                        titulo: 'Cambió el horario del servicio',
+                        introduccion: mensajeNotificacion,
+                        detalles: [
+                            { etiqueta: 'Cliente', valor: nombre_cliente },
+                            { etiqueta: 'Trabajo', valor: titulo_solicitud },
+                            { etiqueta: 'Nueva fecha', valor: fechaNueva },
+                            { etiqueta: 'Horario', valor: `${horaNuevaInicio} a ${horaNuevaFin}` }
+                        ],
+                        botonTexto: 'Ver calendario',
+                        seccion: 'calendario'
+                    }
                 }, connection);
             }
 
@@ -527,6 +592,13 @@ const cancelarOrdenProfesional = async (req, res) => {
                 connection
             );
 
+            await registrarEstadoSolicitud(
+                orden.solicitud_id,
+                'cancelada',
+                'Profesional canceló la orden de trabajo',
+                connection
+            );
+
             const [datosNotificacion] = await connection.execute(
                 `SELECT 
                     prof.nombre_apellido as nombre_profesional,
@@ -547,7 +619,20 @@ const cancelarOrdenProfesional = async (req, res) => {
                     usuario_id: cliente_usuario_id,
                     tipo_notificacion: 'solicitud',
                     referencia_id: orden.solicitud_id,
-                    mensaje: mensajeNotificacion
+                    mensaje: mensajeNotificacion,
+                    presentacion: {
+                        asunto: `Se canceló "${titulo_solicitud}"`,
+                        titulo: 'El profesional canceló el servicio',
+                        introduccion: mensajeNotificacion,
+                        detalles: [
+                            { etiqueta: 'Profesional', valor: nombre_profesional },
+                            { etiqueta: 'Servicio', valor: titulo_solicitud },
+                            { etiqueta: 'Fecha', valor: fechaServicio },
+                            { etiqueta: 'Horario', valor: `${horaInicio} a ${horaFin}` }
+                        ],
+                        botonTexto: 'Ver mis servicios',
+                        seccion: 'mis-servicios'
+                    }
                 }, connection);
             }
 
@@ -670,6 +755,13 @@ const cancelarOrdenCliente = async (req, res) => {
                 connection
             );
 
+            await registrarEstadoSolicitud(
+                orden.solicitud_id,
+                'cancelada',
+                'Cliente canceló la orden de trabajo',
+                connection
+            );
+
             const [datosNotificacion] = await connection.execute(
                 `SELECT
                     cliente.nombre_apellido as nombre_cliente,
@@ -690,7 +782,20 @@ const cancelarOrdenCliente = async (req, res) => {
                     usuario_id: profesional_usuario_id,
                     tipo_notificacion: 'sistema',
                     referencia_id: orden.solicitud_id,
-                    mensaje: mensajeNotificacion
+                    mensaje: mensajeNotificacion,
+                    presentacion: {
+                        asunto: `Se canceló "${titulo_solicitud}"`,
+                        titulo: 'El cliente canceló el servicio',
+                        introduccion: mensajeNotificacion,
+                        detalles: [
+                            { etiqueta: 'Cliente', valor: nombre_cliente },
+                            { etiqueta: 'Servicio', valor: titulo_solicitud },
+                            { etiqueta: 'Fecha', valor: fechaServicio },
+                            { etiqueta: 'Horario', valor: `${horaInicio} a ${horaFin}` }
+                        ],
+                        botonTexto: 'Ver trabajos',
+                        seccion: 'trabajos-asignados'
+                    }
                 }, connection);
             }
 

@@ -169,6 +169,15 @@ const crearSolicitud = async (req, res) => {
     );
     const clienteNombre = (clienteRows[0] && clienteRows[0].nombre_apellido) || 'Cliente';
 
+    const [contextoRows] = await connection.query(
+      `SELECT
+         (SELECT nombre FROM localidad WHERE id = ?) AS localidad,
+         (SELECT nombre FROM tipo_profesional WHERE id = ?) AS rubro`,
+      [localidad_id, tipo_profesional_id]
+    );
+    const localidad = (contextoRows[0] && contextoRows[0].localidad) || '';
+    const rubro = (contextoRows[0] && contextoRows[0].rubro) || '';
+
     // Buscar usuarios profesionales que coinciden con rubro y localidad
     const [profesionalesUsuarios] = await connection.query(`
       SELECT DISTINCT u.id AS usuario_id
@@ -188,7 +197,20 @@ const crearSolicitud = async (req, res) => {
         usuario_id: row.usuario_id,
         tipo_notificacion: 'solicitud',
         referencia_id: solicitud.id,
-        mensaje
+        mensaje,
+        presentacion: {
+          asunto: `Nueva solicitud: ${titulo}`,
+          titulo: 'Hay un trabajo nuevo en tu zona',
+          introduccion: mensaje,
+          detalles: [
+            { etiqueta: 'Cliente', valor: clienteNombre },
+            { etiqueta: 'Trabajo', valor: titulo },
+            { etiqueta: 'Rubro', valor: rubro },
+            { etiqueta: 'Zona', valor: localidad }
+          ],
+          botonTexto: 'Ver solicitud',
+          seccion: 'buscar-trabajo'
+        }
       }, connection);
     }
 

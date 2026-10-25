@@ -15,6 +15,7 @@ const calificacionesRoutes = require('./routes/calificacionesRoutes');
 const estadisticasRoutes = require('./routes/estadisticasRoutes');
 const favoritoRoutes = require('./routes/favoritoRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const { iniciarChequeoTurnos } = require('./jobs/iniciarTurnos');
 
 const app = express();
 app.use(cors());
@@ -93,4 +94,7 @@ app.use('/', (req, res) => {
 });*/
 
 
-app.listen(3002, () => console.log('Server running on http://localhost:3002'));
+app.listen(3002, () => {
+  console.log('Server running on http://localhost:3002');
+  iniciarChequeoTurnos();
+});

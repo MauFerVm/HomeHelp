@@ -37,7 +37,10 @@ const EjeMeses = ({ eje }) => {
             </div>
             <div className="adm-axis-row">
                 {eje.meses.map((mes) => (
-                    <span key={mes.clave} className="adm-axis-month">{mes.nombre}</span>
+                    <span key={mes.clave} className="adm-axis-month">
+                        <span className="adm-mes-largo">{mes.nombre}</span>
+                        <span className="adm-mes-corto">{mes.nombre.slice(0, 3)}</span>
+                    </span>
                 ))}
             </div>
         </div>

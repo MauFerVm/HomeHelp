@@ -10,7 +10,7 @@ const crearPresupuesto = async (req, res) => {
         const { solicitud_id, profesional_persona_id, monto, descripcion, duracion, estado = 'enviado' } = req.body;
 
         // Validaciones
-        if (!solicitud_id || !profesional_persona_id || !monto || !descripcion || !duracion) {
+        if (!solicitud_id || !profesional_persona_id || !monto || !descripcion || duracion === undefined || duracion === null || duracion === '') {
             return res.status(400).json({
                 success: false,
                 message: 'Todos los campos son obligatorios'
@@ -24,10 +24,11 @@ const crearPresupuesto = async (req, res) => {
             });
         }
 
-        if (duracion <= 0) {
+        const duracionMinutos = Number(duracion);
+        if (!Number.isInteger(duracionMinutos) || duracionMinutos < 30 || duracionMinutos % 30 !== 0) {
             return res.status(400).json({
                 success: false,
-                message: 'La duración debe ser mayor a 0'
+                message: 'La duración debe ser de al menos 30 minutos, en intervalos de 30 minutos'
             });
         }
 
@@ -89,7 +90,7 @@ const crearPresupuesto = async (req, res) => {
             personaId,
             monto,
             descripcion,
-            duracion,
+            duracionMinutos,
             estado
         ]);
 
@@ -108,11 +109,31 @@ const crearPresupuesto = async (req, res) => {
 
             if (datosNotificacion.length > 0 && datosNotificacion[0].cliente_usuario_id) {
                 const { profesional_nombre, titulo_solicitud, cliente_usuario_id } = datosNotificacion[0];
+                const montoVisible = Number.isFinite(Number(monto))
+                    ? `$ ${Math.round(Number(monto)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`
+                    : String(monto);
+                const horasDuracion = Math.floor(duracionMinutos / 60);
+                const minutosDuracion = duracionMinutos % 60;
+                const duracionVisible = `${String(horasDuracion).padStart(2, '0')}:${String(minutosDuracion).padStart(2, '0')}`;
+
                 await Notificacion.crear({
                     usuario_id: cliente_usuario_id,
                     tipo_notificacion: 'oferta',
                     referencia_id: solicitud_id,
-                    mensaje: `${profesional_nombre} envió un presupuesto para "${titulo_solicitud}"`
+                    mensaje: `${profesional_nombre} envió un presupuesto para "${titulo_solicitud}"`,
+                    presentacion: {
+                        asunto: `${profesional_nombre} te envió un presupuesto`,
+                        titulo: 'Tenés un presupuesto nuevo',
+                        introduccion: `${profesional_nombre} te envió un presupuesto para "${titulo_solicitud}".`,
+                        detalles: [
+                            { etiqueta: 'Profesional', valor: profesional_nombre },
+                            { etiqueta: 'Trabajo', valor: titulo_solicitud },
+                            { etiqueta: 'Monto', valor: montoVisible },
+                            { etiqueta: 'Duración', valor: duracionVisible }
+                        ],
+                        botonTexto: 'Ver presupuesto',
+                        seccion: 'mis-presupuestos'
+                    }
                 });
             }
         } catch (notiError) {

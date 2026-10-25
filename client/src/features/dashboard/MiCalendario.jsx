@@ -249,10 +249,12 @@ const MiCalendario = () => {
     useEffect(() => {
         if (!personaId) return;
 
-        const fetchOrdenes = async () => {
+        const fetchOrdenes = async (silencioso = false) => {
             try {
-                setLoading(true);
-                setError('');
+                if (!silencioso) {
+                    setLoading(true);
+                    setError('');
+                }
 
                 const response = await fetch(
                     `http://localhost:3002/api/ordenes/profesional/${personaId}?fechaInicio=${rangoInicio}&fechaFin=${rangoFin}`
@@ -261,14 +263,14 @@ const MiCalendario = () => {
 
                 if (data.success) {
                     setOrdenes(data.data.filter((orden) => orden.estado !== 'cancelado'));
-                } else {
+                } else if (!silencioso) {
                     setError(data.message || 'Error al cargar las órdenes de trabajo');
                 }
             } catch (err) {
                 console.error('Error al cargar órdenes:', err);
-                setError('Error al cargar las órdenes de trabajo');
+                if (!silencioso) setError('Error al cargar las órdenes de trabajo');
             } finally {
-                setLoading(false);
+                if (!silencioso) setLoading(false);
             }
         };
 
@@ -289,6 +291,8 @@ const MiCalendario = () => {
 
         fetchOrdenes();
         fetchConfiguracionHorarios();
+        const chequeo = setInterval(() => fetchOrdenes(true), 10 * 60 * 1000);
+        return () => clearInterval(chequeo);
     }, [personaId, rangoInicio, rangoFin]);
 
     const ordenesPorFecha = useMemo(() => {

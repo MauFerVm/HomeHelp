@@ -259,36 +259,71 @@
     cursor: not-allowed;
 }
 
-/* Campo de duración con texto más grande y en negrita - Actualizado */
-.duracion-input {
+.duracion-stepper {
     width: 100%;
-    padding: 16px;
+    height: 70px;
+    padding: 0 12px;
     border: 2px solid #d1d5db;
     border-radius: 12px;
-    font-size: 1.3rem !important;
-    font-weight: 1000 !important;
+    background: #f8fafc;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    user-select: none;
+    touch-action: none;
+    cursor: ew-resize;
     transition: border-color 0.2s, box-shadow 0.2s;
-    background: white;
-    height: 60px;
-    text-align: center;
-    font-family: 'Courier New', monospace;
 }
 
-.duracion-input:focus {
+.duracion-stepper:focus {
     outline: none;
     border-color: #FF6B35;
     box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
 }
 
-.duracion-input:disabled {
+.duracion-stepper.is-disabled {
     background-color: #f9fafb;
     color: #6b7280;
     cursor: not-allowed;
 }
 
-.duracion-input::placeholder {
-    color: #9ca3af;
-    font-family: inherit;
+.duracion-valor {
+    min-width: 5.5ch;
+    text-align: center;
+    font-size: 1.8rem;
+    font-weight: 700;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 0.04em;
+    color: #1f2937;
+    line-height: 1;
+}
+
+.duracion-step-btn {
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 50%;
+    background: #FF6B35;
+    color: white;
+    box-shadow: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.duracion-step-btn:hover:not(:disabled) {
+    background: #e55a2b;
+}
+
+.duracion-step-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    box-shadow: none;
 }
 
 .form-help-text {
@@ -312,7 +347,7 @@
     align-items: center !important;
 }
 
-.duracion-group .duracion-input {
+.duracion-group .duracion-stepper {
     text-align: center;
     margin: 0 auto;
 }

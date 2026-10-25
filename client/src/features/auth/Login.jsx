@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import './Login.css';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { esSeccionDesdeMail } from '../../utils/seccionesMail';
 import api from '../../services/api';
 import video from '../../assets/video.mp4';
 import logo from '../../assets/logo.png';
@@ -14,6 +15,7 @@ const Login = () => {
   const [errorMsg, setErrorMsg] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const loginUser = async (e) => {
     e.preventDefault();
@@ -33,8 +35,10 @@ const Login = () => {
         localStorage.setItem('userType', 'cliente');
       }
       
-      // Login exitoso, navegar a main
-      navigate('/main');
+      const seccion = searchParams.get('seccion');
+      navigate(seccion && esSeccionDesdeMail(seccion)
+        ? `/main?seccion=${encodeURIComponent(seccion)}`
+        : '/main');
     } catch (err) {
       if (err.response?.status === 401) {
         setErrorMsg('Usuario o contraseña incorrectos');

@@ -122,10 +122,11 @@
 
 .ordenes-list {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 400px), 1fr));
     gap: 20px;
     max-width: 1200px;
     margin: 0 auto;
+    min-width: 0;
 }
 
 .orden-card {
@@ -135,6 +136,8 @@
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
     transition: all 0.3s ease;
     border: 1px solid rgba(0, 0, 0, 0.05);
+    min-width: 0;
+    max-width: 100%;
 }
 
 .orden-card:hover {
@@ -736,12 +739,28 @@
     }
     
     .ordenes-list {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
         gap: 15px;
     }
     
     .orden-card {
-        padding: 20px;
+        padding: 16px;
+    }
+
+    .orden-header {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .orden-titulo,
+    .orden-descripcion p,
+    .info-item span {
+        overflow-wrap: anywhere;
+        min-width: 0;
+    }
+
+    .orden-titulo {
+        margin-right: 0;
     }
     
     .modal-content {

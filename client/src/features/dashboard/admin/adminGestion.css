@@ -1,6 +1,7 @@
 .adm-panel {
     text-align: left;
     color: #fff;
+    min-width: 0;
 }
 
 .adm-header {
@@ -353,6 +354,8 @@
 
 .adm-modal {
     width: min(440px, 100%);
+    max-height: calc(100vh - 2rem);
+    overflow: auto;
     background: #1f1f1f;
     color: #fff;
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -703,6 +706,10 @@
     line-height: 1.15;
 }
 
+.adm-mes-corto {
+    display: none;
+}
+
 .adm-analisis-filtros {
     display: flex;
     flex-direction: column;
@@ -924,8 +931,10 @@
 }
 
 @media (max-width: 1100px) {
-    .adm-stats,
-    .adm-stats-3,
+    .adm-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
     .adm-charts {
         grid-template-columns: 1fr;
     }
@@ -935,6 +944,86 @@
     .adm-header {
         flex-direction: column;
         align-items: flex-start;
+    }
+
+    .adm-header h2 {
+        font-size: 1.45rem;
+    }
+
+    .adm-stats-3 {
+        grid-template-columns: 1fr;
+    }
+
+    .adm-chart-card {
+        padding: 1rem 0.85rem 0.9rem;
+    }
+
+    .adm-analisis-filtros {
+        gap: 1rem;
+    }
+
+    .adm-hbar-row {
+        grid-template-columns: 1fr auto;
+        grid-template-areas:
+            "label value"
+            "track track";
+        row-gap: 0.35rem;
+    }
+
+    .adm-hbar-label {
+        grid-area: label;
+        text-align: left;
+        white-space: normal;
+    }
+
+    .adm-hbar-value {
+        grid-area: value;
+    }
+
+    .adm-hbar-track {
+        grid-area: track;
+    }
+
+    .adm-bars li {
+        grid-template-columns: 1fr auto;
+        row-gap: 0.35rem;
+    }
+
+    .adm-bars-label {
+        grid-column: 1;
+        white-space: normal;
+    }
+
+    .adm-bars strong {
+        grid-column: 2;
+        grid-row: 1;
+    }
+
+    .adm-bars-track {
+        grid-column: 1 / -1;
+        grid-row: 2;
+    }
+
+    .adm-mes-largo {
+        display: none;
+    }
+
+    .adm-mes-corto {
+        display: inline;
+    }
+
+    .adm-point-card,
+    .adm-point-card.arriba.centro,
+    .adm-point-card.arriba.izquierda,
+    .adm-point-card.arriba.derecha,
+    .adm-point-card.abajo.centro,
+    .adm-point-card.abajo.izquierda,
+    .adm-point-card.abajo.derecha {
+        position: static;
+        transform: none;
+        width: 100%;
+        max-width: none;
+        margin-top: 0.75rem;
     }
 
     .adm-count-label {
@@ -967,7 +1056,8 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        gap: 1rem;
+        flex-wrap: wrap;
+        gap: 0.65rem 1rem;
         border-bottom: none;
         padding: 0.45rem 1rem;
     }
@@ -997,6 +1087,33 @@
 
     .adm-person {
         min-width: 0;
+        width: 100%;
+    }
+
+    .adm-person-text {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .adm-person-text span {
+        max-width: 100%;
+    }
+
+    .adm-rating,
+    .adm-chips,
+    .adm-zona {
+        justify-content: flex-end;
+        text-align: right;
+        max-width: 100%;
+    }
+
+    .adm-chips {
+        flex: 1 1 160px;
+    }
+
+    .adm-rating {
+        flex-wrap: wrap;
+        white-space: normal;
     }
 }
 
@@ -1005,7 +1122,35 @@
         grid-template-columns: 1fr;
     }
 
-    .adm-select {
+    .adm-select,
+    .adm-search {
         flex: 1 1 100%;
+        min-width: 0;
+    }
+
+    .adm-stat {
+        min-height: 0;
+    }
+
+    .adm-stat strong {
+        font-size: 1.4rem;
+    }
+
+    .adm-chip-btn {
+        padding: 0.45rem 0.75rem;
+        font-size: 0.82rem;
+    }
+
+    .adm-modal-actions {
+        flex-direction: column-reverse;
+    }
+
+    .adm-modal-actions .adm-btn {
+        width: 100%;
+    }
+
+    .adm-donut {
+        width: 140px;
+        height: 140px;
     }
 }

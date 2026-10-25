@@ -98,12 +98,15 @@ const MisServicios = ({
         fetchPersonaId();
     }, [userData]);
 
-    // Cargar órdenes de trabajo del cliente
+    // Cargar órdenes y volver a consultarlas cada 10 minutos
     useEffect(() => {
-        if (personaId) {
-            fetchOrdenesTrabajos();
-            fetchFavoritos();
-        }
+        if (!personaId) return undefined;
+        fetchOrdenesTrabajos();
+        fetchFavoritos();
+        const chequeo = setInterval(() => {
+            fetchOrdenesTrabajos({ silencioso: true });
+        }, 10 * 60 * 1000);
+        return () => clearInterval(chequeo);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [personaId]);
 
@@ -117,10 +120,12 @@ const MisServicios = ({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [filtros, ordenesTrabajos]);
 
-    const fetchOrdenesTrabajos = async () => {
+    const fetchOrdenesTrabajos = async ({ silencioso = false } = {}) => {
         try {
-            setLoading(true);
-            setError(null);
+            if (!silencioso) {
+                setLoading(true);
+                setError(null);
+            }
 
             if (!personaId) {
                 throw new Error('No se encontró el ID del cliente');
@@ -135,6 +140,10 @@ const MisServicios = ({
                 console.log('Órdenes de trabajo obtenidas:', data.data.length);
                 const ordenes = data.data;
                 setOrdenesTrabajos(ordenes);
+                setSelectedOrden((actual) => {
+                    if (!actual) return actual;
+                    return ordenes.find((item) => item.id === actual.id) || actual;
+                });
                 
                 // Verificar calificaciones para órdenes completadas
                 if (personaId) {
@@ -162,9 +171,9 @@ const MisServicios = ({
             }
         } catch (error) {
             console.error('Error al cargar órdenes de trabajo:', error);
-            setError(error.message);
+            if (!silencioso) setError(error.message);
         } finally {
-            setLoading(false);
+            if (!silencioso) setLoading(false);
         }
     };
 

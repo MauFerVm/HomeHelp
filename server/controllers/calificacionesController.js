@@ -85,6 +85,29 @@ const crearCalificacion = async (req, res) => {
                     'calificada',
                     'Ambas partes calificaron el servicio'
                 );
+
+                const [estadoCerrada] = await db.execute(
+                    'SELECT id FROM estado_sol_servicio WHERE nombre = ? LIMIT 1',
+                    ['cerrada']
+                );
+                if (estadoCerrada.length > 0) {
+                    const [solicitudActual] = await db.execute(
+                        'SELECT estado_id FROM solicitud_servicio WHERE id = ? LIMIT 1',
+                        [solicitud_id]
+                    );
+                    if (solicitudActual.length > 0 && Number(solicitudActual[0].estado_id) !== Number(estadoCerrada[0].id)) {
+                        await db.execute(
+                            `INSERT INTO historial_servicio
+                             (solicitud_id, fecha_creacion, fecha_vencimiento, estado_id, notas)
+                             VALUES (?, NOW(), NULL, ?, ?)`,
+                            [solicitud_id, estadoCerrada[0].id, 'Ambas partes calificaron. La solicitud quedó cerrada']
+                        );
+                        await db.execute(
+                            'UPDATE solicitud_servicio SET estado_id = ? WHERE id = ?',
+                            [estadoCerrada[0].id, solicitud_id]
+                        );
+                    }
+                }
             }
         }
 
@@ -93,16 +116,18 @@ const crearCalificacion = async (req, res) => {
                 `SELECT
                     ss.titulo AS titulo_solicitud,
                     calificador.nombre_apellido AS calificador_nombre,
-                    calificado.usuario_id AS calificado_usuario_id
+                    calificado.usuario_id AS calificado_usuario_id,
+                    u.rol AS calificado_rol
                  FROM solicitud_servicio ss
                  JOIN persona calificador ON calificador.id = ?
                  JOIN persona calificado ON calificado.id = ?
+                 LEFT JOIN usuario u ON u.id = calificado.usuario_id
                  WHERE ss.id = ?`,
                 [calificador_persona_id, calificado_persona_id, solicitud_id]
             );
 
             if (datosNotificacion.length > 0 && datosNotificacion[0].calificado_usuario_id) {
-                const { titulo_solicitud, calificador_nombre, calificado_usuario_id } = datosNotificacion[0];
+                const { titulo_solicitud, calificador_nombre, calificado_usuario_id, calificado_rol } = datosNotificacion[0];
                 const faltaCalificar = !(await calificacionesModel.existeCalificacion(
                     solicitud_id,
                     calificado_persona_id,
@@ -116,7 +141,20 @@ const crearCalificacion = async (req, res) => {
                     usuario_id: calificado_usuario_id,
                     tipo_notificacion: 'sistema',
                     referencia_id: solicitud_id,
-                    mensaje
+                    mensaje,
+                    presentacion: {
+                        asunto: `${calificador_nombre} te calificó "${titulo_solicitud}"`,
+                        titulo: 'Recibiste una calificación',
+                        introduccion: mensaje,
+                        detalles: [
+                            { etiqueta: 'Quién calificó', valor: calificador_nombre },
+                            { etiqueta: 'Servicio', valor: titulo_solicitud },
+                            { etiqueta: 'Puntaje', valor: `${puntuacion} de 5` }
+                        ],
+                        nota: faltaCalificar ? 'Todavía podés dejar tu calificación desde HomeHelp.' : '',
+                        botonTexto: 'Ver calificación',
+                        seccion: calificado_rol === 'profesional' ? 'trabajos-asignados' : 'mis-servicios'
+                    }
                 });
             }
         } catch (notiError) {

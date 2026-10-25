@@ -299,12 +299,31 @@ const confirmarHorario = async (req, res) => {
             if (datosNotificacion.length > 0) {
                 const { nombre_cliente, titulo_solicitud, profesional_usuario_id } = datosNotificacion[0];
                 const mensajeNotificacion = `${nombre_cliente} aceptó tu presupuesto: ${titulo_solicitud}`;
+                const fechaStr = String(fecha).split('T')[0];
+                const [anioTurno, mesTurno, diaTurno] = fechaStr.split('-');
+                const fechaTurno = anioTurno && mesTurno && diaTurno
+                    ? `${diaTurno}/${mesTurno}/${anioTurno}`
+                    : fechaStr;
+                const horarioTurno = `${String(horaInicio).substring(0, 5)} a ${String(horaFin).substring(0, 5)}`;
 
                 await Notificacion.crear({
                     usuario_id: profesional_usuario_id,
                     tipo_notificacion: 'solicitud',
                     referencia_id: presupuesto.solicitud_id,
-                    mensaje: mensajeNotificacion
+                    mensaje: mensajeNotificacion,
+                    presentacion: {
+                        asunto: `${nombre_cliente} aceptó tu presupuesto`,
+                        titulo: 'Tu presupuesto fue aceptado',
+                        introduccion: mensajeNotificacion,
+                        detalles: [
+                            { etiqueta: 'Cliente', valor: nombre_cliente },
+                            { etiqueta: 'Trabajo', valor: titulo_solicitud },
+                            { etiqueta: 'Fecha', valor: fechaTurno },
+                            { etiqueta: 'Horario', valor: horarioTurno }
+                        ],
+                        botonTexto: 'Ver el turno',
+                        seccion: 'calendario'
+                    }
                 }, connection);
             }
 

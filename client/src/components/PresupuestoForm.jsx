@@ -1,8 +1,13 @@
-import React, { useState } from 'react';
-import { FaDollarSign, FaFileAlt, FaCheck, FaTimes, FaSpinner } from 'react-icons/fa';
+import React, { useEffect, useRef, useState } from 'react';
+import { FaCheck, FaTimes, FaSpinner, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import SuccessModal from './SuccessModal';
-import { HHMMToMinutos, validarFormatoTiempo } from '../utils/timeUtils';
+import { minutosToHHMM } from '../utils/timeUtils';
 import './PresupuestoForm.css';
+
+const DURACION_PASO = 30;
+const DURACION_MIN = 30;
+const DURACION_MAX = 24 * 60;
+const DURACION_INICIAL = 60;
 
 const PresupuestoForm = ({ 
     solicitud, 
@@ -12,11 +17,13 @@ const PresupuestoForm = ({
     const [formData, setFormData] = useState({
         monto: '',
         descripcion: '',
-        duracion: ''
+        duracion: DURACION_INICIAL
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const stepperRef = useRef(null);
+    const cambiarDuracionRef = useRef(() => {});
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -48,14 +55,8 @@ const PresupuestoForm = ({
             return;
         }
 
-        if (!formData.duracion.trim()) {
-            setError('La duración aproximada es obligatoria');
-            return;
-        }
-
-        // Validar formato de duración (HH:MM)
-        if (!validarFormatoTiempo(formData.duracion)) {
-            setError('La duración debe estar en formato HH:MM (ejemplo: 04:30)');
+        if (!formData.duracion || formData.duracion < DURACION_MIN) {
+            setError('La duración mínima es de 30 minutos');
             return;
         }
 
@@ -81,15 +82,12 @@ const PresupuestoForm = ({
                 .replace(/\./g, '') // Remover puntos (separadores de miles)
                 .replace(',', '.'); // Convertir coma a punto para decimales
             
-            // Convertir duración de HH:MM a minutos
-            const duracionEnMinutos = HHMMToMinutos(formData.duracion);
-
             const presupuestoData = {
                 solicitud_id: solicitud.id,
                 profesional_persona_id: user.id, // Asumiendo que el ID del usuario corresponde al ID de la persona
                 monto: parseFloat(montoSinFormato),
                 descripcion: formData.descripcion.trim(),
-                duracion: duracionEnMinutos,
+                duracion: formData.duracion,
                 estado: 'enviado'
             };
 
@@ -156,10 +154,73 @@ const PresupuestoForm = ({
     const handleSuccessModalClose = () => {
         setShowSuccessModal(false);
         // Limpiar el estado del formulario
-        setFormData({ monto: '', descripcion: '', duracion: '' });
+        setFormData({ monto: '', descripcion: '', duracion: DURACION_INICIAL });
         setError('');
         // Cerrar el modal de presupuesto
         onClose();
+    };
+
+    const cambiarDuracion = (delta) => {
+        if (loading) return;
+        setFormData(prev => {
+            const actual = typeof prev.duracion === 'number' ? prev.duracion : DURACION_MIN;
+            const siguiente = Math.min(DURACION_MAX, Math.max(DURACION_MIN, actual + delta));
+            return { ...prev, duracion: siguiente };
+        });
+        if (error) setError('');
+    };
+
+    cambiarDuracionRef.current = cambiarDuracion;
+
+    useEffect(() => {
+        const el = stepperRef.current;
+        if (!el) return;
+
+        let acumulado = 0;
+        let touchY = null;
+
+        const onWheel = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            acumulado += e.deltaY;
+            if (Math.abs(acumulado) < 40) return;
+            const delta = acumulado > 0 ? -DURACION_PASO : DURACION_PASO;
+            acumulado = 0;
+            cambiarDuracionRef.current(delta);
+        };
+
+        const onTouchStart = (e) => {
+            touchY = e.touches[0].clientY;
+        };
+
+        const onTouchMove = (e) => {
+            if (touchY == null) return;
+            const dy = touchY - e.touches[0].clientY;
+            if (Math.abs(dy) < 28) return;
+            e.preventDefault();
+            cambiarDuracionRef.current(dy > 0 ? DURACION_PASO : -DURACION_PASO);
+            touchY = e.touches[0].clientY;
+        };
+
+        el.addEventListener('wheel', onWheel, { passive: false });
+        el.addEventListener('touchstart', onTouchStart, { passive: true });
+        el.addEventListener('touchmove', onTouchMove, { passive: false });
+
+        return () => {
+            el.removeEventListener('wheel', onWheel);
+            el.removeEventListener('touchstart', onTouchStart);
+            el.removeEventListener('touchmove', onTouchMove);
+        };
+    }, []);
+
+    const handleDuracionKeyDown = (e) => {
+        if (e.key === 'ArrowUp' || e.key === 'ArrowRight') {
+            e.preventDefault();
+            cambiarDuracion(DURACION_PASO);
+        } else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') {
+            e.preventDefault();
+            cambiarDuracion(-DURACION_PASO);
+        }
     };
 
     // Función para mostrar el modal de éxito
@@ -224,22 +285,43 @@ const PresupuestoForm = ({
                             </div>
 
                             <div className="form-group duracion-group">
-                                <label htmlFor="duracion" className="form-label">
+                                <label id="duracion-label" className="form-label">
                                     Duración Aproximada
                                 </label>
-                                <input
-                                    type="text"
-                                    id="duracion"
-                                    name="duracion"
-                                    value={formData.duracion}
-                                    onChange={handleInputChange}
-                                    placeholder="04:30"
-                                    className="duracion-input"
-                                    disabled={loading}
-                                    required
-                                />
+                                <div
+                                    ref={stepperRef}
+                                    className={`duracion-stepper${loading ? ' is-disabled' : ''}`}
+                                    role="spinbutton"
+                                    tabIndex={loading ? -1 : 0}
+                                    aria-labelledby="duracion-label"
+                                    aria-valuemin={DURACION_MIN}
+                                    aria-valuemax={DURACION_MAX}
+                                    aria-valuenow={formData.duracion}
+                                    aria-valuetext={minutosToHHMM(formData.duracion)}
+                                    onKeyDown={handleDuracionKeyDown}
+                                >
+                                    <button
+                                        type="button"
+                                        className="duracion-step-btn"
+                                        onClick={() => cambiarDuracion(-DURACION_PASO)}
+                                        disabled={loading || formData.duracion <= DURACION_MIN}
+                                        aria-label="Disminuir 30 minutos"
+                                    >
+                                        <FaChevronLeft />
+                                    </button>
+                                    <span className="duracion-valor">{minutosToHHMM(formData.duracion)}</span>
+                                    <button
+                                        type="button"
+                                        className="duracion-step-btn"
+                                        onClick={() => cambiarDuracion(DURACION_PASO)}
+                                        disabled={loading || formData.duracion >= DURACION_MAX}
+                                        aria-label="Aumentar 30 minutos"
+                                    >
+                                        <FaChevronRight />
+                                    </button>
+                                </div>
                                 <small className="form-help-text">
-                                    Ingresa la duración en formato horas:minutos (ejemplo: 04:30)
+                                    Ajusta con la rueda del mouse o deslizando, de a 30 minutos. Mínimo 30 minutos.
                                 </small>
                             </div>
 

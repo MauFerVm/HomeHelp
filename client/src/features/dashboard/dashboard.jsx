@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { esSeccionDesdeMail } from '../../utils/seccionesMail';
 import './dashboard.css';
 import PublicarProblemaForm from '../../components/PublicarProblemaForm';
 import ModificarPerfilForm from '../../components/ModificarPerfilForm';
@@ -48,6 +49,7 @@ import perfil from '../../assets/user.png';
 
 const Dashboard = () => {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const [searchQuery, setSearchQuery] = useState('');
     const [currentSlide, setCurrentSlide] = useState(0);
     const [categoriesExpanded, setCategoriesExpanded] = useState(false);
@@ -78,6 +80,10 @@ const Dashboard = () => {
     // El administrador entra directo a la gestión de usuarios.
     const [activeTab, setActiveTab] = useState(() => {
         const storedUserType = localStorage.getItem('userType') || 'cliente';
+        const seccion = new URLSearchParams(window.location.search).get('seccion');
+        if (seccion && esSeccionDesdeMail(seccion) && localStorage.getItem('userData')) {
+            return seccion;
+        }
         return storedUserType === 'admin' ? 'usuarios' : 'dashboard';
     });
 
@@ -104,6 +110,19 @@ const Dashboard = () => {
         }
         return null;
     });
+
+    useEffect(() => {
+        const seccion = searchParams.get('seccion');
+        if (!seccion || !esSeccionDesdeMail(seccion)) return;
+
+        if (!localStorage.getItem('userData')) {
+            navigate(`/?seccion=${encodeURIComponent(seccion)}`, { replace: true });
+            return;
+        }
+
+        setActiveTab(seccion);
+        navigate('/main', { replace: true });
+    }, [searchParams, navigate]);
 
     // Verificar que el userType esté sincronizado con el localStorage
     useEffect(() => {

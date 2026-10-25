@@ -1,6 +1,6 @@
 // models/notificacionModel.js
 const db = require('../config/db');
-const { enviarCorreo } = require('../utils/mailer');
+const { enviarCorreo, armarPresentacion, urlDestino } = require('../utils/mailer');
 
 class Notificacion {
   constructor({ id = null, usuario_id, tipo_notificacion, referencia_id = null, mensaje, leido = 0, creado_en = new Date() }) {
@@ -16,7 +16,7 @@ class Notificacion {
   /**
    * Crea una notificación. Si se pasa una conexión, se usa en transacción.
    */
-  static async crear({ usuario_id, tipo_notificacion, referencia_id = null, mensaje }, conn = null) {
+  static async crear({ usuario_id, tipo_notificacion, referencia_id = null, mensaje, presentacion = null }, conn = null) {
     const executor = conn || db;
     const [result] = await executor.query(
       `INSERT INTO notificacion (usuario_id, tipo_notificacion, referencia_id, mensaje, leido, creado_en)
@@ -24,7 +24,7 @@ class Notificacion {
       [usuario_id, tipo_notificacion, referencia_id, mensaje]
     );
 
-    Notificacion.enviarPorCorreo(usuario_id, mensaje).catch((error) => {
+    Notificacion.enviarPorCorreo(usuario_id, mensaje, presentacion).catch((error) => {
       console.error('No se pudo enviar la notificación por correo:', error.message);
     });
 
@@ -32,9 +32,9 @@ class Notificacion {
   }
 
   /**
-   * Envía el mismo mensaje de la notificación al correo del usuario.
+   * Envía el aviso por correo. El botón del mail solo abre una pantalla de HomeHelp.
    */
-  static async enviarPorCorreo(usuarioId, mensaje) {
+  static async enviarPorCorreo(usuarioId, mensaje, presentacion = null) {
     const [rows] = await db.query(
       'SELECT correo FROM usuario WHERE id = ? LIMIT 1',
       [usuarioId]
@@ -45,10 +45,36 @@ class Notificacion {
       return;
     }
 
+    const tieneDestino = presentacion
+      && presentacion.asunto
+      && presentacion.titulo
+      && presentacion.botonTexto
+      && presentacion.seccion;
+
+    if (!tieneDestino) {
+      await enviarCorreo({
+        to: correo,
+        subject: 'HomeHelp - Nueva notificación',
+        text: mensaje
+      });
+      return;
+    }
+
+    const url = urlDestino(presentacion.seccion);
+    const { text, html } = armarPresentacion({
+      titulo: presentacion.titulo,
+      introduccion: presentacion.introduccion || mensaje,
+      detalles: presentacion.detalles,
+      nota: presentacion.nota,
+      botonTexto: presentacion.botonTexto,
+      url
+    });
+
     await enviarCorreo({
       to: correo,
-      subject: 'HomeHelp - Nueva notificación',
-      text: mensaje
+      subject: presentacion.asunto,
+      text,
+      html
     });
   }
 
