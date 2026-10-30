@@ -1,4 +1,5 @@
 ﻿import React, { useEffect, useState } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import DatePicker from 'react-datepicker';
 import { registerLocale, setDefaultLocale } from 'react-datepicker';
 import es from 'date-fns/locale/es';
@@ -15,6 +16,7 @@ registerLocale('es', es);
 setDefaultLocale('es');
 
 const MisPresupuestos = () => {
+    const { user } = useAuth();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [solicitudesConPresupuestos, setSolicitudesConPresupuestos] = useState([]);
@@ -85,15 +87,8 @@ const MisPresupuestos = () => {
                 setLoading(true);
                 setError('');
 
-                const userDataRaw = localStorage.getItem('userData');
-                if (!userDataRaw) {
+                if (!user?.id) {
                     setError('No se encontraron datos de usuario. Inicie sesión nuevamente.');
-                    setLoading(false);
-                    return;
-                }
-                const user = JSON.parse(userDataRaw);
-                if (!user.id) {
-                    setError('No se encontró el ID del usuario.');
                     setLoading(false);
                     return;
                 }
@@ -133,7 +128,7 @@ const MisPresupuestos = () => {
         };
 
         fetchData();
-    }, []);
+    }, [user]);
 
     // Aplicar filtros cuando cambien los filtros o las solicitudes
     useEffect(() => {

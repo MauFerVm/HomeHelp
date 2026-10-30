@@ -1,4 +1,5 @@
 ﻿import React, { useEffect, useMemo, useState } from 'react';
+import { useAuth } from '../../../context/AuthContext';
 import { FaSearch, FaStar } from 'react-icons/fa';
 import perfil from '../../../assets/user.png';
 import './adminGestion.css';
@@ -170,14 +171,8 @@ const AdminGestion = ({ vista }) => {
     const [form, setForm] = useState({ correo: '', nombre_usuario: '', nombre_apellido: '' });
     const [formError, setFormError] = useState('');
     const [aviso, setAviso] = useState('');
-    const sesionId = useMemo(() => {
-        try {
-            const data = JSON.parse(localStorage.getItem('userData') || 'null');
-            return data?.id ?? null;
-        } catch {
-            return null;
-        }
-    }, []);
+    const { user } = useAuth();
+    const sesionId = user?.id ?? null;
 
     useEffect(() => {
         let cancelado = false;

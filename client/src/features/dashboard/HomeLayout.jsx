@@ -241,24 +241,19 @@ const HomeLayout = () => {
 
             {/* Menú lateral modular */}
             <HomeSidebar
-                userType={userType}
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
                 categories={categories}
                 mobileMenuOpen={mobileMenuOpen}
                 closeMobileMenu={closeMobileMenu}
-                onLogout={handleLogout}
             />
 
             {/* Contenido principal */}
             <div className="main-content">
                 {/* Header modular */}
                 <HomeHeader
-                    userType={userType}
-                    userData={userData}
                     setActiveTab={setActiveTab}
                     onOpenModificarPerfil={() => setShowModificarPerfil(true)}
-                    onLogout={handleLogout}
                 />
 
                 {/* Área de vistas con Suspense */}

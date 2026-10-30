@@ -6,12 +6,16 @@ import './HomeHeader.css';
 import { STATIC_URL, API_URL } from '../../../services/apiConfig';
 
 const HomeHeader = ({
-    userType,
-    userData,
     setActiveTab,
     onOpenModificarPerfil,
-    onLogout
+    userType: propUserType,
+    userData: propUserData,
+    onLogout: propOnLogout
 }) => {
+    const { user: authUser, userType: authUserType, logout } = useAuth();
+    const userData = propUserData || authUser;
+    const userType = propUserType || authUserType;
+    const handleLogout = propOnLogout || logout;
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [showNotifications, setShowNotifications] = useState(false);
@@ -295,7 +299,7 @@ const HomeHeader = ({
                                 className="profile-dropdown-item profile-dropdown-logout"
                                 onClick={() => {
                                     setShowProfileMenu(false);
-                                    onLogout();
+                                    handleLogout();
                                 }}
                             >
                                 <FaSignOutAlt className="profile-dropdown-icon" />

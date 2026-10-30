@@ -1,4 +1,5 @@
 ﻿import React, { useCallback, useEffect, useState } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import DatePicker from 'react-datepicker';
 import { registerLocale, setDefaultLocale } from 'react-datepicker';
 import es from 'date-fns/locale/es';
@@ -391,6 +392,7 @@ const GastosChart = ({ intervalos = [], granularidad }) => {
 };
 
 const EstadisticasCliente = () => {
+    const { user } = useAuth();
     const [personaId, setPersonaId] = useState(null);
     const [personaError, setPersonaError] = useState('');
     const [cliente, setCliente] = useState(null);
@@ -417,15 +419,8 @@ const EstadisticasCliente = () => {
     useEffect(() => {
         const cargarPersona = async () => {
             try {
-                const userDataRaw = localStorage.getItem('userData');
-                if (!userDataRaw) {
+                if (!user?.id) {
                     setPersonaError('No se encontraron datos de usuario. Iniciá sesión nuevamente.');
-                    return;
-                }
-
-                const user = JSON.parse(userDataRaw);
-                if (!user.id) {
-                    setPersonaError('No se encontró el ID del usuario.');
                     return;
                 }
 
@@ -451,7 +446,7 @@ const EstadisticasCliente = () => {
         };
 
         cargarPersona();
-    }, []);
+    }, [user]);
 
     useEffect(() => {
         if (!personaId) {

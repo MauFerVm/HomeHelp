@@ -1,4 +1,5 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
@@ -34,7 +35,7 @@ const BuscarTrabajo = ({
     const [selectedSolicitud, setSelectedSolicitud] = useState(null);
     const [showModal, setShowModal] = useState(false);
     const [showPresupuestoForm, setShowPresupuestoForm] = useState(false);
-    const [userData, setUserData] = useState(null);
+    const { user } = useAuth();
     const [presupuestosExistentes, setPresupuestosExistentes] = useState({});
     const [filtros, setFiltros] = useState({
         prioridad: '',
@@ -46,18 +47,6 @@ const BuscarTrabajo = ({
     const [showFiltros, setShowFiltros] = useState(false);
     const [prioridadesDisponibles, setPrioridadesDisponibles] = useState([]);
 
-    // Obtener datos del usuario del localStorage
-    useEffect(() => {
-        const storedUserData = localStorage.getItem('userData');
-        if (storedUserData) {
-            try {
-                setUserData(JSON.parse(storedUserData));
-            } catch (error) {
-                console.error('Error al parsear userData:', error);
-            }
-        }
-    }, []);
-
     // Cargar prioridades disponibles desde la base de datos
     useEffect(() => {
         fetchPrioridadesDisponibles();
@@ -65,15 +54,17 @@ const BuscarTrabajo = ({
 
     // Cargar solicitudes disponibles para el profesional
     useEffect(() => {
-        fetchSolicitudesDisponibles();
-    }, [filtros]);
+        if (user?.id) {
+            fetchSolicitudesDisponibles();
+        }
+    }, [filtros, user]);
 
     // Verificar presupuestos existentes cuando cambien las solicitudes o el usuario
     useEffect(() => {
-        if (solicitudes.length > 0 && userData?.id) {
+        if (solicitudes.length > 0 && user?.id) {
             verificarPresupuestosExistentes();
         }
-    }, [solicitudes, userData]);
+    }, [solicitudes, user]);
 
     const fetchPrioridadesDisponibles = async () => {
         try {
@@ -94,7 +85,7 @@ const BuscarTrabajo = ({
         try {
             const verificaciones = solicitudes.map(async (solicitud) => {
                 try {
-                    const response = await fetch(`${API_URL}/presupuestos/verificar/${solicitud.id}/${userData.id}`);
+                    const response = await fetch(`${API_URL}/presupuestos/verificar/${solicitud.id}/${user.id}`);
                     const data = await response.json();
                     
                     if (data.success) {
@@ -140,14 +131,7 @@ const BuscarTrabajo = ({
             setLoading(true);
             setError(null);
 
-            // Obtener el ID del usuario del localStorage
-            const userDataRaw = localStorage.getItem('userData');
-            if (!userDataRaw) {
-                throw new Error('No se encontraron datos del usuario');
-            }
-
-            const user = JSON.parse(userDataRaw);
-            if (!user.id) {
+            if (!user?.id) {
                 throw new Error('No se encontró el ID del usuario');
             }
 

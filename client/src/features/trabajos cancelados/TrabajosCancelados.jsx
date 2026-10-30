@@ -1,4 +1,5 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import '../trabajos asignados/trabajoasginado.css';
 import { STATIC_URL, API_URL } from '../../services/apiConfig';
@@ -22,7 +23,7 @@ const TrabajosCancelados = ({ isTab = false }) => {
     const [error, setError] = useState(null);
     const [selectedOrden, setSelectedOrden] = useState(null);
     const [showModal, setShowModal] = useState(false);
-    const [userData, setUserData] = useState(null);
+    const { user } = useAuth();
     const [personaId, setPersonaId] = useState(null);
     const [filtros, setFiltros] = useState({
         cliente: '',
@@ -33,21 +34,10 @@ const TrabajosCancelados = ({ isTab = false }) => {
     const [ordenesFiltradas, setOrdenesFiltradas] = useState([]);
 
     useEffect(() => {
-        const storedUserData = localStorage.getItem('userData');
-        if (storedUserData) {
-            try {
-                setUserData(JSON.parse(storedUserData));
-            } catch (parseError) {
-                console.error('Error al parsear userData:', parseError);
-            }
-        }
-    }, []);
-
-    useEffect(() => {
         const fetchPersonaId = async () => {
-            if (userData?.id) {
+            if (user?.id) {
                 try {
-                    const response = await fetch(`${API_URL}/auth/persona/${userData.id}`);
+                    const response = await fetch(`${API_URL}/auth/persona/${user.id}`);
                     const data = await response.json();
 
                     if (data.success && data.data) {
@@ -60,7 +50,7 @@ const TrabajosCancelados = ({ isTab = false }) => {
         };
 
         fetchPersonaId();
-    }, [userData]);
+    }, [user]);
 
     useEffect(() => {
         if (personaId) {

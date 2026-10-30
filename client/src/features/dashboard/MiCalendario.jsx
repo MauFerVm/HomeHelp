@@ -1,4 +1,5 @@
-﻿import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import { STATIC_URL, API_URL } from '../../services/apiConfig';
 import {
     FaChevronLeft,
@@ -72,7 +73,7 @@ const parseHoraMinutos = (hora) => {
 
 const generarSlotsHorarios = (horariosDia) => {
     const slots = [];
-    
+
     if (!horariosDia || horariosDia.length === 0) {
         // Fallback to default hours if no schedule is defined
         for (let h = 8; h < 20; h++) {
@@ -86,12 +87,12 @@ const generarSlotsHorarios = (horariosDia) => {
         }
         return slots;
     }
-    
+
     // Generate slots based on the professional's schedule for the day
     horariosDia.forEach(horario => {
         const inicioMin = parseHoraMinutos(horario.horaInicio);
         const finMin = parseHoraMinutos(horario.horaFin);
-        
+
         // Generate hourly slots within the schedule range
         for (let minutos = inicioMin; minutos < finMin; minutos += 60) {
             const h = Math.floor(minutos / 60);
@@ -105,7 +106,7 @@ const generarSlotsHorarios = (horariosDia) => {
             });
         }
     });
-    
+
     return slots;
 };
 
@@ -185,6 +186,7 @@ const construirGrillaMes = (year, month) => {
 };
 
 const MiCalendario = () => {
+    const { user } = useAuth();
     const hoyKey = toDateKey(new Date());
     const rangoInicio = getFechaInicioSemana(0);
     const rangoFin = getFechaFinSemana(3);
@@ -221,31 +223,23 @@ const MiCalendario = () => {
     }, [rangoFin]);
 
     useEffect(() => {
-        const storedUserData = localStorage.getItem('userData');
-        if (!storedUserData) return;
+        if (!user?.id) return;
 
-        try {
-            const userData = JSON.parse(storedUserData);
-            if (!userData?.id) return;
-
-            const fetchPersonaId = async () => {
-                try {
-                    const response = await fetch(`${API_URL}/auth/persona/${userData.id}`);
-                    const data = await response.json();
-                    if (data.success && data.data) {
-                        setPersonaId(data.data.id);
-                    }
-                } catch (err) {
-                    console.error('Error al obtener persona_id:', err);
-                    setError('Error al obtener datos del profesional');
+        const fetchPersonaId = async () => {
+            try {
+                const response = await fetch(`${API_URL}/auth/persona/${user.id}`);
+                const data = await response.json();
+                if (data.success && data.data) {
+                    setPersonaId(data.data.id);
                 }
-            };
+            } catch (err) {
+                console.error('Error al obtener persona_id:', err);
+                setError('Error al obtener datos del profesional');
+            }
+        };
 
-            fetchPersonaId();
-        } catch (err) {
-            console.error('Error al parsear userData:', err);
-        }
-    }, []);
+        fetchPersonaId();
+    }, [user]);
 
     useEffect(() => {
         if (!personaId) return;

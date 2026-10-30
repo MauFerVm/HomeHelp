@@ -1,9 +1,11 @@
 ﻿import React, { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
 import { FaTimes, FaUpload, FaSpinner, FaCheck } from 'react-icons/fa';
 import './PublicarProblemaForm.css';
 import { STATIC_URL, API_URL } from '../services/apiConfig';
 
 const PublicarProblemaForm = ({ isOpen, onClose, onSubmit }) => {
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     tipoTrabajo: '',
     prioridad: 'media',
@@ -85,16 +87,8 @@ const PublicarProblemaForm = ({ isOpen, onClose, onSubmit }) => {
 
   const fetchClienteData = async () => {
     try {
-      // Obtener el usuario_id del localStorage
-      const userData = localStorage.getItem('userData');
-      if (!userData) {
-        console.error('No se encontraron datos del usuario en localStorage');
-        return;
-      }
-
-      const user = JSON.parse(userData);
-      if (!user.id) {
-        console.error('No se encontró el ID del usuario');
+      if (!user?.id) {
+        console.error('No se encontró el ID del usuario en la sesión');
         return;
       }
 

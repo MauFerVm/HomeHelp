@@ -20,9 +20,13 @@ function AppRouter() {
           <Route path="/register" element={<Register />} />
           <Route path="/registro" element={<RegistroForm />} />
 
-          {/* Rutas protegidas – requieren sesión activa */}
+          {/* Rutas protegidas generales (cualquier usuario autenticado) */}
           <Route element={<ProtectedRoute />}>
             <Route path="/main" element={<HomeLayout />} />
+          </Route>
+
+          {/* Rutas protegidas exclusivas para profesionales */}
+          <Route element={<ProtectedRoute allowedRoles={['profesional']} />}>
             <Route path="/buscar-trabajo" element={<BuscarTrabajo />} />
             <Route path="/trabajos-asignados" element={<TrabajosAsignados />} />
           </Route>

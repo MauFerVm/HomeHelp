@@ -1,10 +1,12 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import { FaHeart, FaSpinner } from 'react-icons/fa';
 import './ProfesionalesFavoritos.css';
 import perfil from '../../assets/user.png';
 import { STATIC_URL, API_URL } from '../../services/apiConfig';
 
 const ProfesionalesFavoritos = () => {
+    const { user } = useAuth();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [favoritos, setFavoritos] = useState([]);
@@ -15,13 +17,13 @@ const ProfesionalesFavoritos = () => {
                 setLoading(true);
                 setError('');
 
-                const storedUserData = localStorage.getItem('userData');
-                if (!storedUserData) {
+                if (!user?.id) {
+
                     throw new Error('No se encontró la sesión del cliente');
                 }
 
-                const userData = JSON.parse(storedUserData);
-                const personaResponse = await fetch(`${API_URL}/auth/persona/${userData.id}`);
+
+                const personaResponse = await fetch(`${API_URL}/auth/persona/${user.id}`);
                 const personaData = await personaResponse.json();
 
                 if (!personaData.success || !personaData.data?.id) {
@@ -45,7 +47,7 @@ const ProfesionalesFavoritos = () => {
         };
 
         cargarFavoritos();
-    }, []);
+    }, [user]);
 
     const getFoto = (fotoPerfil) => {
         if (fotoPerfil) {

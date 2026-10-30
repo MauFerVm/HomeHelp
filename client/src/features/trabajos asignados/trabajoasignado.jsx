@@ -1,4 +1,5 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import './trabajoasginado.css';
 import CalificacionModal from '../../components/CalificacionModal';
@@ -32,7 +33,7 @@ const TrabajosAsignados = ({
     const [error, setError] = useState(null);
     const [selectedOrden, setSelectedOrden] = useState(null);
     const [showModal, setShowModal] = useState(false);
-    const [userData, setUserData] = useState(null);
+    const { user } = useAuth();
     const [personaId, setPersonaId] = useState(null);
     const [cerrandoOrden, setCerrandoOrden] = useState(false);
     const [cancelandoOrden, setCancelandoOrden] = useState(false);
@@ -52,25 +53,13 @@ const TrabajosAsignados = ({
     const [showFiltros, setShowFiltros] = useState(false);
     const [ordenesFiltradas, setOrdenesFiltradas] = useState([]);
 
-    // Obtener datos del usuario del localStorage
-    useEffect(() => {
-        const storedUserData = localStorage.getItem('userData');
-        if (storedUserData) {
-            try {
-                setUserData(JSON.parse(storedUserData));
-            } catch (error) {
-                console.error('Error al parsear userData:', error);
-            }
-        }
-    }, []);
-
     // Obtener el persona_id basado en el usuario_id
     useEffect(() => {
         const fetchPersonaId = async () => {
-            if (userData?.id) {
+            if (user?.id) {
                 try {
-                    console.log('Obteniendo persona_id para usuario_id:', userData.id);
-                    const response = await fetch(`${API_URL}/auth/persona/${userData.id}`);
+                    console.log('Obteniendo persona_id para usuario_id:', user.id);
+                    const response = await fetch(`${API_URL}/auth/persona/${user.id}`);
                     const data = await response.json();
                     
                     console.log('Respuesta de persona:', data);
@@ -85,7 +74,7 @@ const TrabajosAsignados = ({
         };
 
         fetchPersonaId();
-    }, [userData]);
+    }, [user]);
 
     // Cargar órdenes y volver a consultarlas cada 10 minutos
     useEffect(() => {

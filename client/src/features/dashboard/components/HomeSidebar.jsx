@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useAuth } from '../../../context/AuthContext';
 import {
     FaTimes,
     FaHome,
@@ -22,14 +23,17 @@ import logoHomeHelp from '../../../assets/logo_homehelp.png';
 import './HomeSidebar.css';
 
 const HomeSidebar = ({
-    userType,
     activeTab,
     setActiveTab,
     categories = [],
     mobileMenuOpen,
     closeMobileMenu,
-    onLogout
+    userType: propUserType,
+    onLogout: propOnLogout
 }) => {
+    const { userType: authUserType, logout } = useAuth();
+    const userType = propUserType || authUserType;
+    const handleLogout = propOnLogout || logout;
     const [categoriesExpanded, setCategoriesExpanded] = useState(false);
 
     const toggleCategories = () => {
@@ -361,7 +365,7 @@ const HomeSidebar = ({
                             className="nav-item logout-item"
                             onClick={() => {
                                 closeMobileMenu();
-                                onLogout();
+                                handleLogout();
                             }}
                         >
                             <FaSignOutAlt className="nav-icon" />

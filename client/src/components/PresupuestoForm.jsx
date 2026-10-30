@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 import { FaCheck, FaTimes, FaSpinner, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import SuccessModal from './SuccessModal';
 import { minutosToHHMM } from '../utils/timeUtils';
@@ -9,10 +10,10 @@ const DURACION_MIN = 30;
 const DURACION_MAX = 24 * 60;
 const DURACION_INICIAL = 60;
 
-const PresupuestoForm = ({ 
-    solicitud, 
-    onClose, 
-    onSubmit 
+const PresupuestoForm = ({
+    solicitud,
+    onClose,
+    onSubmit
 }) => {
     const [formData, setFormData] = useState({
         monto: '',
@@ -22,8 +23,9 @@ const PresupuestoForm = ({
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const { user } = useAuth();
     const stepperRef = useRef(null);
-    const cambiarDuracionRef = useRef(() => {});
+    const cambiarDuracionRef = useRef(() => { });
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -37,14 +39,14 @@ const PresupuestoForm = ({
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
+
         // Validaciones
         // Convertir el monto formateado a número puro para validar
         const montoSinFormato = formData.monto
             .replace(/[^\d.,]/g, '') // Remover símbolo de peso y espacios
             .replace(/\./g, '') // Remover puntos (separadores de miles)
             .replace(',', '.'); // Convertir coma a punto para decimales
-        
+
         if (!formData.monto || parseFloat(montoSinFormato) <= 0) {
             setError('El monto debe ser mayor a 0');
             return;
@@ -64,15 +66,8 @@ const PresupuestoForm = ({
             setLoading(true);
             setError('');
 
-            // Obtener datos del usuario del localStorage
-            const userDataRaw = localStorage.getItem('userData');
-            if (!userDataRaw) {
+            if (!user?.id) {
                 throw new Error('No se encontraron datos del usuario');
-            }
-
-            const user = JSON.parse(userDataRaw);
-            if (!user.id) {
-                throw new Error('No se encontró el ID del usuario');
             }
 
             // Preparar datos para enviar
@@ -81,7 +76,7 @@ const PresupuestoForm = ({
                 .replace(/[^\d.,]/g, '') // Remover símbolo de peso y espacios
                 .replace(/\./g, '') // Remover puntos (separadores de miles)
                 .replace(',', '.'); // Convertir coma a punto para decimales
-            
+
             const presupuestoData = {
                 solicitud_id: solicitud.id,
                 profesional_persona_id: user.id, // Asumiendo que el ID del usuario corresponde al ID de la persona
@@ -93,11 +88,11 @@ const PresupuestoForm = ({
 
             // Llamar a la función onSubmit que viene del componente padre
             await onSubmit(presupuestoData);
-            
+
             // Si llegamos aquí, el envío fue exitoso
             setLoading(false);
             handleShowSuccessModal();
-            
+
         } catch (error) {
             console.error('Error al enviar presupuesto:', error);
             setError(error.message || 'Error al enviar el presupuesto');
@@ -109,14 +104,14 @@ const PresupuestoForm = ({
     const formatMonto = (value) => {
         // Remover solo el símbolo de peso y espacios, mantener números, puntos y comas
         const cleaned = value.replace(/[^\d.,]/g, '');
-        
+
         // Si está vacío, retornar vacío
         if (cleaned === '') return '';
-        
+
         // Separar parte entera y decimal
         let integerPart = '';
         let decimalPart = '';
-        
+
         // Si hay coma, separar en parte entera y decimal
         if (cleaned.includes(',')) {
             const parts = cleaned.split(',');
@@ -125,29 +120,29 @@ const PresupuestoForm = ({
         } else {
             integerPart = cleaned;
         }
-        
+
         // Remover puntos de la parte entera (son separadores de miles que el usuario puede haber puesto)
         integerPart = integerPart.replace(/\./g, '');
-        
+
         // Validar que la parte entera sea solo números
         if (!/^\d*$/.test(integerPart)) return '';
-        
+
         // Si no hay parte entera, retornar vacío
         if (integerPart === '') return '';
-        
+
         // Convertir a número para formatear
         const num = parseFloat(integerPart + (decimalPart ? '.' + decimalPart : ''));
         if (isNaN(num)) return '';
-        
+
         // Formatear con separadores de miles
         const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-        
+
         // Construir el resultado
         let result = `$ ${formattedInteger}`;
         if (decimalPart) {
             result += `,${decimalPart}`;
         }
-        
+
         return result;
     };
 
@@ -228,7 +223,7 @@ const PresupuestoForm = ({
         console.log('Mostrando modal de éxito - showSuccessModal será true');
         setShowSuccessModal(true);
         console.log('showSuccessModal establecido a true');
-        
+
         // Cerrar automáticamente después de 3 segundos
         setTimeout(() => {
             console.log('Cerrando modal de éxito automáticamente después de 3 segundos');
@@ -242,7 +237,7 @@ const PresupuestoForm = ({
                 <div className="presupuesto-form-container" onClick={(e) => e.stopPropagation()}>
                     <div className="presupuesto-form-header">
                         <h2>Enviar Presupuesto</h2>
-                        <button 
+                        <button
                             className="close-button"
                             onClick={onClose}
                             disabled={loading}
@@ -381,7 +376,7 @@ const PresupuestoForm = ({
                     </div>
                 </div>
             </div>
-            
+
             {/* Modal de éxito - renderizado fuera del overlay del formulario */}
             {console.log('Renderizando SuccessModal, showSuccessModal:', showSuccessModal)}
             <SuccessModal
