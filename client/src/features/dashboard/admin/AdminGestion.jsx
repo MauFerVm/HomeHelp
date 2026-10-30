@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import { FaSearch, FaStar } from 'react-icons/fa';
 import perfil from '../../../assets/user.png';
 import './adminGestion.css';
+import { STATIC_URL, API_URL } from '../../../services/apiConfig';
 
-const API = 'http://localhost:3002/api/admin';
+const API = `${API_URL}/admin`;
 
 const ESTADOS = [
     { id: 'todos', label: 'Todos' },
@@ -37,7 +38,7 @@ const formatNota = (valor) =>
     });
 
 const fotoSrc = (foto) =>
-    foto ? `http://localhost:3002/uploads/profiles/${foto}` : perfil;
+    foto ? `${STATIC_URL}/uploads/profiles/${foto}` : perfil;
 
 const nombreVisible = (item) => item.nombre_apellido || item.nombre_usuario || 'Sin nombre';
 

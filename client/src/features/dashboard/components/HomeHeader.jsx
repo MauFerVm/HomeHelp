@@ -1,7 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { FaBell, FaUserEdit, FaSignOutAlt } from 'react-icons/fa';
+import { useAuth } from '../../../context/AuthContext';
 import perfil from '../../../assets/user.png';
 import './HomeHeader.css';
+import { STATIC_URL, API_URL } from '../../../services/apiConfig';
 
 const HomeHeader = ({
     userType,
@@ -23,14 +25,10 @@ const HomeHeader = ({
 
     // Cargar notificaciones del usuario
     const fetchNotifications = async () => {
-        const userDataRaw = localStorage.getItem('userData');
-        if (!userDataRaw) return;
+        if (!userData?.id) return;
         try {
-            const parsed = JSON.parse(userDataRaw);
-            if (!parsed?.id) return;
-
             setLoadingNotifications(true);
-            const res = await fetch(`http://localhost:3002/api/notificaciones/usuario/${parsed.id}`);
+            const res = await fetch(`${API_URL}/notificaciones/usuario/${userData.id}`);
             const json = await res.json();
             if (json && json.success && Array.isArray(json.data)) {
                 setNotifications(json.data);
@@ -47,7 +45,7 @@ const HomeHeader = ({
 
     const marcarComoLeida = async (notiId) => {
         try {
-            const res = await fetch(`http://localhost:3002/api/notificaciones/${notiId}/leido`, {
+            const res = await fetch(`${API_URL}/notificaciones/${notiId}/leido`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' }
             });
@@ -75,13 +73,9 @@ const HomeHeader = ({
     };
 
     const marcarTodasComoLeidas = async () => {
-        const userDataRaw = localStorage.getItem('userData');
-        if (!userDataRaw) return;
+        if (!userData?.id) return;
         try {
-            const parsed = JSON.parse(userDataRaw);
-            if (!parsed?.id) return;
-
-            const res = await fetch(`http://localhost:3002/api/notificaciones/marcar-todas/${parsed.id}`, {
+            const res = await fetch(`${API_URL}/notificaciones/marcar-todas/${userData.id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' }
             });
@@ -147,7 +141,7 @@ const HomeHeader = ({
     }, [showProfileMenu]);
 
     const fotoPerfilUrl = userData && userData.foto_perfil
-        ? `http://localhost:3002/uploads/profiles/${userData.foto_perfil}`
+        ? `${STATIC_URL}/uploads/profiles/${userData.foto_perfil}`
         : perfil;
 
     return (

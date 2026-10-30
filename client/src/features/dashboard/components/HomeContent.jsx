@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { FaSearch, FaChevronLeft, FaChevronRight, FaPlus } from 'react-icons/fa';
 import perfil from '../../../assets/user.png';
 import './HomeContent.css';
+import { STATIC_URL, API_URL } from '../../../services/apiConfig';
 
 const HomeContent = ({
     categories = [],
@@ -29,7 +30,7 @@ const HomeContent = ({
 
     const getProfessionalImage = (fotoPerfil) => {
         if (fotoPerfil) {
-            return `http://localhost:3002/uploads/profiles/${fotoPerfil}`;
+            return `${STATIC_URL}/uploads/profiles/${fotoPerfil}`;
         }
         return perfil;
     };
@@ -43,7 +44,7 @@ const HomeContent = ({
             }
             const query = params.toString();
             const response = await fetch(
-                `http://localhost:3002/api/calificaciones/destacados${query ? `?${query}` : ''}`
+                `${API_URL}/calificaciones/destacados${query ? `?${query}` : ''}`
             );
             const data = await response.json();
 

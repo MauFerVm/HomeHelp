@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './trabajoasginado.css';
 import CalificacionModal from '../../components/CalificacionModal';
 import ConfirmModal from '../../components/ConfirmModal';
 import CalificacionSuccessModal from '../../components/CalificacionSuccessModal';
+import { STATIC_URL, API_URL } from '../../services/apiConfig';
 import {
     FaArrowLeft,
     FaMapMarkerAlt,
@@ -69,7 +70,7 @@ const TrabajosAsignados = ({
             if (userData?.id) {
                 try {
                     console.log('Obteniendo persona_id para usuario_id:', userData.id);
-                    const response = await fetch(`http://localhost:3002/api/auth/persona/${userData.id}`);
+                    const response = await fetch(`${API_URL}/auth/persona/${userData.id}`);
                     const data = await response.json();
                     
                     console.log('Respuesta de persona:', data);
@@ -119,7 +120,7 @@ const TrabajosAsignados = ({
             }
 
             console.log('Obteniendo órdenes de trabajo para profesional_id:', personaId);
-            const response = await fetch(`http://localhost:3002/api/ordenes/profesional/${personaId}`);
+            const response = await fetch(`${API_URL}/ordenes/profesional/${personaId}`);
             const data = await response.json();
 
             console.log('Respuesta de órdenes de trabajo:', data);
@@ -140,7 +141,7 @@ const TrabajosAsignados = ({
                         .map(async (orden) => {
                             try {
                                 const response = await fetch(
-                                    `http://localhost:3002/api/calificaciones/verificar?solicitud_id=${orden.solicitud_id}&calificador_persona_id=${personaId}&calificado_persona_id=${orden.cliente_persona_id}`
+                                    `${API_URL}/calificaciones/verificar?solicitud_id=${orden.solicitud_id}&calificador_persona_id=${personaId}&calificado_persona_id=${orden.cliente_persona_id}`
                                 );
                                 const data = await response.json();
                                 calificacionesMap[orden.id] = data.success && data.data.existe;
@@ -172,7 +173,7 @@ const TrabajosAsignados = ({
         if (orden.estado === 'completado' && personaId && orden.cliente_persona_id) {
             try {
                 const response = await fetch(
-                    `http://localhost:3002/api/calificaciones/verificar?solicitud_id=${orden.solicitud_id}&calificador_persona_id=${personaId}&calificado_persona_id=${orden.cliente_persona_id}`
+                    `${API_URL}/calificaciones/verificar?solicitud_id=${orden.solicitud_id}&calificador_persona_id=${personaId}&calificado_persona_id=${orden.cliente_persona_id}`
                 );
                 const data = await response.json();
                 setYaCalificado(data.success && data.data.existe);
@@ -218,7 +219,7 @@ const TrabajosAsignados = ({
 
         try {
             setCerrandoOrden(true);
-            const response = await fetch(`http://localhost:3002/api/ordenes/${selectedOrden.id}/estado`, {
+            const response = await fetch(`${API_URL}/ordenes/${selectedOrden.id}/estado`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -258,7 +259,7 @@ const TrabajosAsignados = ({
 
         try {
             setCerrandoOrden(true);
-            const response = await fetch(`http://localhost:3002/api/ordenes/${selectedOrden.id}/estado`, {
+            const response = await fetch(`${API_URL}/ordenes/${selectedOrden.id}/estado`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -299,7 +300,7 @@ const TrabajosAsignados = ({
 
         try {
             setCancelandoOrden(true);
-            const response = await fetch(`http://localhost:3002/api/ordenes/${orden.id}/cancelar`, {
+            const response = await fetch(`${API_URL}/ordenes/${orden.id}/cancelar`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { FaTimes, FaSpinner } from 'react-icons/fa';
 import api from '../services/api';
 import UsuarioFields from '../features/auth/UsuarioFields';
 import PerfilGuardadoModal from './PerfilGuardadoModal';
 import './ModificarPerfilForm.css';
+import { STATIC_URL, API_URL } from '../services/apiConfig';
 
 const truncateText = (text, max = 80) => {
   const value = String(text || '').trim();
@@ -257,7 +258,7 @@ const ModificarPerfilForm = ({ isOpen, onClose, userType, usuarioId, onSuccess }
         });
       }
 
-      const res = await fetch(`http://localhost:3002/api/auth/perfil/${usuarioId}`, {
+      const res = await fetch(`${API_URL}/auth/perfil/${usuarioId}`, {
         method: 'PUT',
         body: payload
       });

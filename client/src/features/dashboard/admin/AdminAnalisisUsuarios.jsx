@@ -1,7 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import './adminGestion.css';
+import { STATIC_URL, API_URL } from '../../../services/apiConfig';
 
-const API = 'http://localhost:3002/api/admin/analisis-usuarios';
+const API = `${API_URL}/admin/analisis-usuarios`;
 
 const PERIODOS = [
     { id: '1a', label: '1 año' },

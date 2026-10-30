@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { FaStar, FaTimes } from 'react-icons/fa';
 import './CalificacionModal.css';
+import { STATIC_URL, API_URL } from '../services/apiConfig';
 
 const CalificacionModal = ({
     isOpen,
@@ -30,7 +31,7 @@ const CalificacionModal = ({
     const verificarCalificacion = async () => {
         try {
             const response = await fetch(
-                `http://localhost:3002/api/calificaciones/verificar?solicitud_id=${solicitudId}&calificador_persona_id=${calificadorPersonaId}&calificado_persona_id=${calificadoPersonaId}`
+                `${API_URL}/calificaciones/verificar?solicitud_id=${solicitudId}&calificador_persona_id=${calificadorPersonaId}&calificado_persona_id=${calificadoPersonaId}`
             );
             const data = await response.json();
             
@@ -59,7 +60,7 @@ const CalificacionModal = ({
             setEnviando(true);
             setError(null);
 
-            const response = await fetch('http://localhost:3002/api/calificaciones', {
+            const response = await fetch(`${API_URL}/calificaciones`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

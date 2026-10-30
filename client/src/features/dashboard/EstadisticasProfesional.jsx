@@ -1,9 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+﻿import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import DatePicker from 'react-datepicker';
 import { registerLocale, setDefaultLocale } from 'react-datepicker';
 import es from 'date-fns/locale/es';
 import { format } from 'date-fns';
 import 'react-datepicker/dist/react-datepicker.css';
+import { STATIC_URL, API_URL } from '../../services/apiConfig';
 import {
     FaBriefcase,
     FaChartBar,
@@ -341,7 +342,7 @@ const EstadisticasProfesional = () => {
                     return;
                 }
 
-                const personaRes = await fetch(`http://localhost:3002/api/auth/persona/${user.id}`);
+                const personaRes = await fetch(`${API_URL}/auth/persona/${user.id}`);
                 const personaJson = await personaRes.json();
                 if (!personaJson?.success || !personaJson.data?.id) {
                     setPersonaError('No se pudo obtener la persona asociada al usuario.');
@@ -376,7 +377,7 @@ const EstadisticasProfesional = () => {
 
             const params = buildQueryParams(periodoIngresos, fechaDesdeIngresos, fechaHastaIngresos);
             const response = await fetch(
-                `http://localhost:3002/api/estadisticas/ingresos/${personaId}?${params.toString()}`
+                `${API_URL}/estadisticas/ingresos/${personaId}?${params.toString()}`
             );
             const json = await response.json();
 
@@ -414,7 +415,7 @@ const EstadisticasProfesional = () => {
 
             const params = buildQueryParams(periodo, fechaDesde, fechaHasta);
             const response = await fetch(
-                `http://localhost:3002/api/estadisticas/comparacion-presupuestos/${personaId}?${params.toString()}`
+                `${API_URL}/estadisticas/comparacion-presupuestos/${personaId}?${params.toString()}`
             );
             const json = await response.json();
 
@@ -456,7 +457,7 @@ const EstadisticasProfesional = () => {
                 filtrosCalif.fechaHasta
             );
             const response = await fetch(
-                `http://localhost:3002/api/estadisticas/calificaciones/${personaId}?${params.toString()}`
+                `${API_URL}/estadisticas/calificaciones/${personaId}?${params.toString()}`
             );
             const json = await response.json();
 

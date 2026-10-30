@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../trabajos asignados/trabajoasginado.css';
+import { STATIC_URL, API_URL } from '../../services/apiConfig';
 import {
     FaArrowLeft,
     FaMapMarkerAlt,
@@ -46,7 +47,7 @@ const TrabajosCancelados = ({ isTab = false }) => {
         const fetchPersonaId = async () => {
             if (userData?.id) {
                 try {
-                    const response = await fetch(`http://localhost:3002/api/auth/persona/${userData.id}`);
+                    const response = await fetch(`${API_URL}/auth/persona/${userData.id}`);
                     const data = await response.json();
 
                     if (data.success && data.data) {
@@ -86,7 +87,7 @@ const TrabajosCancelados = ({ isTab = false }) => {
                 throw new Error('No se encontró el ID del profesional');
             }
 
-            const response = await fetch(`http://localhost:3002/api/ordenes/profesional/${personaId}`);
+            const response = await fetch(`${API_URL}/ordenes/profesional/${personaId}`);
             const data = await response.json();
 
             if (data.success) {

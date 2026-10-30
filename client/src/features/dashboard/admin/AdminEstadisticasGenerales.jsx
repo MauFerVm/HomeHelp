@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import './adminGestion.css';
+import { STATIC_URL, API_URL } from '../../../services/apiConfig';
 
-const API = 'http://localhost:3002/api/admin/estadisticas-generales';
+const API = `${API_URL}/admin/estadisticas-generales`;
 
 const COLORES = ['#a74924', '#2a9d8f', '#c9a227', '#3dbe7a', '#5b8def', '#d64545', '#c77dff'];
 

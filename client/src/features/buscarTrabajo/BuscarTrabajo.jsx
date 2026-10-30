@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import './BuscarTrabajo.css';
 import PresupuestoForm from '../../components/PresupuestoForm';
+import { STATIC_URL, API_URL } from '../../services/apiConfig';
 import {
     FaArrowLeft,
     FaMapMarkerAlt,
@@ -76,7 +77,7 @@ const BuscarTrabajo = ({
 
     const fetchPrioridadesDisponibles = async () => {
         try {
-            const response = await fetch('http://localhost:3002/api/solicitudes/prioridades');
+            const response = await fetch(`${API_URL}/solicitudes/prioridades`);
             const data = await response.json();
             
             if (data.success) {
@@ -93,7 +94,7 @@ const BuscarTrabajo = ({
         try {
             const verificaciones = solicitudes.map(async (solicitud) => {
                 try {
-                    const response = await fetch(`http://localhost:3002/api/presupuestos/verificar/${solicitud.id}/${userData.id}`);
+                    const response = await fetch(`${API_URL}/presupuestos/verificar/${solicitud.id}/${userData.id}`);
                     const data = await response.json();
                     
                     if (data.success) {
@@ -158,7 +159,7 @@ const BuscarTrabajo = ({
             if (filtros.fechaDesde) queryParams.append('fechaDesde', filtros.fechaDesde);
             if (filtros.fechaHasta) queryParams.append('fechaHasta', filtros.fechaHasta);
 
-            const url = `http://localhost:3002/api/solicitudes/disponibles/${user.id}${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+            const url = `${API_URL}/solicitudes/disponibles/${user.id}${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
 
             // Usar el nuevo endpoint específico para profesionales
             const response = await fetch(url);
@@ -199,7 +200,7 @@ const BuscarTrabajo = ({
 
     const handleEnviarPresupuesto = async (presupuestoData) => {
         try {
-            const response = await fetch('http://localhost:3002/api/presupuestos', {
+            const response = await fetch(`${API_URL}/presupuestos`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -678,7 +679,7 @@ const BuscarTrabajo = ({
                                 <div className="detalle-section">
                                     <h4>Foto del Problema</h4>
                                     <img 
-                                        src={`http://localhost:3002${selectedSolicitud.solicitud.foto}`}
+                                        src={`${STATIC_URL}${selectedSolicitud.solicitud.foto}`}
                                         alt="Foto del problema"
                                         className="problema-foto"
                                     />

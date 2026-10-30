@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { FaHeart, FaSpinner } from 'react-icons/fa';
 import './ProfesionalesFavoritos.css';
 import perfil from '../../assets/user.png';
+import { STATIC_URL, API_URL } from '../../services/apiConfig';
 
 const ProfesionalesFavoritos = () => {
     const [loading, setLoading] = useState(true);
@@ -20,14 +21,14 @@ const ProfesionalesFavoritos = () => {
                 }
 
                 const userData = JSON.parse(storedUserData);
-                const personaResponse = await fetch(`http://localhost:3002/api/auth/persona/${userData.id}`);
+                const personaResponse = await fetch(`${API_URL}/auth/persona/${userData.id}`);
                 const personaData = await personaResponse.json();
 
                 if (!personaData.success || !personaData.data?.id) {
                     throw new Error('No se pudo identificar al cliente');
                 }
 
-                const response = await fetch(`http://localhost:3002/api/favoritos/cliente/${personaData.data.id}`);
+                const response = await fetch(`${API_URL}/favoritos/cliente/${personaData.data.id}`);
                 const data = await response.json();
 
                 if (!data.success) {
@@ -48,7 +49,7 @@ const ProfesionalesFavoritos = () => {
 
     const getFoto = (fotoPerfil) => {
         if (fotoPerfil) {
-            return `http://localhost:3002/uploads/profiles/${fotoPerfil}`;
+            return `${STATIC_URL}/uploads/profiles/${fotoPerfil}`;
         }
         return perfil;
     };

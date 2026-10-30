@@ -1,9 +1,11 @@
-import React, { useState, useEffect, lazy, Suspense } from 'react';
+﻿import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { esSeccionDesdeMail } from '../../utils/seccionesMail';
+import { useAuth } from '../../context/AuthContext';
 import './HomeLayout.css';
 import { FaBars } from 'react-icons/fa';
 import perfil from '../../assets/user.png';
+import { STATIC_URL, API_URL } from '../../services/apiConfig';
 
 // Subcomponentes modulares de la interfaz
 import HomeHeader from './components/HomeHeader';
@@ -42,6 +44,15 @@ const LoadingFallback = () => (
 const HomeLayout = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
+
+    // -----------------------------------------------------------------------
+    // Auth centralizado
+    // -----------------------------------------------------------------------
+    const { user: userData, userType, logout, updateUser } = useAuth();
+
+    // -----------------------------------------------------------------------
+    // Estado local de UI
+    // -----------------------------------------------------------------------
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [categories, setCategories] = useState([]);
     const [loadingCategories, setLoadingCategories] = useState(true);
@@ -50,33 +61,11 @@ const HomeLayout = () => {
 
     // El administrador entra directo a la gestión de usuarios
     const [activeTab, setActiveTab] = useState(() => {
-        const storedUserType = localStorage.getItem('userType') || 'cliente';
         const seccion = new URLSearchParams(window.location.search).get('seccion');
-        if (seccion && esSeccionDesdeMail(seccion) && localStorage.getItem('userData')) {
+        if (seccion && esSeccionDesdeMail(seccion) && userData) {
             return seccion;
         }
-        return storedUserType === 'admin' ? 'usuarios' : 'dashboard';
-    });
-
-    // Estado para el tipo de usuario (cliente, profesional o admin)
-    const [userType, setUserType] = useState(() => {
-        const storedUserType = localStorage.getItem('userType') || 'cliente';
-        console.log('userType obtenido del localStorage:', storedUserType);
-        return storedUserType;
-    });
-
-    // Información del usuario autenticado
-    const [userData, setUserData] = useState(() => {
-        const storedUserData = localStorage.getItem('userData');
-        if (storedUserData) {
-            try {
-                return JSON.parse(storedUserData);
-            } catch (error) {
-                console.error('Error al parsear userData:', error);
-                return null;
-            }
-        }
-        return null;
+        return userType === 'admin' ? 'usuarios' : 'dashboard';
     });
 
     // Redirección si viene con query param 'seccion' desde un email
@@ -84,32 +73,20 @@ const HomeLayout = () => {
         const seccion = searchParams.get('seccion');
         if (!seccion || !esSeccionDesdeMail(seccion)) return;
 
-        if (!localStorage.getItem('userData')) {
+        if (!userData) {
             navigate(`/?seccion=${encodeURIComponent(seccion)}`, { replace: true });
             return;
         }
 
         setActiveTab(seccion);
         navigate('/main', { replace: true });
-    }, [searchParams, navigate]);
-
-    // Sincronizar userType con localStorage
-    useEffect(() => {
-        const storedUserType = localStorage.getItem('userType');
-        if (storedUserType && storedUserType !== userType) {
-            console.log('Actualizando userType desde localStorage:', storedUserType);
-            setUserType(storedUserType);
-            if (storedUserType === 'admin') {
-                setActiveTab('usuarios');
-            }
-        }
-    }, [userType]);
+    }, [searchParams, navigate, userData]);
 
     // Cargar categorías activas (solo para clientes y profesionales)
     const fetchActiveCategories = async () => {
         try {
             setLoadingCategories(true);
-            const response = await fetch('http://localhost:3002/api/categories/active');
+            const response = await fetch(`${API_URL}/categories/active`);
             const data = await response.json();
 
             if (data.success) {
@@ -117,7 +94,7 @@ const HomeLayout = () => {
                     id: category.id,
                     name: category.nombre,
                     image: category.imagen
-                        ? `http://localhost:3002/uploads/categorias/${category.imagen}`
+                        ? `${STATIC_URL}/uploads/categorias/${category.imagen}`
                         : perfil,
                     estado: category.estado
                 }));
@@ -178,16 +155,12 @@ const HomeLayout = () => {
     const toggleMobileMenu = () => setMobileMenuOpen(prev => !prev);
     const closeMobileMenu = () => setMobileMenuOpen(false);
 
-    const handleLogout = () => {
-        localStorage.removeItem('userType');
-        localStorage.removeItem('userData');
-        navigate('/');
-    };
+    /** Delega el logout al AuthContext (limpia estado + localStorage + redirige) */
+    const handleLogout = () => logout();
 
+    /** Fusiona cambios del perfil en el AuthContext */
     const handlePerfilSuccess = (updatedData) => {
-        const merged = { ...userData, ...updatedData };
-        setUserData(merged);
-        localStorage.setItem('userData', JSON.stringify(merged));
+        updateUser(updatedData);
     };
 
     const handleOpenProblemaForm = () => setShowProblemaForm(true);
@@ -320,4 +293,3 @@ const HomeLayout = () => {
 };
 
 export default HomeLayout;
-

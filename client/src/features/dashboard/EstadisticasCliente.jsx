@@ -1,9 +1,10 @@
-import React, { useCallback, useEffect, useState } from 'react';
+﻿import React, { useCallback, useEffect, useState } from 'react';
 import DatePicker from 'react-datepicker';
 import { registerLocale, setDefaultLocale } from 'react-datepicker';
 import es from 'date-fns/locale/es';
 import { format } from 'date-fns';
 import 'react-datepicker/dist/react-datepicker.css';
+import { STATIC_URL, API_URL } from '../../services/apiConfig';
 import {
     FaChartBar,
     FaChevronDown,
@@ -429,8 +430,8 @@ const EstadisticasCliente = () => {
                 }
 
                 const [personaRes, clienteRes] = await Promise.all([
-                    fetch(`http://localhost:3002/api/auth/persona/${user.id}`),
-                    fetch(`http://localhost:3002/api/auth/cliente/${user.id}`)
+                    fetch(`${API_URL}/auth/persona/${user.id}`),
+                    fetch(`${API_URL}/auth/cliente/${user.id}`)
                 ]);
                 const personaJson = await personaRes.json();
                 const clienteJson = await clienteRes.json();
@@ -459,7 +460,7 @@ const EstadisticasCliente = () => {
 
         const cargarCalificacion = async () => {
             try {
-                const response = await fetch(`http://localhost:3002/api/calificaciones/persona/${personaId}`);
+                const response = await fetch(`${API_URL}/calificaciones/persona/${personaId}`);
                 const json = await response.json();
                 const lista = json?.success && Array.isArray(json.data) ? json.data : [];
                 const total = lista.length;
@@ -495,7 +496,7 @@ const EstadisticasCliente = () => {
 
             const params = buildQueryParams(periodo, fechaDesde, fechaHasta, tipoProfesionalId);
             const response = await fetch(
-                `http://localhost:3002/api/estadisticas/gastos/${personaId}?${params.toString()}`
+                `${API_URL}/estadisticas/gastos/${personaId}?${params.toString()}`
             );
             const json = await response.json();
 
@@ -533,7 +534,7 @@ const EstadisticasCliente = () => {
 
             const params = buildQueryParams(periodoSolicitudes, fechaDesdeSolicitudes, fechaHastaSolicitudes);
             const response = await fetch(
-                `http://localhost:3002/api/estadisticas/solicitudes/${personaId}?${params.toString()}`
+                `${API_URL}/estadisticas/solicitudes/${personaId}?${params.toString()}`
             );
             const json = await response.json();
 
@@ -618,7 +619,7 @@ const EstadisticasCliente = () => {
                     <img
                         className="est-cliente-foto"
                         src={cliente.foto_perfil
-                            ? `http://localhost:3002/uploads/profiles/${cliente.foto_perfil}`
+                            ? `${STATIC_URL}/uploads/profiles/${cliente.foto_perfil}`
                             : perfil}
                         alt={cliente.nombre_apellido || 'Cliente'}
                     />

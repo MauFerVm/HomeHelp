@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../trabajos asignados/trabajoasginado.css';
 import CalificacionModal from '../../components/CalificacionModal';
@@ -6,6 +6,7 @@ import ConfirmModal from '../../components/ConfirmModal';
 import CalificacionSuccessModal from '../../components/CalificacionSuccessModal';
 import SuccessModal from '../../components/SuccessModal';
 import CalendarioHorarios from '../../components/CalendarioHorarios';
+import { STATIC_URL, API_URL } from '../../services/apiConfig';
 import {
     FaArrowLeft,
     FaMapMarkerAlt,
@@ -81,7 +82,7 @@ const MisServicios = ({
             if (userData?.id) {
                 try {
                     console.log('Obteniendo persona_id para usuario_id:', userData.id);
-                    const response = await fetch(`http://localhost:3002/api/auth/persona/${userData.id}`);
+                    const response = await fetch(`${API_URL}/auth/persona/${userData.id}`);
                     const data = await response.json();
                     
                     console.log('Respuesta de persona:', data);
@@ -132,7 +133,7 @@ const MisServicios = ({
             }
 
             console.log('Obteniendo órdenes de trabajo para cliente_id:', personaId);
-            const response = await fetch(`http://localhost:3002/api/ordenes/cliente/${personaId}`);
+            const response = await fetch(`${API_URL}/ordenes/cliente/${personaId}`);
             const data = await response.json();
 
             console.log('Respuesta de órdenes de trabajo:', data);
@@ -153,7 +154,7 @@ const MisServicios = ({
                         .map(async (orden) => {
                             try {
                                 const response = await fetch(
-                                    `http://localhost:3002/api/calificaciones/verificar?solicitud_id=${orden.solicitud_id}&calificador_persona_id=${personaId}&calificado_persona_id=${orden.profesional_id}`
+                                    `${API_URL}/calificaciones/verificar?solicitud_id=${orden.solicitud_id}&calificador_persona_id=${personaId}&calificado_persona_id=${orden.profesional_id}`
                                 );
                                 const data = await response.json();
                                 calificacionesMap[orden.id] = data.success && data.data.existe;
@@ -185,7 +186,7 @@ const MisServicios = ({
         if (orden.estado === 'completado' && personaId && orden.profesional_id) {
             try {
                 const response = await fetch(
-                    `http://localhost:3002/api/calificaciones/verificar?solicitud_id=${orden.solicitud_id}&calificador_persona_id=${personaId}&calificado_persona_id=${orden.profesional_id}`
+                    `${API_URL}/calificaciones/verificar?solicitud_id=${orden.solicitud_id}&calificador_persona_id=${personaId}&calificado_persona_id=${orden.profesional_id}`
                 );
                 const data = await response.json();
                 setYaCalificado(data.success && data.data.existe);
@@ -210,7 +211,7 @@ const MisServicios = ({
     const fetchFavoritos = async () => {
         if (!personaId) return;
         try {
-            const response = await fetch(`http://localhost:3002/api/favoritos/cliente/${personaId}`);
+            const response = await fetch(`${API_URL}/favoritos/cliente/${personaId}`);
             const data = await response.json();
             if (data.success && Array.isArray(data.data)) {
                 setFavoritosIds(new Set(data.data.map((item) => Number(item.profesional_id))));
@@ -221,7 +222,7 @@ const MisServicios = ({
     };
 
     const agregarFavorito = async (profesionalId) => {
-        const response = await fetch('http://localhost:3002/api/favoritos', {
+        const response = await fetch(`${API_URL}/favoritos`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -308,7 +309,7 @@ const MisServicios = ({
 
         try {
             setCerrandoOrden(true);
-            const response = await fetch(`http://localhost:3002/api/ordenes/${selectedOrden.id}/estado`, {
+            const response = await fetch(`${API_URL}/ordenes/${selectedOrden.id}/estado`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -348,7 +349,7 @@ const MisServicios = ({
 
         try {
             setCerrandoOrden(true);
-            const response = await fetch(`http://localhost:3002/api/ordenes/${selectedOrden.id}/estado`, {
+            const response = await fetch(`${API_URL}/ordenes/${selectedOrden.id}/estado`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -464,7 +465,7 @@ const MisServicios = ({
 
         try {
             setCancelandoOrden(true);
-            const response = await fetch(`http://localhost:3002/api/ordenes/${orden.id}/cancelar-cliente`, {
+            const response = await fetch(`${API_URL}/ordenes/${orden.id}/cancelar-cliente`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -505,7 +506,7 @@ const MisServicios = ({
             setReprogramandoHorario(true);
 
             const response = await fetch(
-                `http://localhost:3002/api/ordenes/${ordenParaReprogramar.id}/reprogramar`,
+                `${API_URL}/ordenes/${ordenParaReprogramar.id}/reprogramar`,
                 {
                     method: 'PUT',
                     headers: {

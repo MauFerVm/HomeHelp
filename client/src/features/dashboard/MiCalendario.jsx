@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
+import { STATIC_URL, API_URL } from '../../services/apiConfig';
 import {
     FaChevronLeft,
     FaChevronRight,
@@ -229,7 +230,7 @@ const MiCalendario = () => {
 
             const fetchPersonaId = async () => {
                 try {
-                    const response = await fetch(`http://localhost:3002/api/auth/persona/${userData.id}`);
+                    const response = await fetch(`${API_URL}/auth/persona/${userData.id}`);
                     const data = await response.json();
                     if (data.success && data.data) {
                         setPersonaId(data.data.id);
@@ -257,7 +258,7 @@ const MiCalendario = () => {
                 }
 
                 const response = await fetch(
-                    `http://localhost:3002/api/ordenes/profesional/${personaId}?fechaInicio=${rangoInicio}&fechaFin=${rangoFin}`
+                    `${API_URL}/ordenes/profesional/${personaId}?fechaInicio=${rangoInicio}&fechaFin=${rangoFin}`
                 );
                 const data = await response.json();
 
@@ -277,7 +278,7 @@ const MiCalendario = () => {
         const fetchConfiguracionHorarios = async () => {
             try {
                 const response = await fetch(
-                    `http://localhost:3002/api/horarios/profesional/${personaId}/configuracion`
+                    `${API_URL}/horarios/profesional/${personaId}/configuracion`
                 );
                 const data = await response.json();
 

@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 import { FaChevronLeft, FaChevronRight, FaClock, FaCheck, FaExclamationTriangle } from 'react-icons/fa';
 import './CalendarioHorarios.css';
+import { STATIC_URL, API_URL } from '../services/apiConfig';
 
 // ─── Constantes de la escala temporal ────────────────────────────────────────
 const HORA_INICIO_DIA = 8;   // 08:00
@@ -144,9 +145,9 @@ const CalendarioHorarios = ({
             setLoading(true);
             setError('');
             const fechaInicio = getFechaInicioSemana(offsetSemanas);
-            let urlDisponibles = `http://localhost:3002/api/horarios/profesional/${profesionalId}/disponibles?fechaInicio=${fechaInicio}&duracion=${duracion}`;
+            let urlDisponibles = `${API_URL}/horarios/profesional/${profesionalId}/disponibles?fechaInicio=${fechaInicio}&duracion=${duracion}`;
             if (ordenId) urlDisponibles += `&ordenId=${ordenId}`;
-            const urlConfig = `http://localhost:3002/api/horarios/profesional/${profesionalId}/configuracion`;
+            const urlConfig = `${API_URL}/horarios/profesional/${profesionalId}/configuracion`;
 
             const [resDisp, resConf] = await Promise.allSettled([
                 fetch(urlDisponibles).then(r => r.json()),

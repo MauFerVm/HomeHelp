@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { FaTimes, FaUpload, FaSpinner, FaCheck } from 'react-icons/fa';
 import './PublicarProblemaForm.css';
+import { STATIC_URL, API_URL } from '../services/apiConfig';
 
 const PublicarProblemaForm = ({ isOpen, onClose, onSubmit }) => {
   const [formData, setFormData] = useState({
@@ -44,7 +45,7 @@ const PublicarProblemaForm = ({ isOpen, onClose, onSubmit }) => {
   const fetchTiposTrabajo = async () => {
     try {
       setLoadingData(true);
-      const response = await fetch('http://localhost:3002/api/solicitudes/tipos-trabajo');
+      const response = await fetch(`${API_URL}/solicitudes/tipos-trabajo`);
       const data = await response.json();
       
       if (data.success) {
@@ -62,14 +63,14 @@ const PublicarProblemaForm = ({ isOpen, onClose, onSubmit }) => {
   const fetchLocalidades = async () => {
     try {
       // Obtener todas las localidades de todas las provincias
-      const response = await fetch('http://localhost:3002/api/location/provincias');
+      const response = await fetch(`${API_URL}/location/provincias`);
       const provinciasData = await response.json();
       
       if (Array.isArray(provinciasData)) {
         // Obtener localidades de todas las provincias
         const allLocalidades = [];
         for (const provincia of provinciasData) {
-          const localidadesResponse = await fetch(`http://localhost:3002/api/location/localidades/${provincia.id}`);
+          const localidadesResponse = await fetch(`${API_URL}/location/localidades/${provincia.id}`);
           const localidadesData = await localidadesResponse.json();
           if (Array.isArray(localidadesData)) {
             allLocalidades.push(...localidadesData);
@@ -98,7 +99,7 @@ const PublicarProblemaForm = ({ isOpen, onClose, onSubmit }) => {
       }
 
       // Hacer una consulta directa a la base de datos para obtener los datos del cliente
-      const response = await fetch(`http://localhost:3002/api/auth/cliente/${user.id}`);
+      const response = await fetch(`${API_URL}/auth/cliente/${user.id}`);
       const data = await response.json();
       
       if (data.success) {
@@ -123,7 +124,7 @@ const PublicarProblemaForm = ({ isOpen, onClose, onSubmit }) => {
 
   const getPersonaIdByUsuarioId = async (usuarioId) => {
     try {
-      const response = await fetch(`http://localhost:3002/api/auth/persona/${usuarioId}`);
+      const response = await fetch(`${API_URL}/auth/persona/${usuarioId}`);
       const data = await response.json();
       
       if (data.success) {
@@ -255,7 +256,7 @@ const PublicarProblemaForm = ({ isOpen, onClose, onSubmit }) => {
         submitData.append('foto', formData.foto);
       }
 
-      const response = await fetch('http://localhost:3002/api/solicitudes', {
+      const response = await fetch(`${API_URL}/solicitudes`, {
         method: 'POST',
         body: submitData
       });

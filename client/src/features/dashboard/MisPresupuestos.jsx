@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import DatePicker from 'react-datepicker';
 import { registerLocale, setDefaultLocale } from 'react-datepicker';
 import es from 'date-fns/locale/es';
@@ -8,6 +8,7 @@ import { FaClock, FaExclamationTriangle, FaCheckCircle, FaEye, FaFilter, FaCheck
 import { minutosToHHMM } from '../../utils/timeUtils';
 import CalendarioHorarios from '../../components/CalendarioHorarios';
 import '../../components/HorarioConfirmadoModal.css';
+import { STATIC_URL, API_URL } from '../../services/apiConfig';
 
 // Registrar el locale en español
 registerLocale('es', es);
@@ -62,7 +63,7 @@ const MisPresupuestos = () => {
     useEffect(() => {
         const fetchPrioridadesDisponibles = async () => {
             try {
-                const response = await fetch('http://localhost:3002/api/solicitudes/prioridades');
+                const response = await fetch(`${API_URL}/solicitudes/prioridades`);
                 const data = await response.json();
                 
                 if (data.success) {
@@ -98,7 +99,7 @@ const MisPresupuestos = () => {
                 }
 
                 // Obtener persona_id del cliente a partir de usuario.id
-                const personaRes = await fetch(`http://localhost:3002/api/auth/persona/${user.id}`);
+                const personaRes = await fetch(`${API_URL}/auth/persona/${user.id}`);
                 const personaJson = await personaRes.json();
                 if (!personaJson || personaJson.success === false || !personaJson.data?.id) {
                     setError('No se pudo obtener la persona asociada al usuario.');
@@ -108,14 +109,14 @@ const MisPresupuestos = () => {
                 const clientePersonaId = personaJson.data.id;
 
                 // Traer solicitudes del cliente
-                const solRes = await fetch(`http://localhost:3002/api/solicitudes/cliente/${clientePersonaId}`);
+                const solRes = await fetch(`${API_URL}/solicitudes/cliente/${clientePersonaId}`);
                 const solJson = await solRes.json();
                 const solicitudes = Array.isArray(solJson?.data) ? solJson.data : [];
 
                 // Para cada solicitud, traer sus presupuestos
                 const solicitudesAgrupadas = await Promise.all(
                     solicitudes.map(async (sol) => {
-                        const presuRes = await fetch(`http://localhost:3002/api/presupuestos/solicitud/${sol.id}`);
+                        const presuRes = await fetch(`${API_URL}/presupuestos/solicitud/${sol.id}`);
                         const presuJson = await presuRes.json();
                         const presupuestos = Array.isArray(presuJson?.data) ? presuJson.data : [];
                         return { solicitud: sol, presupuestos };
@@ -301,7 +302,7 @@ const MisPresupuestos = () => {
             setConfirmandoHorario(true);
             
             const response = await fetch(
-                `http://localhost:3002/api/horarios/presupuesto/${presupuestoSeleccionado.id}/confirmar`,
+                `${API_URL}/horarios/presupuesto/${presupuestoSeleccionado.id}/confirmar`,
                 {
                     method: 'POST',
                     headers: {
@@ -512,7 +513,7 @@ const MisPresupuestos = () => {
                                                         <div className="presupuesto-pro-info">
                                                             {p.profesional_foto ? (
                                                                 <img
-                                                                    src={`http://localhost:3002/uploads/profiles/${p.profesional_foto}`}
+                                                                    src={`${STATIC_URL}/uploads/profiles/${p.profesional_foto}`}
                                                                     alt={p.profesional_nombre || 'Profesional'}
                                                                     className="presupuesto-pro-avatar"
                                                                 />
@@ -557,7 +558,7 @@ const MisPresupuestos = () => {
                                 <div className="presupuesto-pro-info" style={{ marginTop: 8 }}>
                                     {presupuestoSeleccionado.profesional_foto ? (
                                         <img
-                                            src={`http://localhost:3002/uploads/profiles/${presupuestoSeleccionado.profesional_foto}`}
+                                            src={`${STATIC_URL}/uploads/profiles/${presupuestoSeleccionado.profesional_foto}`}
                                             alt={presupuestoSeleccionado.profesional_nombre || 'Profesional'}
                                             className="presupuesto-pro-avatar"
                                         />

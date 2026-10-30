@@ -3,6 +3,7 @@ import './Login.css';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { esSeccionDesdeMail } from '../../utils/seccionesMail';
 import api from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 import video from '../../assets/video.mp4';
 import logo from '../../assets/logo.png';
 import { FaUserShield } from 'react-icons/fa';
@@ -16,6 +17,7 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { login } = useAuth();
 
   const loginUser = async (e) => {
     e.preventDefault();
@@ -24,17 +26,16 @@ const Login = () => {
         LoginUserName: loginUserName,
         LoginPassword: loginPassword,
       });
-      
-      // Guardar la información completa del usuario en localStorage
+
       if (res.data) {
-        localStorage.setItem('userType', res.data.rol || 'cliente');
-        localStorage.setItem('userData', JSON.stringify(res.data));
+        // Delegar la persistencia al AuthContext
+        login(res.data);
         console.log('Usuario autenticado:', res.data);
       } else {
         console.warn('No se recibió información del usuario del servidor');
-        localStorage.setItem('userType', 'cliente');
+        login({ rol: 'cliente' });
       }
-      
+
       const seccion = searchParams.get('seccion');
       navigate(seccion && esSeccionDesdeMail(seccion)
         ? `/main?seccion=${encodeURIComponent(seccion)}`
@@ -65,7 +66,7 @@ const Login = () => {
             <Link to={'/registro'}>
               <button className='btn'>Regístrate</button>
             </Link>
-            
+
           </div>
         </div>
 

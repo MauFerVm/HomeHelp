@@ -1,8 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import { FaSearch } from 'react-icons/fa';
 import './adminGestion.css';
+import { STATIC_URL, API_URL } from '../../../services/apiConfig';
 
-const API = 'http://localhost:3002/api/categories';
+const API = `${API_URL}/categories`;
 
 const ESTADOS = [
     { id: 'todos', label: 'Todas' },
@@ -23,7 +24,7 @@ const Estado = ({ activo }) => (
 );
 
 const imagenSrc = (imagen) => (
-    imagen ? `http://localhost:3002/uploads/categorias/${imagen}` : ''
+    imagen ? `${STATIC_URL}/uploads/categorias/${imagen}` : ''
 );
 
 const AdminCategorias = () => {
