@@ -3,7 +3,7 @@ import DatePicker from 'react-datepicker';
 import { registerLocale, setDefaultLocale } from 'react-datepicker';
 import es from 'date-fns/locale/es';
 import 'react-datepicker/dist/react-datepicker.css';
-import './dashboard.css';
+import './HomeLayout.css';
 import { FaClock, FaExclamationTriangle, FaCheckCircle, FaEye, FaFilter, FaCheck } from 'react-icons/fa';
 import { minutosToHHMM } from '../../utils/timeUtils';
 import CalendarioHorarios from '../../components/CalendarioHorarios';

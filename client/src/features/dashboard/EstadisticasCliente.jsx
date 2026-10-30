@@ -21,7 +21,7 @@ import {
     FaTools
 } from 'react-icons/fa';
 import perfil from '../../assets/user.png';
-import './dashboard.css';
+import './HomeLayout.css';
 
 registerLocale('es', es);
 setDefaultLocale('es');

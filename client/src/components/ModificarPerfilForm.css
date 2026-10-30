@@ -9,7 +9,7 @@
   background: rgba(0, 0, 0, 0.65) !important;
 }
 
-/* Sobrescribe .modal-content de dashboard.css (500px !important) */
+/* Sobrescribe .modal-content de HomeLayout.css (500px !important) */
 .modal-content.perfil-modal-content {
   width: min(1120px, calc(100vw - 48px)) !important;
   max-width: 1120px !important;

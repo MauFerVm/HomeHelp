@@ -23,7 +23,7 @@ import {
     FaTrophy,
     FaUnlink
 } from 'react-icons/fa';
-import './dashboard.css';
+import './HomeLayout.css';
 
 registerLocale('es', es);
 setDefaultLocale('es');
