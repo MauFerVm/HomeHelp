@@ -281,8 +281,23 @@ const MisPresupuestos = () => {
         });
     };
 
+    const grupoDelPresupuesto = (presupuesto) => {
+        if (!presupuesto) return null;
+        return solicitudesConPresupuestos.find(item =>
+            item.solicitud.id === presupuesto.solicitud_id
+            || item.presupuestos.some(p => p.id === presupuesto.id)
+        ) || null;
+    };
+
+    const solicitudYaTieneElegido = (presupuesto) => {
+        const grupo = grupoDelPresupuesto(presupuesto);
+        if (!grupo) return false;
+        return grupo.presupuestos.some(p => p.estado === 'aceptado' && p.id !== presupuesto.id);
+    };
+
     // Función para abrir el calendario
     const abrirCalendario = () => {
+        if (solicitudYaTieneElegido(presupuestoSeleccionado)) return;
         setCalendarioAbierto(true);
     };
 
@@ -314,15 +329,21 @@ const MisPresupuestos = () => {
             const data = await response.json();
 
             if (data.success) {
-                // Actualizar el estado del presupuesto en la lista local
-                setSolicitudesConPresupuestos(prev => 
+                const solicitudId = presupuestoSeleccionado.solicitud_id;
+                setSolicitudesConPresupuestos(prev =>
                     prev.map(item => ({
                         ...item,
-                        presupuestos: item.presupuestos.map(p => 
-                            p.id === presupuestoSeleccionado.id 
-                                ? { ...p, estado: 'aceptado' }
-                                : p
-                        )
+                        presupuestos: item.presupuestos.map(p => {
+                            if (p.id === presupuestoSeleccionado.id) {
+                                return { ...p, estado: 'aceptado' };
+                            }
+                            const mismaSolicitud = p.solicitud_id === solicitudId
+                                || item.solicitud.id === solicitudId;
+                            if (mismaSolicitud && p.estado === 'enviado') {
+                                return { ...p, estado: 'rechazado' };
+                            }
+                            return p;
+                        })
                     }))
                 );
 
@@ -523,6 +544,11 @@ const MisPresupuestos = () => {
                                                             {new Date(p.creado_en).toLocaleString()}
                                                         </div>
                                                     </div>
+                                                    <div className={`presupuesto-status ${p.estado}`}>
+                                                        {p.estado === 'aceptado' && 'Aceptado'}
+                                                        {p.estado === 'rechazado' && 'Rechazado'}
+                                                        {p.estado === 'enviado' && 'Enviado'}
+                                                    </div>
                                                     <div className="presupuesto-card-actions">
                                                         <button className="ver-detalle-button" onClick={() => { setPresupuestoSeleccionado(p); setDetalleAbierto(true); }}>
                                                             <FaEye />
@@ -598,7 +624,7 @@ const MisPresupuestos = () => {
                         </div>
                         <div className="modal-footer">
                             <button className="cancel-button" onClick={() => { setDetalleAbierto(false); setPresupuestoSeleccionado(null); }}>Cerrar</button>
-                            {presupuestoSeleccionado.estado === 'enviado' ? (
+                            {presupuestoSeleccionado.estado === 'enviado' && !solicitudYaTieneElegido(presupuestoSeleccionado) ? (
                                 <button 
                                     className="aplicar-button" 
                                     onClick={abrirCalendario}
@@ -608,7 +634,11 @@ const MisPresupuestos = () => {
                                 </button>
                             ) : (
                                 <button className="aplicar-button" disabled>
-                                    {presupuestoSeleccionado.estado === 'aceptado' ? 'Presupuesto Aceptado' : 'Presupuesto Rechazado'}
+                                    {presupuestoSeleccionado.estado === 'aceptado'
+                                        ? 'Presupuesto Aceptado'
+                                        : solicitudYaTieneElegido(presupuestoSeleccionado)
+                                            ? 'Ya elegiste otro presupuesto'
+                                            : 'Presupuesto Rechazado'}
                                 </button>
                             )}
                         </div>

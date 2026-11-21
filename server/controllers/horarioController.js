@@ -46,9 +46,10 @@ const getHorariosDisponibles = async (req, res) => {
             });
         }
 
-        // Calcular fecha fin (7 días después)
+        // Calcular fecha fin (7 días después) en el calendario local
         const fechaFin = new Date(fechaConsulta);
-        fechaFin.setDate(fechaFin.getDate() + 6);
+        fechaFin.setDate(fechaConsulta.getDate() + 6);
+        const fechaFinStr = getFechaLocal(fechaFin);
 
         let excluirAgendaId = null;
         if (ordenId) {
@@ -68,14 +69,14 @@ const getHorariosDisponibles = async (req, res) => {
         const horariosActivos = await horarioModel.getHorariosActivos(
             profesionalId, 
             fechaInicio, 
-            fechaFin.toISOString().split('T')[0]
+            fechaFinStr
         );
 
         // Obtener agenda ocupada
         const agendaOcupada = await horarioModel.getAgendaOcupada(
             profesionalId,
             fechaInicio,
-            fechaFin.toISOString().split('T')[0],
+            fechaFinStr,
             excluirAgendaId
         );
 
@@ -91,7 +92,7 @@ const getHorariosDisponibles = async (req, res) => {
             success: true,
             data: {
                 fechaInicio,
-                fechaFin: fechaFin.toISOString().split('T')[0],
+                fechaFin: fechaFinStr,
                 horariosDisponibles
             }
         });
@@ -202,6 +203,76 @@ const confirmarHorario = async (req, res) => {
         try {
             await connection.beginTransaction();
 
+            await connection.execute(
+                'SELECT id FROM solicitud_servicio WHERE id = ? FOR UPDATE',
+                [presupuesto.solicitud_id]
+            );
+
+            const [presupuestoBloqueado] = await connection.execute(
+                'SELECT id, estado FROM presupuesto WHERE id = ? FOR UPDATE',
+                [presupuestoId]
+            );
+
+            if (presupuestoBloqueado.length === 0 || presupuestoBloqueado[0].estado !== 'enviado') {
+                await connection.rollback();
+                return res.status(409).json({
+                    success: false,
+                    message: 'El presupuesto ya fue procesado'
+                });
+            }
+
+            const [ordenesVigentes] = await connection.execute(
+                `SELECT id
+                 FROM orden_de_trabajo
+                 WHERE solicitud_id = ?
+                   AND is_active = 1
+                   AND estado <> 'cancelado'
+                 LIMIT 1
+                 FOR UPDATE`,
+                [presupuesto.solicitud_id]
+            );
+
+            if (ordenesVigentes.length > 0) {
+                await connection.rollback();
+                return res.status(409).json({
+                    success: false,
+                    message: 'Esta solicitud ya tiene una orden de trabajo'
+                });
+            }
+
+            const [presupuestosARechazar] = await connection.execute(
+                `SELECT per.usuario_id, ss.titulo AS titulo_solicitud
+                 FROM presupuesto p
+                 JOIN persona per ON per.id = p.profesional_persona_id
+                 JOIN solicitud_servicio ss ON ss.id = p.solicitud_id
+                 WHERE p.solicitud_id = ?
+                   AND p.id <> ?
+                   AND p.estado = 'enviado'`,
+                [presupuesto.solicitud_id, presupuestoId]
+            );
+
+            const [presupuestoAceptado] = await connection.execute(
+                `UPDATE presupuesto SET estado = 'aceptado' WHERE id = ? AND estado = 'enviado'`,
+                [presupuestoId]
+            );
+
+            if (presupuestoAceptado.affectedRows !== 1) {
+                await connection.rollback();
+                return res.status(409).json({
+                    success: false,
+                    message: 'El presupuesto ya fue procesado'
+                });
+            }
+
+            await connection.execute(
+                `UPDATE presupuesto
+                 SET estado = 'rechazado'
+                 WHERE solicitud_id = ?
+                   AND id <> ?
+                   AND estado = 'enviado'`,
+                [presupuesto.solicitud_id, presupuestoId]
+            );
+
             // Crear entrada en agenda
             const agendaId = await horarioModel.crearEntradaAgenda(
                 profesionalId,
@@ -212,12 +283,6 @@ const confirmarHorario = async (req, res) => {
                 horaFin,
                 'pendiente',
                 connection
-            );
-
-            // Actualizar estado del presupuesto
-            await connection.execute(
-                'UPDATE presupuesto SET estado = ? WHERE id = ?',
-                ['aceptado', presupuestoId]
             );
 
             // Crear orden de trabajo
@@ -327,6 +392,27 @@ const confirmarHorario = async (req, res) => {
                 }, connection);
             }
 
+            for (const rechazado of presupuestosARechazar) {
+                if (!rechazado.usuario_id) continue;
+                const mensajeRechazo = `El cliente eligió otro presupuesto para "${rechazado.titulo_solicitud}". Tu oferta quedó rechazada.`;
+                await Notificacion.crear({
+                    usuario_id: rechazado.usuario_id,
+                    tipo_notificacion: 'oferta',
+                    referencia_id: presupuesto.solicitud_id,
+                    mensaje: mensajeRechazo,
+                    presentacion: {
+                        asunto: `No eligieron tu presupuesto para "${rechazado.titulo_solicitud}"`,
+                        titulo: 'Tu presupuesto no fue elegido',
+                        introduccion: mensajeRechazo,
+                        detalles: [
+                            { etiqueta: 'Trabajo', valor: rechazado.titulo_solicitud }
+                        ],
+                        botonTexto: 'Ver solicitudes',
+                        seccion: 'buscar-trabajo'
+                    }
+                }, connection);
+            }
+
             await connection.commit();
 
             res.json({
@@ -347,6 +433,12 @@ const confirmarHorario = async (req, res) => {
                 await connection.rollback();
             } catch (rollbackError) {
                 console.error('Error al revertir la confirmación de horario:', rollbackError);
+            }
+            if (error && (error.code === 'ER_DUP_ENTRY' || error.errno === 1062)) {
+                return res.status(409).json({
+                    success: false,
+                    message: 'Esta solicitud ya tiene una orden de trabajo'
+                });
             }
             throw error;
         } finally {
@@ -371,13 +463,14 @@ function procesarHorariosDisponibles(horariosActivos, agendaOcupada, fechaInicio
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
     
-    const fechaInicioObj = new Date(fechaInicio);
+    // "YYYY-MM-DD" a solas es medianoche UTC y en Argentina cae el día anterior.
+    const fechaInicioObj = new Date(`${String(fechaInicio).slice(0, 10)}T00:00:00`);
     const horariosPorDia = {};
 
     // Inicializar estructura por día
     for (let i = 0; i < 7; i++) {
         const fecha = new Date(fechaInicioObj);
-        fecha.setDate(fecha.getDate() + i);
+        fecha.setDate(fechaInicioObj.getDate() + i);
         
         // Calcular el día de la semana real de esta fecha
         const diaNumero = fecha.getDay(); // 0=Domingo, 1=Lunes, ..., 6=Sábado
@@ -435,14 +528,13 @@ function procesarHorariosDisponibles(horariosActivos, agendaOcupada, fechaInicio
         if (horariosPorDiaSemana[diaSemana]) {
             // Filtrar horarios que son válidos para esta fecha específica
             const horariosValidosParaFecha = horariosPorDiaSemana[diaSemana].filter(horario => {
-                const fechaActual = new Date(fecha);
-                const fechaInicioHorario = new Date(horario.fechaInicio);
-                const fechaFinHorario = horario.fechaFin ? new Date(horario.fechaFin) : null;
-                
-                // Verificar que la fecha esté dentro del rango del horario
-                const despuesDeFechaInicio = fechaActual >= fechaInicioHorario;
-                const antesDeFechaFin = !fechaFinHorario || fechaActual <= fechaFinHorario;
-                
+                const fechaIso = isoFecha(fecha);
+                const inicioIso = isoFecha(horario.fechaInicio);
+                const finIso = isoFecha(horario.fechaFin);
+
+                const despuesDeFechaInicio = fechaIso >= inicioIso;
+                const antesDeFechaFin = !finIso || fechaIso <= finIso;
+
                 return despuesDeFechaInicio && antesDeFechaFin;
             });
             
@@ -579,6 +671,12 @@ function getFechaLocal(date = new Date()) {
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
+}
+
+function isoFecha(valor) {
+    if (!valor) return null;
+    if (valor instanceof Date) return getFechaLocal(valor);
+    return String(valor).slice(0, 10);
 }
 
 /**

@@ -204,13 +204,6 @@ const HomeLayout = () => {
                 return <AdminReportesIngresos />;
             case 'analisis-usuarios':
                 return <AdminAnalisisUsuarios />;
-            case 'contacto':
-                return (
-                    <div className="tab-content">
-                        <h2>Contacto y Soporte</h2>
-                        <p>Esta funcionalidad estará disponible próximamente.</p>
-                    </div>
-                );
             default:
                 if (userType === 'admin') {
                     return <AdminGestion vista="usuarios" />;

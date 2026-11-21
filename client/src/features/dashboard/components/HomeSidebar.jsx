@@ -128,16 +128,6 @@ const HomeSidebar = ({
                         </div>
 
                         <div className="nav-section">
-                            <h3 className="nav-section-title">CONTACTO</h3>
-                            <ul className="nav-menu">
-                                <li className="nav-item" onClick={closeMobileMenu} data-user-type="cliente">
-                                    <FaEnvelope className="nav-icon" />
-                                    <span>Soporte</span>
-                                </li>
-                            </ul>
-                        </div>
-
-                        <div className="nav-section">
                             <h3 className="nav-section-title">GRAFICOS</h3>
                             <ul className="nav-menu">
                                 <li
@@ -238,22 +228,6 @@ const HomeSidebar = ({
                             </ul>
                         </div>
 
-                        <div className="nav-section">
-                            <h3 className="nav-section-title">CONTACTO</h3>
-                            <ul className="nav-menu">
-                                <li
-                                    className={`nav-item ${activeTab === 'contacto' ? 'active' : ''}`}
-                                    onClick={() => {
-                                        closeMobileMenu();
-                                        setActiveTab('contacto');
-                                    }}
-                                    data-user-type="profesional"
-                                >
-                                    <FaEnvelope className="nav-icon" />
-                                    <span>Soporte</span>
-                                </li>
-                            </ul>
-                        </div>
                     </>
                 )}
 
